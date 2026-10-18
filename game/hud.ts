@@ -1,6 +1,7 @@
 // Pont entre la boucle de jeu et l'interface React (useSyncExternalStore), mis à jour ~10 fois par seconde.
 import type { Device } from "./input";
 import type { Objective } from "./state";
+import type { Bubble } from "./tutorial";
 
 export interface HudSnapshot {
   sector: string;
@@ -32,6 +33,10 @@ export interface HudSnapshot {
   notice: string;
   noticeId: number;
   prompt: { name: string; action: string } | null;
+  /** Bulle d'aide du tutoriel en cours, ou null. */
+  tutorial: Bubble | null;
+  /** Astuce quand l'objectif n'avance plus depuis longtemps ("" sinon). */
+  hint: string;
   device: Device;
   paused: boolean;
   fps: number;

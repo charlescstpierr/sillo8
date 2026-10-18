@@ -64,6 +64,17 @@ lance-clous et voient mieux qui se tient debout : s'accroupir aide à passer.
 | F5 / F9 | — | — | Sauvegarder / charger |
 | H / B | — | — | Se soigner / mettre une pile |
 
+## Aide en jeu
+
+- **Tutoriel léger** : en début de partie, de petites bulles (une à la fois, selon l'appareil) montrent
+  comment se déplacer, examiner une note, relire le carnet ; le combat vient plus tard, quand un zombie
+  approche. Les étapes vues sont mémorisées (`sillo8-tutorial`) ; Réglages → « Revoir le tutoriel ».
+- **Flèche d'objectif** : un petit chevron au sol autour de l'héroïne, vers l'objectif en cours (en passant
+  par la bonne porte). Par défaut, il n'apparaît qu'après ~45 s sans progrès ; Réglages → toujours / jamais.
+- **Astuce** : après ~3 min sans progrès, une indication sur l'objectif en cours.
+
+Logique pure dans `game/tutorial.ts` (testée par `tests/unit/tutorial.test.ts`), chevron dans `game/render/guide.ts`.
+
 ## Vérifier
 
 ```sh

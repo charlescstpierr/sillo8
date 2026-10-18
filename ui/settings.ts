@@ -1,6 +1,7 @@
 // Réglages persistés (localStorage « sillo8-settings ») et leur application au moteur.
 import type { Engine } from "@/game/engine";
 import { SERVER_ROUTE } from "@/game/dialogue";
+import type { ArrowMode } from "@/game/tutorial";
 
 export const SETTINGS_KEY = "sillo8-settings";
 
@@ -9,9 +10,18 @@ export interface Settings {
   endpoint: string;
   model: string;
   useServer: boolean;
+  /** Flèche d'objectif : "auto" après ~45 s sans progrès (par défaut), toujours, ou jamais. */
+  objectiveArrow: ArrowMode;
 }
 
-export const DEFAULT_SETTINGS: Settings = { lowQuality: null, endpoint: "", model: "", useServer: false };
+export const DEFAULT_SETTINGS: Settings = { lowQuality: null, endpoint: "", model: "", useServer: false, objectiveArrow: "auto" };
+
+/** Anciens réglages sans le champ, ou booléen oui/non : repli sur "auto" (false → jamais). */
+export function arrowMode(value: unknown): ArrowMode {
+  if (value === "always" || value === "never" || value === "auto") return value;
+  if (value === false) return "never";
+  return "auto";
+}
 
 export function loadSettings(): Settings {
   try {
@@ -23,6 +33,7 @@ export function loadSettings(): Settings {
       endpoint: typeof data.endpoint === "string" ? data.endpoint.slice(0, 512) : "",
       model: typeof data.model === "string" ? data.model.slice(0, 128) : "",
       useServer: data.useServer === true,
+      objectiveArrow: arrowMode(data.objectiveArrow),
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -60,6 +71,7 @@ export function applyDialogue(engine: Engine, settings: Settings, serverEnabled:
 /** Au démarrage : réglages enregistrés appliqués au moteur (l'adresse ?low= reste prioritaire). */
 export function applyStartupSettings(engine: Engine, urlLow: string | null): void {
   const settings = loadSettings();
+  engine.tutorial.arrowMode = settings.objectiveArrow;
   if (urlLow === null && settings.lowQuality !== null && settings.lowQuality !== engine.lowQuality) {
     engine.setLowQuality(settings.lowQuality);
   }

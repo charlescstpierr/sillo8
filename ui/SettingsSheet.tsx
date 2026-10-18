@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Engine } from "@/game/engine";
 import { PaperButton, Stamp, Tag } from "./Paper";
 import { applyDialogue, loadSettings, saveSettings, serverDialogueAvailable, type Settings } from "./settings";
+import type { ArrowMode } from "@/game/tutorial";
 import styles from "./sheets.module.css";
 
 export function SettingsSheet({ engine, touch }: { engine: Engine; touch: boolean }) {
@@ -14,6 +15,8 @@ export function SettingsSheet({ engine, touch }: { engine: Engine; touch: boolea
   const [endpoint, setEndpoint] = useState(initial.endpoint);
   const [model, setModel] = useState(initial.model);
   const [useServer, setUseServer] = useState(initial.useServer);
+  const [arrow, setArrow] = useState<ArrowMode>(initial.objectiveArrow);
+  const [replayed, setReplayed] = useState(false);
   const [serverEnabled, setServerEnabled] = useState<boolean | null>(null);
   const [error, setError] = useState("");
 
@@ -38,12 +41,13 @@ export function SettingsSheet({ engine, touch }: { engine: Engine; touch: boolea
   }, [engine, origin]);
 
   const apply = () => {
-    const next: Settings = { lowQuality, endpoint: endpoint.trim(), model: model.trim(), useServer: useServer && serverEnabled === true };
+    const next: Settings = { lowQuality, endpoint: endpoint.trim(), model: model.trim(), useServer: useServer && serverEnabled === true, objectiveArrow: arrow };
     if (!applyDialogue(engine, next, serverEnabled === true)) {
       setError("Adresse refusée. Utilisez localhost ou un proxy HTTPS, sans identifiants.");
       return;
     }
     if (engine.lowQuality !== lowQuality) engine.setLowQuality(lowQuality);
+    engine.tutorial.arrowMode = arrow;
     if (!saveSettings(next)) engine.notify("Les réglages ne seront pas conservés dans ce navigateur.");
     back();
   };
@@ -60,6 +64,19 @@ export function SettingsSheet({ engine, touch }: { engine: Engine; touch: boolea
         <span className={styles.switch} aria-hidden />
         <span>Mode performance · sans ombres portées ni poussière, résolution réduite</span>
       </label>
+
+      <h2 className={styles.section}>Aide</h2>
+      <label className={styles.field}>
+        Flèche d'objectif
+        <select className={styles.input} value={arrow} onChange={(e) => setArrow(e.target.value as ArrowMode)}>
+          <option value="auto">Après 45 s sans progrès (conseillé)</option>
+          <option value="always">Toujours</option>
+          <option value="never">Jamais</option>
+        </select>
+      </label>
+      <PaperButton onClick={() => { engine.tutorial.replay(); setReplayed(true); }} disabled={replayed}>
+        {replayed ? "Tutoriel relancé" : "Revoir le tutoriel"}
+      </PaperButton>
 
       <h2 className={styles.section}>Dialogues par IA (facultatif, histoire à venir)</h2>
       <p className={styles.text} style={{ fontSize: 15 }}>

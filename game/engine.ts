@@ -23,6 +23,8 @@ import { animateOperator, buildOperator, type OperatorRig } from "./render/opera
 import { PALETTE } from "./render/palette";
 import { blobTexture } from "./render/textures";
 import { decal } from "./render/props";
+import { arrowVisible, nearestUnreadNote, nearestZombie, TutorialDirector } from "./tutorial";
+import { buildGuide } from "./render/guide";
 
 export interface EngineOptions {
   lowQuality?: boolean;
@@ -53,6 +55,9 @@ export class Engine {
   aimPoint: Vector3 | null = null;
   focus: InteractableDef | null = null;
   storage: KeyValueStore | null;
+  /** Tutoriel léger, flèche d'objectif et astuces (logique dans tutorial.ts). */
+  readonly tutorial: TutorialDirector;
+  readonly guide = buildGuide();
 
   private clock = new Clock();
   private frame = 0;
@@ -76,6 +81,7 @@ export class Engine {
   private shadowBlob: Mesh;
   private readonly tmp = new Vector3();
   private readonly aimTmp = new Vector3();
+  private readonly guideTmp = new Vector3();
   private resizeObserver: ResizeObserver | null = null;
   private hordeContext: HordeContext;
   private progressEffects: ProgressEffects;
@@ -83,6 +89,7 @@ export class Engine {
   constructor(readonly canvas: HTMLCanvasElement, options: EngineOptions = {}) {
     this.lowQuality = options.lowQuality ?? false;
     this.storage = options.storage ?? null;
+    this.tutorial = new TutorialDirector(this.storage);
     this.renderer = new WebGLRenderer({ canvas, antialias: !this.lowQuality, stencil: true, powerPreference: "high-performance" });
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.toneMapping = NeutralToneMapping;
@@ -110,7 +117,7 @@ export class Engine {
     const [px, , pz] = this.state.playerPosition;
     this.player = new PlayerController(px, pz, this.state.playerYaw);
     this.operator = buildOperator();
-    this.scene.add(this.operator.root, this.operator.droppedMag);
+    this.scene.add(this.operator.root, this.operator.droppedMag, this.guide.root);
     this.shadowBlob = decal(this.scene, blobTexture("shadow"), px, pz, 1.1, 1.1, 0, 0.02);
 
     this.horde = createHorde(this.state);
@@ -224,6 +231,7 @@ export class Engine {
   setMode(mode: UiMode, character?: Character): void {
     this.ui.set(mode, character);
     if (mode !== "playing") this.input.releaseAll();
+    if (mode === "journal" || mode === "inventory") this.tutorial.markJournal();
     this.publishHud();
   }
 
@@ -321,6 +329,7 @@ export class Engine {
     this.horde.sync(this.state);
     this.refreshWorld();
     this.rig.snap(new Vector3(x, 0, z));
+    this.tutorial.start(this.state);
   }
 
   openPause(): void {
@@ -495,7 +504,8 @@ export class Engine {
 
     // Interaction et raccourcis
     this.focus = this.findFocus();
-    if (input.consume("interact") && this.focus) this.interact(this.focus);
+    const interacted = input.consume("interact") && this.focus !== null;
+    if (interacted) this.interact(this.focus!);
     if (input.consume("save")) this.saveGame();
     if (input.consume("load")) this.loadGame();
     if (input.consume("heal")) this.heal();
@@ -534,6 +544,25 @@ export class Engine {
     }, dt);
     this.world.update(dt, this.elapsed, this.player.x, this.player.z);
     this.updateHighlights();
+    this.updateTutorial(dt, interacted);
+  }
+
+  /** Bulles d'aide, astuce et flèche d'objectif (au sol, cachée quand la cible est à l'écran et proche). */
+  private updateTutorial(dt: number, interacted: boolean): void {
+    const { x, z } = this.player;
+    this.tutorial.update(dt, this.state, x, z, {
+      device: this.input.device, moving: this.player.speed > 0.6, interacted, crouched: this.player.crouched,
+      struck: this.combat.swingTime > 0 || this.player.shotTime > 0, dazzled: this.combat.dazzleTime > 0, journalOpened: false,
+      noteDistance: nearestUnreadNote(this.state, x, z), zombieDistance: nearestZombie(this.horde.aimCandidates(), x, z), notesRead: this.state.notes.length,
+    });
+    const target = this.tutorial.target;
+    let show = false;
+    if (target) {
+      const p = this.guideTmp.set(target.goalX, 0.5, target.goalZ).project(this.camera);
+      const onScreen = p.z < 1 && Math.abs(p.x) < 0.9 && Math.abs(p.y) < 0.9;
+      show = arrowVisible(this.tutorial.arrowWanted(), Math.hypot(target.goalX - x, target.goalZ - z), onScreen);
+    }
+    this.guide.update(dt, this.elapsed, x, z, target?.x ?? x, target?.z ?? z + 1, show);
   }
 
   /** Rechargement du lance-clous (la clé à molette ne se recharge pas). */
@@ -649,6 +678,8 @@ export class Engine {
       notice: this.noticeTime > 0 ? this.notice : "",
       noticeId: this.noticeId,
       prompt: this.focus ? { name: this.focus.name, action: this.focus.action } : null,
+      tutorial: this.tutorial?.bubble ?? null,
+      hint: this.tutorial?.hint ?? "",
       device: this.input.device,
       paused: this.ui.get().mode !== "playing",
       fps: this.fps,

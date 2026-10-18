@@ -142,6 +142,27 @@ function Objectives({ hud, touch }: { hud: ReturnType<typeof useHud>; touch: boo
   );
 }
 
+/**
+ * Bulle du tutoriel (ou astuce si l'objectif n'avance plus) : petite, en bas au centre, au-dessus des
+ * commandes, pour laisser libre le haut de l'héroïne. Sur téléphone, la pointe se tourne vers le bouton.
+ */
+function TutorialBubble({ hud }: { hud: ReturnType<typeof useHud> }) {
+  const bubble = hud.tutorial;
+  if (bubble) {
+    return (
+      <p className={styles.tutorial} role="note" aria-label="Conseil" data-step={bubble.step} data-target={bubble.target} key={bubble.step}>
+        <kbd>{bubble.key}</kbd> {bubble.text}
+      </p>
+    );
+  }
+  if (!hud.hint) return null;
+  return (
+    <p className={styles.tutorial} role="note" aria-label="Astuce" data-step="hint" key={hud.hint}>
+      <b className={styles.tutorialLabel}>Astuce</b> {hud.hint}
+    </p>
+  );
+}
+
 const HINT: [string, string][] = [
   ["Clic", "frapper/tirer"], ["Clic droit", "éblouir"], ["1/2", "arme"], ["R", "recharger"],
   ["E", "interagir"], ["J", "carnet"], ["Tab", "sac"],
@@ -218,6 +239,8 @@ export function Hud({ engine }: { engine: Engine }) {
           ))}
         </ul>
       </section>
+
+      <TutorialBubble hud={hud} />
 
       {/* Téléphone : barre verticale rétractable au bord gauche (vie, lampe, arme) */}
       <VitalsRail hud={hud} nailgun={nailgun} counters={counters} danger={danger} />
