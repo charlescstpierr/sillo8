@@ -48,6 +48,9 @@ const RECIPES: Record<string, Recipe> = {
   metal_clang: (s) => ({ text: line("choc métallique", direction(s, true)), danger: false }),
   distant_knock: (s) => ({ text: line("trois coups, réguliers", direction(s, true)), danger: false }),
   creak: (s) => (s.placed ? { text: line("grincement", direction(s)), danger: false } : null),
+  // Enquête (game/investigation/content/story.ts) : néons qui se rallument, signal tapé à la main.
+  electric_buzz: (s) => (s.placed ? { text: line("néons qui grésillent", direction(s)), danger: false } : null),
+  morse: (s) => ({ text: line("bips tapés à la main", direction(s)), danger: false }),
 };
 
 /** Noms des sons sous-titrés. */

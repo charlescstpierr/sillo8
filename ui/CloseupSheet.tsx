@@ -7,6 +7,7 @@ import type { Engine } from "@/game/engine";
 import { INDEX } from "@/game/investigation/world";
 import type { Examinable, HiddenDetail } from "@/game/investigation/types";
 import { Art } from "./inquiry/art";
+import { PuzzlePanel } from "./inquiry/PuzzlePanel";
 import { useInquiry } from "./inquiry/useInquiry";
 import { NewClue, ThoughtPaper } from "./InquiryLayer";
 import { PaperButton } from "./Paper";
@@ -137,6 +138,8 @@ function Closeup({ engine, exam, touch }: { engine: Engine; exam: Examinable; to
   // Clavier : flèches (tourner, ou déplacer la loupe), + / − (zoom), L (loupe), R (remettre de face).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Champ de saisie d'une énigme : les lettres vont au champ.
+      if (e.target instanceof HTMLInputElement) return;
       const step = e.shiftKey ? 20 : 10;
       let handled = true;
       switch (e.code) {
@@ -246,11 +249,12 @@ function Closeup({ engine, exam, touch }: { engine: Engine; exam: Examinable; to
         {!loupe ? <span className={styles.stageHint} aria-hidden>{touch ? "glisser pour tourner · pincer pour zoomer" : "glisser pour tourner · molette pour zoomer"}</span> : null}
       </div>
 
-      <div className={styles.closeupInfo}>
+      <div className={styles.closeupInfo} style={exam.puzzle ? { height: "auto", maxHeight: "62%" } : undefined}>
+        {exam.puzzle ? <PuzzlePanel engine={engine} id={exam.puzzle} touch={touch} /> : null}
         {details.map((d, i) => (revealed[i] ? (
           <p key={i} className={styles.revealed} data-revealed><span className={styles.revealStamp}>Vu</span>{d.text}</p>
         ) : null))}
-        {cue ? <p className={styles.cue} role="note" aria-label="Consigne">{cue}</p> : details.length ? null : <p className={styles.cue}>Noté au carnet.</p>}
+        {cue ? <p className={styles.cue} role="note" aria-label="Consigne">{cue}</p> : details.length || exam.puzzle ? null : <p className={styles.cue}>Noté au carnet.</p>}
         {inquiry.thought ? <ThoughtPaper text={inquiry.thought.text} key={inquiry.thought.key} /> : null}
       </div>
 
