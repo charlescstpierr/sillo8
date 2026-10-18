@@ -4,7 +4,7 @@
 
 Jeu web solo en français, jouable sur ordi et sur téléphone, en vue de dessus façon « jouet » :
 cel-shading, contours bruns, murs coupés à mi-hauteur comme une maison de poupée.
-Vous incarnez une survivante bricoleuse (bonnet olive, veste moutarde, sacoche en cuir) qui
+Vous incarnez un survivant bricoleur (bonnet olive, veste moutarde, sacoche en cuir) qui
 explore l'étage 1 d'un silo envahi de zombies.
 
 Next.js 16 + React 19 pour l'interface, three.js pour la 3D (dans un seul composant), TypeScript.
@@ -79,7 +79,7 @@ et n'affichent que quelques images par capture.
 app/                 pages Next.js, route optionnelle /api/dialogue
 game/                logique en TypeScript pur : état, objectifs (progress.ts), plan, collisions,
                      caméra, visée, entrées, combat, zombies, notes
-game/render/         rendu three.js : matériaux toon, héroïne, zombies, effets, monde
+game/render/         rendu three.js : matériaux toon, héros, zombies, effets, monde
 game/render/sectors/ décor de chaque zone (extérieur, centre, aile ouest, aile est)
 ui/                  interface React : HUD, sac, carnet, notes, menus, commandes tactiles
 tests/unit           Vitest (dont journey.test.ts : l'étage 1 joué de bout en bout)
