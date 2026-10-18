@@ -61,14 +61,14 @@ export const THOUGHTS: Thought[] = [
   { id: "t_raclures", text: "Cette armoire a bougé. Souvent.", trigger: near("room1_cabinet", 2.2) },
   { id: "t_courant_air", text: "…Courant d'air. Sûrement.", trigger: { on: "chain" } },
   { id: "t_montre", text: "2 h 14. Qu'est-ce qui s'est passé à 2 h 14 ?", trigger: { on: "chain" } },
-  { id: "t_chambre1", text: "Une chambre “condamnée”, avec deux lampes neuves et un plateau propre ?", trigger: near("room1", 1.8), requires: { unlocked: ["examinable:room1_cabinet"] } },
+  { id: "t_chambre1", text: "Une chambre “condamnée”, avec deux lampes neuves et un plateau propre ?", trigger: near("room1_bed", 1.6), requires: { unlocked: ["examinable:room1_cabinet"] } },
   { id: "t_eclat", text: "Du verre vert. D'où vient-il ?", trigger: { on: "chain" } },
 
   // ——— Atelier ———
   { id: "t_casier", text: "Ses outils sont rangés au millimètre. Le genre de type qui ne ment pas.", trigger: { on: "examine", examinable: "a9" } },
 
   // ——— Salle de contrôle ———
-  { id: "t_bague", text: "Elle tourne sa bague. Encore.", trigger: near("operator_latch", 3.2), requires: { unlocked: ["puzzle:shed"] } },
+  { id: "t_bague", text: "Elle tourne sa bague. Encore.", trigger: near("operator_door", 3.2), requires: { unlocked: ["puzzle:shed"] } },
   { id: "t_loquet", text: "Fermé de l'intérieur. Coincée… vraiment ?", trigger: { on: "chain" } },
 
   // ——— Tableau : défi au joueur, puis résumé après la juste accusation (§ 21) ———
@@ -82,19 +82,19 @@ export const THOUGHTS: Thought[] = [
 ];
 
 export const TRACES: UvTrace[] = [
-  { id: "c1", room: "plaza", shape: { kind: "none", x: -10.1, z: 27, radius: 1.1 }, text: "Rien. Pas une trace de mordu au seuil.", card: "c1" },
-  { id: "c2", room: "infirmary", shape: { kind: "trail", points: [[18.4, 6.9], [17.6, 5.0], [16.0, 2.2], [12.6, 0.7], [10.3, 0.15]] }, text: "Une traînée part de l'armoire.", card: "c2" },
+  { id: "c1", room: "plaza", shape: { kind: "none", x: POS.service_threshold.x, z: POS.service_threshold.z, radius: 1.1 }, text: "Rien. Pas une trace de mordu au seuil.", card: "c1" },
+  { id: "c2", room: "infirmary", shape: { kind: "trail", points: [[17.85, 6.3], [17.2, 5.0], [16.0, 2.2], [12.6, 0.7], [10.3, 0.15]] }, text: "Une traînée part de l'armoire.", card: "c2" },
   { id: "c3", room: "hub", shape: { kind: "trail", points: [[6.9, 0.2], [3.5, 1.4], [0, 1.0], [-3.5, -0.2], [-6.9, 0.1]] }, text: "La même traînée, sans détour, jusqu'au moteur.", card: "c3" },
   {
     id: "c4", room: "infirmary", requires: { unlocked: ["examinable:room1_cabinet"] },
-    shape: { kind: "prints", points: [[19.6, 5.6], [20.2, 6.1], [20.7, 6.6]] },
+    shape: { kind: "prints", points: [[19.25, 6.55], [19.65, 6.15], [20.05, 5.7]] },
     text: "Deux empreintes de semelles fines près du lit, vivantes (pas de bave).", card: "c4",
   },
-  { id: "c5", room: "infirmary", shape: { kind: "stamp", x: 10.2, z: -1.7, y: 1.02, text: "PATIENT n° 1", yaw: Math.PI / 2 }, text: "Sous « CONDAMNÉE » sur le plan, au tampon invisible : « PATIENT n° 1 ».", card: "c5" },
+  { id: "c5", room: "infirmary", shape: { kind: "stamp", x: POS.note_infirmary_map.x, z: POS.note_infirmary_map.z + 0.06, y: POS.note_infirmary_map.y - 0.12, text: "PATIENT n° 1", yaw: 0 }, text: "Sous « CONDAMNÉE » sur le plan, au tampon invisible : « PATIENT n° 1 ».", card: "c5" },
   // c6 et c7 sont des passages à la loupe (gros plans a2 et cahier de relève), pas des traces au sol.
   {
     id: "c8", room: "control",
-    shape: { kind: "trail", points: [[20.5, -15.6], [22.6, -17.4], [24.4, -18.9], [25.5, -19.6]] },
+    shape: { kind: "trail", points: [[21.0, -15.5], [24.0, -17.2], [26.5, -17.95], [28.0, -18.2]] },
     text: "Traînées de mordu devant le local technique, aucune derrière.", card: "c8",
   },
 ];
@@ -103,7 +103,7 @@ export const EVENTS: StrangeEvent[] = [
   // ——— Première minute ———
   {
     // d1 : la voix de l'opératrice à la radio de la guérite, puis la pile meurt.
-    id: "d1", trigger: { on: "near", x: 4, z: 31, radius: 5 },
+    id: "d1", trigger: near("guard_radio", 5.5),
     actions: [
       { do: "sound", cue: "radio_static", x: POS.guard_radio.x, z: POS.guard_radio.z },
       { do: "notice", text: "La radio grésille : « …ici l'opératrice de nuit… c'est l'heure de la relève… il y a quelqu'un ? » Puis plus rien." },
@@ -148,7 +148,7 @@ export const EVENTS: StrangeEvent[] = [
       { do: "card", card: "generator_restart" },
       { do: "sound", cue: "electric_buzz", x: -22, z: 26, delay: 1.2 },
       { do: "notice", text: "Les néons s'allument en vague. Une seule lueur reste verte, à l'est.", delay: 1.4 },
-      { do: "light", x: POS.operator_latch.x, z: POS.operator_latch.z, y: 0.15, color: "#7dff8a", duration: 4, delay: 1.4 },
+      { do: "light", x: POS.operator_door.x, z: POS.operator_door.z, y: 0.15, color: "#7dff8a", duration: 4, delay: 1.4 },
       { do: "thought", thought: "t_vert", delay: 3 },
     ],
   },
@@ -170,7 +170,7 @@ export const EVENTS: StrangeEvent[] = [
     // d5 : une valise glisse et s'ouvre.
     id: "d5", trigger: { on: "enter", room: "hub" },
     actions: [
-      { do: "sound", cue: "creak", x: POS.suitcase.x, z: POS.suitcase.z, delay: 0.6 },
+      { do: "sound", cue: "creak", x: POS.open_suitcase.x, z: POS.open_suitcase.z, delay: 0.6 },
       { do: "notice", text: "Une valise glisse et s'ouvre : vêtements, une photo de groupe retournée.", delay: 0.8 },
     ],
   },
@@ -186,9 +186,9 @@ export const EVENTS: StrangeEvent[] = [
   // ——— Cafétéria ———
   {
     // d6 : trois coups de l'intérieur de la chambre froide, réguliers.
-    id: "d6", trigger: near("cold_room", 7), requires: { facts: ["generator_powered"] },
+    id: "d6", trigger: near("cold_room_door", 7), requires: { facts: ["generator_powered"] },
     actions: [
-      { do: "sound", cue: "distant_knock", x: POS.cold_room.x, z: POS.cold_room.z },
+      { do: "sound", cue: "distant_knock", x: POS.cold_room_door.x, z: POS.cold_room_door.z },
       { do: "thought", thought: "t_frappe", delay: 1.4 },
     ],
   },
@@ -208,6 +208,12 @@ export const EVENTS: StrangeEvent[] = [
       { do: "sound", cue: "creak", x: POS.room1_cabinet.x, z: POS.room1_cabinet.z, delay: 1 },
       { do: "thought", thought: "t_courant_air", delay: 2.2 },
     ],
+  },
+
+  {
+    // L'armoire poussée (X1 ou X2 établie) : elle glisse sur ses raclures, la porte de la chambre 1 apparaît.
+    id: "room1_push", trigger: { on: "examine", examinable: "room1_cabinet" },
+    actions: [{ do: "sound", cue: "creak", x: POS.room1_cabinet.x, z: POS.room1_cabinet.z }],
   },
 
   // ——— Salle de contrôle : radio réparée (d10, d11) ———

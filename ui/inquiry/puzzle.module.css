@@ -1,6 +1,7 @@
 /* Énigmes (cadenas, mot de passe, leviers) : papier crème, encre, gros boutons au doigt. */
 .panel {
   position: relative;
+  flex: none;
   display: flex;
   flex-direction: column;
   gap: 6px;

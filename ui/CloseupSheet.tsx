@@ -249,7 +249,7 @@ function Closeup({ engine, exam, touch }: { engine: Engine; exam: Examinable; to
         {!loupe ? <span className={styles.stageHint} aria-hidden>{touch ? "glisser pour tourner · pincer pour zoomer" : "glisser pour tourner · molette pour zoomer"}</span> : null}
       </div>
 
-      <div className={styles.closeupInfo} style={exam.puzzle ? { height: "auto", maxHeight: "62%" } : undefined}>
+      <div className={styles.closeupInfo} style={exam.puzzle ? { height: "auto", maxHeight: "none", minHeight: 0 } : undefined}>
         {exam.puzzle ? <PuzzlePanel engine={engine} id={exam.puzzle} touch={touch} /> : null}
         {details.map((d, i) => (revealed[i] ? (
           <p key={i} className={styles.revealed} data-revealed><span className={styles.revealStamp}>Vu</span>{d.text}</p>

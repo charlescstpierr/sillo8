@@ -20,6 +20,9 @@ import {
 import { addOnce, emptyRecord, recordOf } from "./record";
 import { CARRIER_REACH, CARRIERS, CONTENT, DROPPED_RADIUS, EXAMINABLE_DEFS, INDEX } from "./world";
 import { CARD_FLAG, DEDUCTION_FLAG, PUZZLE_FLAG } from "./content/links";
+import { AREAS, CABINET_SLIDE, POS } from "./content/positions";
+import { getStoryObject } from "../render/storyProps";
+import type { Box } from "../collision";
 import type { EventAction, Point, Thought, Trigger } from "./types";
 
 export interface InquiryHost {
@@ -30,6 +33,8 @@ export interface InquiryHost {
   setMode(mode: UiMode, character?: string): void;
   /** Bruit qui attire les mordus (disjoncteur de l'énigme 2). */
   noise?(x: number, z: number, radius: number): void;
+  /** Obstacles du monde (pour faire glisser l'armoire de la chambre 1 avec son obstacle). */
+  colliders?(): readonly Box[];
   /** Où est ce mordu (identifiant de ENEMIES) ? null s'il n'existe pas dans le monde. */
   locate?(enemy: string): { x: number; z: number; alive: boolean; frozen: boolean } | null;
 }
@@ -134,6 +139,8 @@ export class InquiryDirector {
     this.mistakes = 0;
     this.lastProgress = Date.now();
     this.store.patch({ thought: null, toast: null, uv: false, boardThought: null, hintSuggested: false, version: this.store.get().version + 1 });
+    // L'armoire reprend la place que dit la partie chargée (glisse d'un coup).
+    this.updateStoryDecor(this.host.state.playerPosition[0], this.host.state.playerPosition[2], 0);
   }
 
   // ——— Lampe UV ———
@@ -178,6 +185,7 @@ export class InquiryDirector {
     const entered = room !== this.room ? room : null;
     this.room = room;
     this.updateCarriers();
+    this.updateStoryDecor(x, z, dt);
     for (const t of CONTENT.thoughts) if (this.matches(t.trigger, x, z, entered) && conditionMet(t.requires, this.record, s)) this.think(t.id);
     for (const e of CONTENT.events) {
       if (this.record.events.includes(e.id) || !this.matches(e.trigger, x, z, entered) || !conditionMet(e.requires, this.record, s)) continue;
@@ -223,6 +231,41 @@ export class InquiryDirector {
       }
       default: return false;
     }
+  }
+
+  /** Armoire de la chambre 1 : déplacement courant (m vers le nord) et son obstacle. */
+  private cabinetShift = 0;
+  private cabinetBox: { box: Box; minZ: number; maxZ: number } | null = null;
+
+  /**
+   * Décor narratif piloté par l'enquête (game/render/storyProps.ts) : l'armoire de la chambre 1 glisse quand on la
+   * pousse (avec son obstacle), les plafonds de la chambre 1 et du local technique se lèvent quand Lou y est, et la
+   * lueur verte sous la porte de l'opératrice s'éteint quand Lou est disculpé (C5).
+   */
+  private updateStoryDecor(x: number, z: number, dt: number): void {
+    const r = this.record;
+    const target = r.events.includes("room1_push") ? CABINET_SLIDE : 0;
+    if (this.cabinetShift !== target) {
+      const step = Math.sign(target - this.cabinetShift) * Math.min(Math.abs(target - this.cabinetShift), dt > 0 ? dt * 1.2 : Infinity);
+      this.cabinetShift += step;
+      const cabinet = getStoryObject("room1_cabinet");
+      if (cabinet) cabinet.position.z = POS.room1_cabinet.z + this.cabinetShift;
+      if (!this.cabinetBox) {
+        const box = this.host.colliders?.().find((b) => Math.abs((b.minX + b.maxX) / 2 - POS.room1_cabinet.x) < 0.05 && Math.abs((b.minZ + b.maxZ) / 2 - POS.room1_cabinet.z) < 0.05);
+        if (box) this.cabinetBox = { box, minZ: box.minZ, maxZ: box.maxZ };
+      }
+      if (this.cabinetBox) {
+        this.cabinetBox.box.minZ = this.cabinetBox.minZ + this.cabinetShift;
+        this.cabinetBox.box.maxZ = this.cabinetBox.maxZ + this.cabinetShift;
+      }
+    }
+    const inside = (a: { x0: number; x1: number; z0: number; z1: number }) => x > a.x0 && x < a.x1 && z > a.z0 && z < a.z1;
+    const room1 = getStoryObject("room1_ceiling");
+    if (room1) room1.visible = !inside(AREAS.room1);
+    const local = getStoryObject("local_ceiling");
+    if (local) local.visible = !inside(AREAS.local);
+    const glowLine = getStoryObject("operator_glow");
+    if (glowLine) glowLine.visible = !knowsFact(this.host.state, "accused_cleared");
   }
 
   /**

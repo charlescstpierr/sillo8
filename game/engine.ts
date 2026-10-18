@@ -155,6 +155,7 @@ export class Engine {
       scene: this.scene, state: this.state, notify: (text) => this.notify(text),
       emit: (event) => this.events.emit(event), setMode: (mode, id) => this.setMode(mode, id),
       noise: (x, z, radius) => this.horde.hearNoise(x, z, radius),
+      colliders: () => this.world.colliders,
       // Mordus porteurs d'indices : figés par la lampe (étourdis) ou abattus.
       locate: (id) => {
         const z = (this.horde as Partial<ZombieHorde>).get?.(id);

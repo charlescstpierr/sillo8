@@ -2,7 +2,7 @@
 // tiroir), petits décors nécessaires à l'histoire (armoire, raclures, craie), et effets des événements étranges
 // (lueur au loin, silhouette). Style jouet : formes simples, contour d'encre, papier crème.
 import {
-  AdditiveBlending, CanvasTexture, CapsuleGeometry, Group, Mesh, MeshBasicMaterial, PlaneGeometry, PointLight,
+  AdditiveBlending, CanvasTexture, CapsuleGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, PlaneGeometry, PointLight,
   SphereGeometry, SRGBColorSpace, Texture,
 } from "three";
 import type { InvestigationContent, Prop, WorldMarker } from "../investigation/types";
@@ -172,6 +172,15 @@ function marker(m: WorldMarker, label: string): { group: Group; height: number }
       const sheet = panel(g, paperSheet(`inq-sheet:${label}`, label, 4), 0, 0.02, 0, 0.34, 0.44, 0);
       sheet.rotation.set(-Math.PI / 2, 0, 0.3);
       height = 0.6;
+      break;
+    }
+    case "glint": {
+      // L'objet est déjà dessiné par le décor (game/render/storyProps.ts) : un disque invisible à sa hauteur, que le
+      // contour blanc entoure quand Lou est à portée.
+      const y = m.y ?? 0.05;
+      const disc = mesh(new CylinderGeometry(0.24, 0.24, 0.02, 20), new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }), 0, y, 0, false);
+      g.add(disc);
+      height = y + 0.9;
       break;
     }
     case "bolts": {

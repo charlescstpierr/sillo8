@@ -88,7 +88,9 @@ export interface Question {
 // ——— Objets examinables et gros plans ———
 
 /** Forme de l'objet dans le décor (rendu game/render/uv.ts → marqueurs d'enquête). */
-export type MarkerShape = "poster" | "photo" | "step" | "drawer" | "sheet" | "plaque" | "bolts" | "lantern" | "levers" | "terminal" | "locker" | "lamp";
+export type MarkerShape = "poster" | "photo" | "step" | "drawer" | "sheet" | "plaque" | "bolts" | "lantern" | "levers" | "terminal" | "locker" | "lamp"
+  /** Objet déjà dessiné par le décor (STORY_PROPS) : seulement un repère invisible, pour le contour à portée. */
+  | "glint";
 
 export interface WorldMarker {
   shape: MarkerShape;

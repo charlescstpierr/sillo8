@@ -12,7 +12,7 @@ export const EXAMINABLES: Examinable[] = [
   // ——— Entrée (extérieur) ———
   {
     id: "a1", name: "Photo de l'inauguration", action: "Examiner", ...place("photo_inauguration", 0.35),
-    marker: { shape: "photo", yaw: POS.photo_inauguration.yaw },
+    marker: { shape: "glint", y: POS.photo_inauguration.y },
     closeup: {
       glance: "Trente personnes souriantes devant la porte neuve.",
       aspect: 1.45,
@@ -26,7 +26,7 @@ export const EXAMINABLES: Examinable[] = [
   },
   {
     id: "a15", name: "Seuil de la porte de service", action: "Examiner", ...place("service_threshold", 0.5),
-    marker: { shape: "step", yaw: POS.service_threshold.yaw },
+    marker: { shape: "glint", y: POS.service_threshold.y },
     closeup: {
       glance: "Une marche usée, de la poussière.",
       aspect: 1.6,
@@ -38,13 +38,13 @@ export const EXAMINABLES: Examinable[] = [
   },
   {
     id: "poster_rule", name: "Affiche de la règle n° 1", action: "Lire", ...place("poster_rule", 0.5),
-    marker: { shape: "plaque", yaw: POS.poster_rule.yaw, y: 1.45, label: "RÈGLE N° 1" },
+    marker: { shape: "glint", y: POS.poster_rule.y },
     card: "poster_rule",
     closeup: { glance: "Une affiche officielle, à côté de la porte.", aspect: 0.78, front: { art: "rule" } },
   },
   {
     id: "door_bolts", name: "Verrous de la grande porte", action: "Examiner", ...place("door_bolts", 0.45),
-    marker: { shape: "bolts", yaw: POS.door_bolts.yaw, y: 1.0 },
+    marker: { shape: "glint", y: POS.door_bolts.y },
     card: "door_bolts",
     closeup: { glance: "Trois gros verrous, graissés, du côté dehors.", aspect: 0.8, front: { art: "bolts" } },
   },
@@ -52,7 +52,7 @@ export const EXAMINABLES: Examinable[] = [
   // ——— Zone extérieure ———
   {
     id: "a5", name: "Lanterne d'enfant", action: "Examiner", ...place("lila_lantern", 0.4),
-    marker: { shape: "lantern" },
+    marker: { shape: "glint", y: POS.lila_lantern.y },
     closeup: {
       glance: "Lanterne cabossée, verre blanc.",
       aspect: 0.8,
@@ -104,7 +104,7 @@ export const EXAMINABLES: Examinable[] = [
   },
   {
     id: "note_shed_left", name: "Consigne de délestage", action: "Lire", ...place("note_shed_left", 0.45),
-    marker: { shape: "plaque", yaw: POS.note_shed_left.yaw, y: 1.3, label: "CONSIGNE" },
+    marker: { shape: "glint", y: POS.note_shed_left.y },
     card: "note_shed_left",
     closeup: {
       glance: "La moitié gauche d'une consigne, déchirée.",
@@ -130,13 +130,13 @@ export const EXAMINABLES: Examinable[] = [
   // ——— Sécurité ———
   {
     id: "note_shed_right", name: "Consigne de délestage", action: "Lire", ...place("note_shed_right", 0.45),
-    marker: { shape: "plaque", yaw: POS.note_shed_right.yaw, y: 1.3, label: "CONSIGNE" },
+    marker: { shape: "glint", y: POS.note_shed_right.y },
     card: "note_shed_right",
     closeup: { glance: "La moitié droite d'une consigne, déchirée.", aspect: 0.75, front: { art: "shedRight" } },
   },
   {
     id: "terminal", name: "Terminal du poste", action: "Allumer", ...place("terminal", 0.5),
-    marker: { shape: "terminal", yaw: POS.terminal.yaw },
+    marker: { shape: "glint", y: POS.terminal.y },
     card: "note_terminal_postit",
     puzzle: "terminal",
     closeup: { glance: "Le terminal de Bérard demande un mot de passe. Un post-it est collé sur l'écran.", aspect: 1.3, front: { art: "terminal" } },
@@ -145,7 +145,7 @@ export const EXAMINABLES: Examinable[] = [
   // ——— Hub ———
   {
     id: "poster_notice", name: "Avis à tous", action: "Lire", ...place("poster_notice", 0.5),
-    marker: { shape: "poster", yaw: POS.poster_notice.yaw, label: "AVIS" },
+    marker: { shape: "glint", y: POS.poster_notice.y },
     card: "poster_notice",
     closeup: { glance: "L'avis officiel, bien droit au milieu.", aspect: 0.78, front: { art: "notice" } },
   },
@@ -153,13 +153,13 @@ export const EXAMINABLES: Examinable[] = [
   // ——— Cafétéria ———
   {
     id: "note_cook_postit", name: "Post-it de Cuisine", action: "Lire", ...place("note_cook_postit", 0.4),
-    marker: { shape: "plaque", yaw: POS.note_cook_postit.yaw, y: 1.3, label: "POST-IT" },
+    marker: { shape: "glint", y: POS.note_cook_postit.y },
     card: "note_cook_postit",
     closeup: { glance: "Un post-it jaune, écrit gros.", aspect: 1, front: { art: "postit" } },
   },
   {
     id: "cook_tally", name: "Traits à la craie", action: "Examiner", ...place("cook_tally", 0.5),
-    marker: { shape: "plaque", yaw: POS.cook_tally.yaw, y: 1.2, label: "IIII IIII" },
+    marker: { shape: "glint", y: POS.cook_tally.y },
     card: "cook_tally",
     closeup: { glance: "Des traits à la craie sur la porte de la chambre froide.", aspect: 0.85, front: { art: "tally" } },
   },
@@ -174,7 +174,7 @@ export const EXAMINABLES: Examinable[] = [
   // ——— Entrepôt ———
   {
     id: "battery_locker", name: "Armoire à piles", action: "Ouvrir", ...place("battery_locker", 0.6),
-    marker: { shape: "locker", yaw: POS.battery_locker.yaw },
+    marker: { shape: "glint", y: POS.battery_locker.y },
     puzzle: "locker",
     closeup: { glance: "Une armoire cadenassée ; à côté, un panier à piles vide, retourné. Le cadenas a six molettes de lettres.", aspect: 0.9, front: { art: "padlock" } },
   },
@@ -182,13 +182,13 @@ export const EXAMINABLES: Examinable[] = [
   // ——— Infirmerie ———
   {
     id: "note_infirmary_map", name: "Plan de l'infirmerie", action: "Lire", ...place("note_infirmary_map", 0.45),
-    marker: { shape: "plaque", yaw: POS.note_infirmary_map.yaw, y: 1.25, label: "PLAN" },
+    marker: { shape: "glint", y: POS.note_infirmary_map.y },
     card: "note_infirmary_map",
     closeup: { glance: "Le plan de l'infirmerie, punaisé au mur.", aspect: 1.3, front: { art: "plan" } },
   },
   {
     id: "okafor_drawer", name: "Tiroir du bureau", action: "Ouvrir", ...place("okafor_drawer", 0.35),
-    marker: { shape: "drawer", yaw: POS.okafor_drawer.yaw },
+    marker: { shape: "glint", y: POS.okafor_drawer.y },
     // Proposé : message tant que C1 n'est pas faite.
     locked: { until: { deductions: ["C1"] }, message: "Le tiroir du bureau est fermé à clé." },
     closeup: {
@@ -202,7 +202,7 @@ export const EXAMINABLES: Examinable[] = [
   },
   {
     id: "note_lila_2", name: "Panier à piles vide", action: "Examiner", ...place("note_lila_2", 0.35),
-    marker: { shape: "sheet", label: "LISTE" },
+    marker: { shape: "glint", y: POS.note_lila_2.y },
     card: "note_lila_2",
     closeup: {
       glance: "Une liste d'enfant, au fond d'un panier vide.",
@@ -227,7 +227,7 @@ export const EXAMINABLES: Examinable[] = [
   },
   {
     id: "room1_cabinet", name: "Armoire de l'infirmerie", action: "Pousser", ...place("room1_cabinet", 0.6),
-    marker: { shape: "drawer", yaw: POS.room1_cabinet.yaw },
+    marker: { shape: "glint", y: POS.room1_cabinet.y },
     locked: { until: { unlocked: ["examinable:room1_cabinet"] }, message: "Une armoire lourde. « Ne pas déplacer l'armoire. » Pourquoi la pousser ?" },
     closeup: {
       glance: "L'armoire glisse sur ses raclures. Derrière, une porte : la chambre 1.",
@@ -237,9 +237,9 @@ export const EXAMINABLES: Examinable[] = [
   },
   // Chambre 1 : derrière l'armoire, une fois X1 ou X2 établie.
   {
-    id: "a7", name: "Lampe de chevet", action: "Examiner", ...place("room1_lamp", 0.4),
+    id: "a7", name: "Lampe de chevet", action: "Examiner", ...place("room1_bedside_lamp", 0.4),
     requires: { unlocked: ["examinable:room1_cabinet"] },
-    marker: { shape: "lamp" },
+    marker: { shape: "glint", y: POS.room1_bedside_lamp.y },
     closeup: {
       glance: "Une lampe de chevet. La douille est vide.",
       aspect: 0.8,
@@ -250,9 +250,9 @@ export const EXAMINABLES: Examinable[] = [
     },
   },
   {
-    id: "a8", name: "Serrure de la chambre 1", action: "Examiner", ...place("room1_lock", 0.4),
+    id: "a8", name: "Serrure de la chambre 1", action: "Examiner", ...place("room1_door", 0.4),
     requires: { unlocked: ["examinable:room1_cabinet"] },
-    marker: { shape: "plaque", yaw: POS.room1_lock.yaw, y: 1.0, label: "SERRURE" },
+    marker: { shape: "glint", y: POS.room1_door.y },
     closeup: {
       glance: "Une serrure électrique.",
       aspect: 0.9,
@@ -265,7 +265,7 @@ export const EXAMINABLES: Examinable[] = [
   {
     id: "note_room1_file", name: "Dossier de la chambre 1", action: "Lire", ...place("note_room1_file", 0.4),
     requires: { unlocked: ["examinable:room1_cabinet"] },
-    marker: { shape: "sheet", label: "DOSSIER" },
+    marker: { shape: "glint", y: POS.note_room1_file.y },
     card: "note_room1_file",
     closeup: {
       glance: "Un dossier médical, rangé sous le lit.",
@@ -280,7 +280,7 @@ export const EXAMINABLES: Examinable[] = [
   // ——— Atelier ———
   {
     id: "a9", name: "Casier de Marceau", action: "Ouvrir", ...place("marceau_locker", 0.55),
-    marker: { shape: "locker", yaw: POS.marceau_locker.yaw },
+    marker: { shape: "glint", y: POS.marceau_locker.y },
     locked: { until: { unlocked: ["examinable:a9"] }, message: "Un casier au nom à demi arraché. Fermé." },
     closeup: {
       glance: "Des outils rangés au millimètre, et une photo : Bérard et Marceau, bras dessus bras dessous.",
@@ -296,7 +296,7 @@ export const EXAMINABLES: Examinable[] = [
   // ——— Salle de contrôle ———
   {
     id: "note_radio_logbook", name: "Cahier de relève de nuit", action: "Lire", ...place("note_radio_logbook", 0.4),
-    marker: { shape: "sheet", label: "RELÈVE" },
+    marker: { shape: "glint", y: POS.note_radio_logbook.y },
     card: "note_radio_logbook",
     closeup: {
       glance: "Le cahier de relève, ouvert à la nuit de l'orage.",
@@ -321,9 +321,9 @@ export const EXAMINABLES: Examinable[] = [
     },
   },
   {
-    id: "a11", name: "Porte du local technique", action: "Examiner", ...place("operator_latch", 0.5),
+    id: "a11", name: "Porte du local technique", action: "Examiner", ...place("operator_door", 0.5),
     requires: { unlocked: ["puzzle:shed"] },
-    marker: { shape: "plaque", yaw: POS.operator_latch.yaw, y: 1.05, label: "LOCAL TECH." },
+    marker: { shape: "glint", y: POS.operator_door.y },
     closeup: {
       glance: "Un verrou électrique. Le courant est revenu : son voyant est vert.",
       aspect: 0.9,
@@ -353,7 +353,7 @@ export const EXAMINABLES: Examinable[] = [
   // ——— Dortoirs, pièce cachée ———
   {
     id: "note_lila_3", name: "Sous l'oreiller", action: "Examiner", ...place("note_lila_3", 0.4),
-    marker: { shape: "sheet", label: "LISTE" },
+    marker: { shape: "glint", y: POS.note_lila_3.y },
     card: "note_lila_3",
     closeup: {
       glance: "Une liste d'enfant, sous un petit oreiller de travers.",
@@ -371,7 +371,7 @@ export const EXAMINABLES: Examinable[] = [
   {
     id: "a14", name: "Dessin de Lila", action: "Examiner", ...place("lila_drawing", 0.4),
     requires: { facts: ["secret_revealed"] },
-    marker: { shape: "sheet", label: "DESSIN" },
+    marker: { shape: "glint", y: POS.lila_drawing.y },
     card: "lila_drawing",
     closeup: { glance: "Le silo dessiné en coupe.", aspect: 0.7, front: { art: "drawing" } },
   },
@@ -379,7 +379,7 @@ export const EXAMINABLES: Examinable[] = [
   // ——— Serre ———
   {
     id: "note_lila_4", name: "Liste d'enfant", action: "Lire", ...place("note_lila_4", 0.4),
-    marker: { shape: "sheet", label: "LISTE" },
+    marker: { shape: "glint", y: POS.note_lila_4.y },
     card: "note_lila_4",
     closeup: {
       glance: "Une liste, près du petit arrosoir.",
