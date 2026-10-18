@@ -1,3 +1,8 @@
+"use client";
+import dynamic from "next/dynamic";
+
+const GameCanvas = dynamic(() => import("@/ui/GameCanvas"), { ssr: false });
+
 export default function Home() {
-  return <main>SILO 9</main>;
+  return <GameCanvas />;
 }

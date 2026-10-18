@@ -1,1 +1,30 @@
-html, body { margin: 0; height: 100%; background: #1e140d; color: #3a2a1c; overflow: hidden; }
+@import "@fontsource/grandstander/700.css";
+@import "@fontsource/patrick-hand/400.css";
+@import "@fontsource/special-elite/400.css";
+
+:root {
+  --paper: #f4ecd6;
+  --ink: #3a2a1c;
+  --rust: #b4532a;
+  --danger: #d8452b;
+  --teal: #2f9c8f;
+  --font-title: "Grandstander", "Comic Sans MS", system-ui, sans-serif;
+  --font-body: "Patrick Hand", "Comic Sans MS", system-ui, sans-serif;
+  --font-stamp: "Special Elite", "Courier New", monospace;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #1b2321;
+  color: var(--ink);
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+* {
+  box-sizing: border-box;
+}

@@ -12,6 +12,9 @@
     "verify": "./tools/verify.sh"
   },
   "dependencies": {
+    "@fontsource/grandstander": "^5.3.0",
+    "@fontsource/patrick-hand": "^5.3.0",
+    "@fontsource/special-elite": "^5.3.0",
     "next": "^16.4.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

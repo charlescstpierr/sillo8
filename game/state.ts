@@ -9,7 +9,7 @@ export const FACT_IDS = ["relay_location", "power_restored", "core_recovered", "
 export type FactId = (typeof FACT_IDS)[number];
 export const SAVE_LIMIT = 65536;
 export const SAVE_KEY = "silo9-save";
-export const SPAWN: [number, number, number] = [0, 0, 8];
+export const SPAWN: [number, number, number] = [0, 0, 9.2];
 
 export interface Objective {
   title: string;
@@ -39,7 +39,7 @@ export class SiloState {
   facts: string[] = [];
   memory: string[] = [];
   playerPosition: [number, number, number] = [...SPAWN];
-  playerYaw = 0;
+  playerYaw = Math.PI;
   elapsed = 0;
   relations: Record<Character, number> = { mother: 0, n7: 0 };
 
