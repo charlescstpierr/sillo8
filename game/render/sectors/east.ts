@@ -8,6 +8,7 @@ import {
 import type { Box } from "../../collision";
 import type { SiloState } from "../../state";
 import { onWorldRefresh, ruin, type DecorContext, type ModelBuilder, type WorldView } from "../world";
+import { decorateStory } from "../storyProps";
 import { glow, toon } from "../toon";
 import { PALETTE } from "../palette";
 import { block, can, crate, cylinder, decal, grass, mesh, overgrowth, panel, rubble, signBoard } from "../props";
@@ -288,7 +289,7 @@ function decorateControl(ctx: DecorContext): void {
   const { root } = ctx;
   commsBody(ctx);
   monitorBank(ctx, 9.4, 14.8, -21.45, 1);
-  monitorBank(ctx, 21.2, 26.8, -21.45, 4);
+  monitorBank(ctx, 21.2, 25.6, -21.45, 4);
   // Pupitres en arc autour de la radio, écrans tournés vers le sud.
   const arc = (radius: number, deg: number) => {
     const t = (deg * Math.PI) / 180;
@@ -316,7 +317,8 @@ function decorateControl(ctx: DecorContext): void {
   floorCable(root, [[23.2, -19.4], [21.8, -20.6], [19.7, -20.9]], OLIVE_DARK);
   floorCable(root, [[10.9, -17.2], [10.2, -18.8], [10.6, -20.8]], CHARCOAL, 0.03);
   // Baies de serveurs, armoires et casiers.
-  for (const [i, z] of [-20.6, -19.6, -14.4, -13.4].entries()) serverRack(ctx, 29.45, z, 70 + i);
+  // Les baies du fond ont laissé la place au local technique (storyProps.ts).
+  for (const [i, z] of [-17.0, -16.1, -14.4, -13.4].entries()) serverRack(ctx, 29.45, z, 70 + i);
   for (let i = 0; i < 3; i++) {
     block(root, 0.6, 1.3, 0.5, i === 1 ? OLIVE : CREAM_DARK, 12.3 + i * 0.64, 0, -8.45, 0.05);
     block(root, 0.5, 0.05, 0.04, CHARCOAL, 12.3 + i * 0.64, 1.0, -8.72, 0.01);
@@ -342,7 +344,7 @@ function decorateControl(ctx: DecorContext): void {
   papers(root, 22.5, 0, -12.2, 3, 62);
   papers(root, 16.6, 0, -10.6, 3, 63);
   decal(root, blobTexture("puddle"), 24.6, -15.2, 0.5, 0.35, 1.2).renderOrder = 1;
-  note(root, "Ne plus toucher\naux écrans.\nIls nous\nentendent ?", 9.25, 1.2, -8.18, Math.PI, 0.06);
+  note(root, "Canal 2 :\nréservé\nDr O. / Sgt B.", 9.25, 1.2, -8.18, Math.PI, 0.06);
   ruin(root, 7, 30, -22, -8, 801, 2, 0.8);
   rubble(root, 28.4, -16.5, 6, 812, 0.5);
   decal(root, blobTexture("puddle"), 15.2, -11, 1.6, 1.1, 0.4);
@@ -374,8 +376,8 @@ function decorateCorridor(ctx: DecorContext): void {
   const board = place(root, 7.2, -4.2, Math.PI / 2);
   block(board, 1.5, 0.95, 0.05, LEATHER_LIGHT, 0, 0.7, 0, 0.02);
   block(board, 1.38, 0.83, 0.03, "#b78b5a", 0, 0.76, 0.02, 0.01);
-  note(board, "Infirmerie :\nlits libres.\nNe pas fermer\nla serre !", -0.4, 1.2, 0.045, 0, -0.05);
-  note(board, "Tour de garde\nLéa · Marc\nJo · moi", 0.05, 1.18, 0.045, 0, 0.04);
+  note(board, "Chambre 1 :\ncondamnée\n(humidité).\n— Dr O.", -0.4, 1.2, 0.045, 0, -0.05);
+  note(board, "Couvre-feu\n22 h", 0.05, 1.18, 0.045, 0, 0.04);
   note(board, "Graines dans\nle bac bleu", 0.45, 1.0, 0.045, 0, -0.08);
   signBoard(board, "AVIS", -0.05, 1.5, 0.05, 0.6, 0.16, 0, { bg: MUSTARD, fg: CHARCOAL });
   signBoard(root, "INFIRMERIE →", 7.17, 1.15, 1.8, 0.9, 0.2, Math.PI / 2, { bg: CREAM, fg: "#c8453a" });
@@ -497,7 +499,7 @@ function decorateInfirmary(ctx: DecorContext): void {
   signBoard(root, "INFIRMERIE", 21.1, 0.6, -7.83, 0.9, 0.2, 0, { bg: CREAM, fg: "#c8453a" });
   decal(root, eastCrossTexture(), 16, 1.6, 1.4, 1.4, 0, 0.012).renderOrder = 1;
   // Chariot de soins.
-  const trolley = place(root, 20.6, 5.9, 0.2);
+  const trolley = place(root, 20.4, 2.3, 0.2);
   for (const [lx, lz] of [[-0.45, -0.25], [0.45, -0.25], [-0.45, 0.25], [0.45, 0.25]]) cylinder(trolley, 0.025, 0.85, "#a9b2ad", lx, 0, lz, 6);
   block(trolley, 1.0, 0.04, 0.6, "#a9b2ad", 0, 0.3, 0, 0.01);
   block(trolley, 1.0, 0.04, 0.6, "#a9b2ad", 0, 0.83, 0, 0.01);
@@ -506,7 +508,7 @@ function decorateInfirmary(ctx: DecorContext): void {
   bandageBox(trolley, -0.1, 1.01, 0.02, 0.3);
   bandageBox(trolley, 0.2, 0.34, 0, 0);
   cylinder(trolley, 0.05, 0.16, "#c8453a", 0.38, 0.87, -0.15, 8);
-  solid(ctx, 20.6, 5.9, 1.1, 0.75, 0.2);
+  solid(ctx, 20.4, 2.3, 1.1, 0.75, 0.2);
   const exam = place(root, 18.2, -3.3);
   for (const lx of [-0.8, 0.8]) block(exam, 0.12, 0.7, 0.6, "#a9b2ad", lx, 0, 0, 0.03);
   block(exam, 1.9, 0.14, 0.75, OLIVE, 0, 0.7, 0, 0.06);
@@ -530,12 +532,12 @@ function decorateInfirmary(ctx: DecorContext): void {
   // Presse-papiers suspendu au pied d'un lit (dossier de patient).
   const clip = place(root, 14.2, -5.68, 0, 0.42);
   block(clip, 0.26, 0.34, 0.02, LEATHER_LIGHT, 0, 0, 0, 0.01);
-  panel(clip, eastNoteTexture("Patient 3\nfièvre, calme\nmorsure ? non"), 0, 0.16, 0.012, 0.22, 0.27, 0);
+  panel(clip, eastNoteTexture("Lit 3\nfièvre, calme\nmorsure ? non"), 0, 0.16, 0.012, 0.22, 0.27, 0);
   ruin(root, 10, 22, -8, 8, 830, 1, 0.8);
   decal(root, blobTexture("rust"), 20.4, -1.4, 1.2, 0.9, 0.5);
   // Néon froid au plafond.
   block(root, 1.4, 0.06, 0.2, "#a9b2ad", 16, 2.62, -2, 0.02);
-  ctx.light(16, 2.55, -2, "#d7f0ff", 7, 10, 0.45, 31);
+  ctx.light(16, 2.55, -2, "#d7f0ff", 7, 10, 0.8, 31);
   ctx.beam(16, 2.55, -2, 1.3, "#d7f0ff");
 }
 
@@ -750,7 +752,7 @@ function sparkFountain(ctx: DecorContext, x: number, y: number, z: number): void
 // ——— Serre ———
 
 /** Bac surélevé en bois rempli de légumes. Grand axe selon x si w > d. */
-function planterBed(ctx: DecorContext, x: number, z: number, w: number, d: number, seed: number): void {
+function planterBed(ctx: DecorContext, x: number, z: number, w: number, d: number, seed: number, wilted = true): void {
   const r = rng(seed);
   const g = place(ctx.root, x, z);
   const h = 0.45;
@@ -768,15 +770,27 @@ function planterBed(ctx: DecorContext, x: number, z: number, w: number, d: numbe
     for (const lane of [-0.22, 0.22]) {
       const px = long ? t * (w - 0.3) : lane * (w - 0.3);
       const pz = long ? lane * (d - 0.3) : t * (d - 0.3);
-      vegetable(g, px + (r() - 0.5) * 0.08, h + 0.02, pz + (r() - 0.5) * 0.08, r);
+      if (wilted && r() < 0.35) continue;
+      vegetable(g, px + (r() - 0.5) * 0.08, h + 0.02, pz + (r() - 0.5) * 0.08, r, wilted);
     }
   }
   solid(ctx, x, z, w + 0.1, d + 0.1);
 }
 
-function vegetable(parent: Object3D, x: number, y: number, z: number, r: () => number): void {
+/** Feuilles sèches des bacs qu'on n'arrose plus. */
+const DRY = ["#8a7444", "#9a8250", "#7a6438", "#a08a58", "#8f7a4a"];
+
+function vegetable(parent: Object3D, x: number, y: number, z: number, r: () => number, wilted = false): void {
   const kind = Math.floor(r() * 5);
-  const leaf = LEAVES[Math.floor(r() * LEAVES.length)];
+  const leaf = (wilted ? DRY : LEAVES)[Math.floor(r() * LEAVES.length)];
+  if (wilted) {
+    // Plant desséché : touffe affaissée, tige penchée, un fruit flétri parfois.
+    ball(parent, leaf, x, y + 0.04, z, 0.15, 0.05, 0.15);
+    const stem = cylinder(parent, 0.01, 0.3, DRY[2], x, y, z, 4);
+    stem.rotation.z = 0.9 * (r() > 0.5 ? 1 : -1);
+    if (r() < 0.3) ball(parent, "#7a4a2a", x + 0.1, y + 0.03, z + 0.05, 0.04);
+    return;
+  }
   if (kind === 0) {
     // Salade : boules aplaties superposées.
     ball(parent, leaf, x, y + 0.08, z, 0.17, 0.11, 0.17);
@@ -946,7 +960,7 @@ function decorateGreenhouse(ctx: DecorContext): void {
   planterBed(ctx, 11.6, 11.6, 1.2, 3.2, 1501);
   planterBed(ctx, 15.6, 10.2, 3.0, 1.2, 1502);
   planterBed(ctx, 19.9, 10.2, 2.8, 1.2, 1503);
-  planterBed(ctx, 28.4, 11.9, 1.2, 3.0, 1504);
+  planterBed(ctx, 28.4, 11.9, 1.2, 3.0, 1504, false);
   planterBed(ctx, 28.4, 15.9, 1.2, 2.4, 1505);
   planterBed(ctx, 9.25, 15.6, 1.1, 3.0, 1506);
   planterBed(ctx, 14.6, 20.6, 3.2, 1.2, 1507);
@@ -1044,6 +1058,7 @@ export function decorateEast(ctx: DecorContext): void {
   decorateInfirmary(ctx);
   decorateWorkshop(ctx);
   decorateGreenhouse(ctx);
+  decorateStory(ctx, "east");
   // Écrans neigeux : la neige défile ; écrans bleus : les données montent doucement.
   ctx.animate((_dt, time) => {
     const noise = eastStaticTexture();

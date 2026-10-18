@@ -113,6 +113,39 @@ function settle(parent: Object3D, m: Mesh): void {
   if (sink && parent === sink.root) sink.absorb(m);
 }
 
+const bakeInverse = new Matrix4();
+const bakeMatrix = new Matrix4();
+
+/**
+ * Fond tous les maillages immobiles de `group` (et de ses enfants) dans un lot : par défaut le lot statique
+ * en cours de construction, sinon `into` (un lot local, par exemple sur un battant de porte qui bouge).
+ * Les maillages marqués `userData.live` (animés, recolorés, cachés plus tard) restent tels quels.
+ * Les groupes vidés sont retirés de la scène.
+ */
+export function bakeStatic(group: Object3D, into: StaticBatch | null = sink): void {
+  if (!into) return;
+  group.updateWorldMatrix(true, true);
+  into.root.updateWorldMatrix(true, false);
+  bakeInverse.copy(into.root.matrixWorld).invert();
+  const meshes: Mesh[] = [];
+  group.traverse((o) => {
+    if (!(o instanceof Mesh) || o.userData.live || Array.isArray(o.material)) return;
+    for (let p: Object3D | null = o; p && p !== group.parent; p = p.parent) if (!p.visible || p.userData.live) return;
+    meshes.push(o);
+  });
+  for (const m of meshes) {
+    bakeMatrix.multiplyMatrices(bakeInverse, m.matrixWorld);
+    if (bakeMatrix.determinant() < 0) continue;
+    into.add(m.geometry, bakeMatrix, m.material as Material, { castShadow: m.castShadow, renderOrder: m.renderOrder });
+    m.removeFromParent();
+  }
+  const prune = (o: Object3D): boolean => {
+    for (const child of [...o.children]) if (prune(child)) child.removeFromParent();
+    return o.children.length === 0 && !(o instanceof Mesh) && !o.userData.live && o.type === "Group";
+  };
+  if (prune(group)) group.removeFromParent();
+}
+
 export function mesh(geometry: ConstructorParameters<typeof Mesh>[0], material: Material, x = 0, y = 0, z = 0, shadows = true): Mesh {
   const m = new Mesh(geometry, material);
   m.position.set(x, y, z);

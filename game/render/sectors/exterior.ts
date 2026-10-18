@@ -7,6 +7,7 @@ import {
 } from "three";
 import type { DecorContext, ModelBuilder, WorldView } from "../world";
 import { onWorldRefresh } from "../world";
+import { decorateStory } from "../storyProps";
 import type { SiloState } from "../../state";
 import { PALETTE } from "../palette";
 import { glow, toon } from "../toon";
@@ -455,36 +456,16 @@ function barricade(ctx: DecorContext, x: number, z: number, rot: number): void {
   solid(ctx, x, z, 1.35, 0.4, rot, 1);
 }
 
-/** Guérite de contrôle renversée sur le flanc, note épinglée sur la façade. */
-function toppledBooth(ctx: DecorContext, x: number, z: number): void {
-  const g = new Group();
-  g.position.set(x, 0, z);
-  g.rotation.z = -Math.PI / 2 + 0.06;
-  const hut = new Group();
-  hut.position.x = -0.7;
-  g.add(hut);
-  block(hut, 1.4, 2.0, 1.4, C.olive, 0, 0, 0, 0.12);
-  block(hut, 1.44, 0.4, 1.44, C.glass, 0, 1.15, 0, 0.08);
-  block(hut, 1.7, 0.16, 1.7, C.mustard, 0, 2.0, 0, 0.06);
-  block(hut, 1.46, 0.14, 1.46, C.cream, 0, 0.7, 0, 0.03);
-  panel(hut, signTexture("CONTRÔLE", { bg: C.cream, fg: C.charcoal, border: C.leatherLight, width: 256, height: 72 }), 0, 1.7, 0.73, 0.9, 0.25, 0);
-  // Note de survivant punaisée (décor).
-  // Face tournée vers le ciel une fois couchée : porte, pancarte et note visibles de la caméra.
-  block(hut, 0.04, 1.5, 0.75, C.oliveDark, -0.71, 0.1, 0.1, 0.02);
-  panel(hut, signTexture("CONTRÔLE", { bg: C.cream, fg: C.charcoal, border: C.leatherLight, width: 256, height: 72 }), -0.735, 1.72, 0, 1.0, 0.28, -Math.PI / 2);
-  const note = panel(hut, paperTexture(3), -0.735, 0.75, 0.15, 0.36, 0.44, -Math.PI / 2);
-  note.rotation.x = 0.15;
-  blob(hut, PALETTE.danger, -0.74, 0.95, 0.15, 0.04, 0.04, 0.04);
-  blob(hut, C.cream, -0.73, 0.75, -0.2, 0.02, 0.06, 0.06);
-  ctx.root.add(g);
-  // Barrière de contrôle tombée à côté.
+/** Barrière de contrôle tombée sur le chemin (la guérite, elle, tient encore debout près de la porte). */
+function fallenBarrier(ctx: DecorContext, x: number, z: number): void {
+  block(ctx.root, 0.3, 0.9, 0.3, C.oliveDark, x - 0.1, 0, z - 1.05, 0.04);
+  solid(ctx, x - 0.1, z - 1.05, 0.3, 0.3, 0, 1);
   const arm = new Group();
   arm.position.set(x - 0.1, 0.08, z - 1.05);
   arm.rotation.set(0, 0.1, Math.PI / 2);
   for (let i = 0; i < 5; i++) cylinder(arm, 0.06, 0.44, i % 2 ? C.cream : PALETTE.danger, 0, i * 0.44, 0, 8);
   ctx.root.add(arm);
-  rubble(ctx.root, x + 1.8, z + 0.9, 5, 77, 0.4);
-  solid(ctx, x + 1.05, z, 1.1, 0.75, 0, 1);
+  rubble(ctx.root, x + 0.6, z - 0.4, 5, 77, 0.4);
 }
 
 /** Bidons rouillés. */
@@ -753,7 +734,7 @@ export function decorateExterior(ctx: DecorContext): void {
   ctx.dust(0, 2.5, 25);
 
   barricade(ctx, -5.2, 31.6, 0.35);
-  toppledBooth(ctx, 5.0, 32.4);
+  fallenBarrier(ctx, 5.0, 32.4);
   warning(root, "ZONE\nCONTAMINÉE", -3.3, 29.8, 0.15);
   warning(root, "ZONE\nCONTAMINÉE", 11.0, 38.2, -0.5, 0.12);
   barrels(ctx, 7.4, 35.6, 1);
@@ -778,7 +759,10 @@ export function decorateExterior(ctx: DecorContext): void {
   decal(root, blobTexture("puddle"), 3.9, 30.6, 1.6, 1.1, 0.3, 0.012);
   decal(root, dirtTexture(2), 3.9, 30.6, 2.4, 1.8, 0.3, 0.01);
   scatter(root, -10.5, 11.5, 24, 45.5, 70, 900, (x, z) =>
-    Math.abs(x) < 2 || (x < -6 && z > 24.5 && z < 29.8) || Math.hypot(x + 6, z - 36) < 1 || Math.hypot(x - 8, z - 39) < 1 || (Math.abs(x) < 7.2 && z < 24.6));
+    Math.abs(x) < 2 || (x < -6 && z > 24.5 && z < 29.8) || Math.hypot(x + 6, z - 36) < 1 || Math.hypot(x - 8, z - 39) < 1 || (Math.abs(x) < 7.2 && z < 24.6)
+    // Parvis, guérite, dalle de la porte de service (narration par le décor).
+    || (Math.abs(x) < 3.5 && z < 26.5) || (x > 4.3 && x < 7.6 && z < 28) || (x < -8.4 && z > 25.6 && z < 30));
+  decorateStory(ctx, "exterior");
 
   // Zone extérieure.
   truck(ctx, 44.3, 26.0, 0.25);
@@ -810,7 +794,7 @@ export function decorateExterior(ctx: DecorContext): void {
   decal(root, blobTexture("rust"), 34.4, 26.2, 2.2, 1.6, 1.0, 0.011);
   ctx.dust(30, 2, 34);
   scatter(root, 12.5, 47.5, 23, 45.5, 120, 901, (x, z) =>
-    (x > 18.5 && x < 23.5 && z < 26) || Math.hypot(x - 25, z - 35) < 1 || Math.hypot(x - 41, z - 28) < 1 || Math.hypot(x - 21.5, z - 40.8) < 1.2);
+    (x > 18.5 && x < 23.5 && z < 26) || Math.hypot(x - 25, z - 35) < 1 || Math.hypot(x - 41, z - 28) < 1 || Math.hypot(x - 21.5, z - 40.8) < 1.2 || Math.hypot(x - 40.1, z - 29.05) < 0.9);
 }
 
 // ——— Objets interactifs ———

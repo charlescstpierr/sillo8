@@ -6,6 +6,7 @@ import {
 } from "three";
 import type { DecorContext, ModelBuilder, WorldView } from "../world";
 import { onWorldRefresh, ruin } from "../world";
+import { decorateStory } from "../storyProps";
 import type { SiloState } from "../../state";
 import { glow, toon } from "../toon";
 import { PALETTE } from "../palette";
@@ -13,7 +14,7 @@ import {
   block, can, crate, cylinder, decal, hazardStrip, mesh, overgrowth, panel, rubble, signBoard, stringLights,
 } from "../props";
 import {
-  blobTexture, drawingTexture, paperTexture, rng, signTexture, sprayTexture, westBoardTexture, westFlourTexture,
+  blobTexture, drawingTexture, paperTexture, rng, signTexture, sprayTexture, westFlourTexture,
   westGlowTexture, westKnitTexture, westMapTexture, westMuralTexture, westScratchTexture,
 } from "../textures";
 
@@ -218,9 +219,10 @@ function shelf(ctx: DecorContext, x: number, z: number, length: number, height: 
         for (let k = 0; k < 3; k++) for (let j = 0; j < 2; j++) cylinder(g, 0.06, 0.13, [PALETTE.rustLight, C.cream, C.olive][(k + j) % 3], cx + 0.07 + k * 0.13, top, -0.1 + j * 0.16, 10);
         cx += 0.42;
       } else if (pick < 0.86) {
-        // Boîte de piles (couvercle moutarde, éclair peint)
+        // Boîte de piles vide, couvercle relevé (il n'en reste plus une seule sur les étagères).
         block(g, 0.32, 0.14, 0.24, C.charcoal, cx + 0.16, top, 0, 0.02);
-        block(g, 0.33, 0.04, 0.25, C.mustard, cx + 0.16, top + 0.14, 0, 0.015);
+        const lid = block(g, 0.33, 0.03, 0.25, C.mustard, cx + 0.16, top + 0.14, -0.12, 0.012);
+        lid.rotation.x = -1.1;
         cx += 0.38;
       } else {
         // Boîte de clous (fer-blanc)
@@ -457,7 +459,7 @@ function dorms(ctx: DecorContext): void {
     const d = panel(root, drawingTexture(), x, 1.05, -19.82, 0.5, 0.4, 0);
     d.rotation.z = tilt;
   }
-  pinnedNote(root, "Tour de garde :\nLéa · Marco\nmoi ce soir", -22.6, 1.1, -19.82, 0, -0.06);
+  pinnedNote(root, "Extinction\ndes feux 22 h.\nChut ! Les petits\ndorment.", -22.6, 1.1, -19.82, 0, -0.06);
   // Casiers personnels (un ouvert, veste moutarde dedans).
   [C.olive, C.mustard, C.teal, C.olive, C.brick].forEach((color, i) => locker(root, -14.6 + i * 0.6, -19.55, 0, color, i === 2));
   solid(ctx, -13.4, -19.55, 3.0, 0.6);
@@ -488,20 +490,9 @@ function dorms(ctx: DecorContext): void {
   lid.rotation.x = -1.2;
   block(open, 0.3, 0.06, 0.3, C.cream, -0.1, 0.24, 0.05, 0.03);
   block(open, 0.35, 0.05, 0.2, C.mustard, 0.25, 0.02, 0.38, 0.02).rotation.y = 0.5;
-  // Coin saccagé (sud-ouest) : lit renversé, matelas éventré, casier tombé, brûlure.
-  const fallen = bunk(root, -31.65, -7.6, 0, 7, true);
-  fallen.rotation.z = -Math.PI / 2;
-  fallen.position.y = 0.48;
-  solid(ctx, -30.8, -7.6, 1.8, 2.1);
-  const torn = block(root, 0.85, 0.12, 1.6, PALETTE.mattress, -28.9, 0, -9.0, 0.05);
-  torn.rotation.y = 0.7;
-  const tr = rng(17);
-  for (let i = 0; i < 6; i++) ball(root, 0.06 + tr() * 0.05, C.cream, -28.9 + (tr() - 0.5) * 1.2, 0.08, -9.0 + (tr() - 0.5) * 1.2, 1.2, 0.6, 1);
-  const tipped = locker(root, -28.4, -8.3, 0, C.olive, false, 0.25);
-  tipped.rotation.x = Math.PI / 2;
-  solid(ctx, -28.4, -7.55, 0.6, 1.55);
-  rubble(root, -29.6, -6.9, 9, 77, 0.6);
-  decal(root, blobTexture("scorch"), -30.2, -8.4, 2.2, 1.8, 0.6);
+  // Coin sud-ouest : un dernier lit fait au carré, comme les autres.
+  bunk(root, -29.4, -7.2, Math.PI, 15, false);
+  solid(ctx, -29.4, -7.2, 1.0, 2.1);
   // Coin jeux : table basse sur caisse, jeu de plateau, cartes, deux poufs.
   crate(root, -17, -14.3, 0.6, 0.2);
   block(root, 1.0, 0.06, 0.8, C.wood, -17, 0.6, -14.3, 0.02).rotation.y = 0.2;
@@ -513,16 +504,6 @@ function dorms(ctx: DecorContext): void {
   ball(root, 0.3, C.olive, -17.9, 0.22, -14.0, 1, 0.65, 1);
   ball(root, 0.3, C.mustard, -16.2, 0.22, -14.8, 1, 0.65, 1);
   solid(ctx, -17, -14.3, 1.3, 1.2);
-  // Poêle à bois bricolé dans un fût, bouilloire, chaussettes qui sèchent.
-  barrel(root, -29.6, -11.3, PALETTE.rust);
-  block(root, 0.3, 0.22, 0.04, C.charcoal, -29.6, 0.2, -10.97, 0.02);
-  block(root, 0.22, 0.12, 0.03, "#ff9a3a", -29.6, 0.25, -10.95, 0.02).material = glow("#ff9a3a");
-  rod(root, [-29.75, 0.9, -11.4], [-29.75, 1.7, -11.4], 0.06, C.charcoal);
-  cylinder(root, 0.12, 0.16, PALETTE.steel, -29.5, 0.92, -11.2, 10);
-  rod(root, [-29.5, 1.12, -11.3], [-29.5, 1.12, -11.1], 0.015, C.charcoal, 4);
-  rod(root, [-30.3, 1.25, -11.9], [-29.0, 1.25, -11.9], 0.01, C.cream, 4);
-  for (let i = 0; i < 3; i++) block(root, 0.08, 0.2, 0.03, [C.mustard, C.brick, C.cream][i], -30.1 + i * 0.4, 1.06, -11.9, 0.015);
-  solid(ctx, -29.6, -11.3, 0.8, 0.8);
   // Fauteuil défoncé avec plaid et livre.
   const chair = group(root, -25.8, -10.0, -0.3);
   block(chair, 0.85, 0.42, 0.75, C.leatherLight, 0, 0, 0, 0.12);
@@ -578,7 +559,6 @@ function secretRoom(ctx: DecorContext): void {
   panel(root, westMapTexture(), -36.82, 1.12, -16.4, 0.75, 0.58, Math.PI / 2);
   const map2 = panel(root, westMapTexture(), -36.82, 1.0, -15.4, 0.42, 0.33, Math.PI / 2);
   map2.rotation.z = 0.12;
-  panel(root, westBoardTexture(), -34.6, 1.0, -17.82, 1.5, 1.0, 0);
   stringLights(root, -36.7, -17.75, -32.5, -17.75, 1.62, 9);
   // Coffre-fort (cadran en laiton).
   block(root, 0.72, 0.8, 0.6, C.charcoal, -33.0, 0, -17.35, 0.06);
@@ -587,14 +567,8 @@ function secretRoom(ctx: DecorContext): void {
   rod(root, [-33.2, 0.3, -17.0], [-33.2, 0.5, -17.0], 0.018, C.mustard, 6);
   for (let i = 0; i < 3; i++) cylinder(root, 0.06, 0.13, [PALETTE.rustLight, C.cream, C.olive][i], -33.2 + i * 0.15, 0.8, -17.4, 10);
   solid(ctx, -33.0, -17.35, 0.75, 0.65);
-  // Couchage : natte, sac de couchage tricoté, oreiller, livres, bougie.
-  block(root, 2.0, 0.05, 0.85, C.oliveDark, -35.4, 0, -11.0, 0.02);
-  const bag = block(root, 1.45, 0.13, 0.72, "#ffffff", -35.15, 0.05, -11.0, 0.06);
-  bag.material = knit(C.brick, C.cream);
-  block(root, 0.32, 0.13, 0.5, C.cream, -36.15, 0.05, -11.0, 0.06);
-  for (let i = 0; i < 3; i++) block(root, 0.3 - i * 0.03, 0.06, 0.22, [C.teal, C.mustard, C.brick][i], -34.0, i * 0.06, -10.55, 0.015).rotation.y = i * 0.25;
-  cylinder(root, 0.045, 0.12, C.cream, -34.0, 0, -11.55, 10);
-  root.add(mesh(geo("flame", () => new SphereGeometry(0.025, 6, 5)), glow("#ffd27a"), -34.0, 0.15, -11.55, false));
+  // (Le couchage de Lila, sous sa cabane en couverture, est dans storyProps.ts.)
+
   crate(root, -32.85, -10.75, 0.6, 0.2);
   crate(root, -32.85, -10.75, 0.45, 0.6, 0.6);
   solid(ctx, -32.85, -10.75, 0.8, 0.8);
@@ -605,9 +579,9 @@ function storage(ctx: DecorContext): void {
   const root = ctx.root;
   ruin(root, -32, -11, -6, 6, 1011, 1, 0.8);
   // Hautes étagères au nord, étagères basses au sud (la caméra voit par-dessus).
-  [-29.5, -27.1, -24.7, -22.3, -19.9].forEach((x, i) => shelf(ctx, x, -5.45, 2.3, 2.1, 4, 40 + i));
+  // (La place de la première étagère est prise par l'armoire à piles cadenassée : storyProps.ts.)
+  [-27.1, -24.7, -22.3, -19.9].forEach((x, i) => shelf(ctx, x, -5.45, 2.3, 2.1, 4, 41 + i));
   [-29.4, -27.0, -22.2, -19.8].forEach((x, i) => shelf(ctx, x, 5.45, 2.3, 1.05, 2, 50 + i));
-  pinnedNote(root, "INVENTAIRE\npiles : 3 boîtes\nclous : ok\nconserves : 41", -17.6, 1.05, -5.82, 0, 0.07);
   // Cage grillagée (ouest) et son contenu.
   const cx0 = -31.85, cx1 = -29.2, cz0 = -3.5, cz1 = 2.5;
   for (const [x, z] of [[cx1, cz0], [cx1, cz1], [cx0 + 0.05, cz0], [cx0 + 0.05, cz1]]) block(root, 0.08, 2.0, 0.08, PALETTE.steelDark, x, 0, z, 0.01);
@@ -708,7 +682,8 @@ function storage(ctx: DecorContext): void {
   crate(root, -16.5, 4.65, 0.5, 0.4, 0.6);
   panel(root, signTexture("CONSERVES", { bg: C.cream, fg: PALETTE.outline, width: 256, height: 64 }), -16.8, 0.35, 4.29, 0.45, 0.12, 0);
   solid(ctx, -16.5, 4.65, 1.3, 0.8);
-  ctx.light(-21.5, 2.3, 0.6, "#ffdca8", 6, 11, 0.35, 23, true);
+  // Ampoule nue qui se balance (storyProps.ts) : pas de globe fixe ici.
+  ctx.light(-21.5, 2.3, 0.6, "#ffdca8", 6, 11, 0.35, 23, false);
   ctx.dust(-21.5, 2.2, 0.4);
 }
 
@@ -761,12 +736,9 @@ function cafeteria(ctx: DecorContext): void {
     }
   }
   solid(ctx, -31.05, 12.6, 0.5, 0.85);
-  crate(root, -30.75, 14.5, 0.6, 0.3);
-  crate(root, -31.35, 15.3, 0.55, -0.1);
-  solid(ctx, -31.0, 14.9, 1.2, 1.5);
   // Longues tables.
   cafeTable(ctx, -25.5, -14.0, 9.4, 31);
-  cafeTable(ctx, -30.0, -22.8, 18.4, 32);
+  cafeTable(ctx, -26.6, -20.6, 18.4, 32);
   cafeTable(ctx, -17.2, -12.4, 18.4, 33);
   // Chariot de plateaux sales et plante en pot qui s'accroche.
   const trolley = group(root, -13, 15.8, 0.2);
@@ -786,7 +758,7 @@ function cafeteria(ctx: DecorContext): void {
   decal(root, blobTexture("puddle"), -16.3, 11.6, 1.2, 0.9, 1.2);
   // Fresque des survivants, ardoise du menu, guirlande.
   panel(root, westMuralTexture(), -19.5, 0.95, 6.19, 2.6, 1.3, 0);
-  signBoard(root, "SOUPE DU JOUR\n(encore)", -25.6, 1.12, 6.19, 1.0, 0.5, 0, { bg: "#2f3a2e", fg: C.cream, border: C.wood });
+  signBoard(root, "MENU : PÊCHES\n(encore)", -25.6, 1.12, 6.19, 1.0, 0.5, 0, { bg: "#2f3a2e", fg: C.cream, border: C.wood });
   stringLights(root, -28.2, 6.35, -12.2, 6.35, 1.66, 14);
   ctx.light(-20, 2.3, 13.0, "#ffd39a", 7, 12, 0.2, 24, true);
   ctx.beam(-20, 2.3, 13.0, 1.3, "#ffe6b0");
@@ -956,6 +928,7 @@ export function decorateWest(ctx: DecorContext): void {
   storage(ctx);
   cafeteria(ctx);
   generatorRoom(ctx);
+  decorateStory(ctx, "west");
   ctx.animate(animateWest);
 }
 
