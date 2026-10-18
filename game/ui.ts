@@ -7,12 +7,12 @@ export interface UiSnapshot {
   mode: UiMode;
   /** Mode d'où l'on vient (retour depuis les réglages). */
   previous: UiMode;
-  /** Interlocuteur du dialogue, ou choix de fin pour la conclusion. */
+  /** Interlocuteur du dialogue, ou identifiant de la conclusion (ex. "floor2"). */
   character: Character;
 }
 
 export class UiStore {
-  private snapshot: UiSnapshot = { mode: "playing", previous: "playing", character: "mother" };
+  private snapshot: UiSnapshot = { mode: "playing", previous: "playing", character: "" };
   private listeners = new Set<() => void>();
 
   subscribe = (listener: () => void): (() => void) => {

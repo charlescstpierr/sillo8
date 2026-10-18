@@ -8,9 +8,9 @@ import { CAMERA, CameraRig } from "./camera";
 import { AIM_HEIGHT, assistTarget, groundPoint, yawTowards } from "./aim";
 import { InputState } from "./input";
 import { PlayerController } from "./player";
-import { Phase, SiloState, type Character, type KeyValueStore } from "./state";
+import { SiloState, type Character, type KeyValueStore } from "./state";
 import { SiloDialogue } from "./dialogue";
-import { COLOSSUS_Z, DOORS, sectorAt, type InteractableDef } from "./level";
+import { DOORS, ENTRANCE_TRIGGER, roomAt, sectorAt, type InteractableDef } from "./level";
 import { doorOpen, interactableAvailable } from "./rules";
 import { HudStore, type HudSnapshot } from "./hud";
 import { UiStore, type UiMode } from "./ui";
@@ -65,7 +65,6 @@ export class Engine {
   private notice = "";
   private noticeId = 0;
   private noticeTime = 0;
-  private colossusTriggered = false;
   private worldDirty = true;
   private sun: DirectionalLight;
   private shadowBlob: Mesh;
@@ -219,7 +218,7 @@ export class Engine {
     this.state.reset();
     this.startRun();
     this.setMode("playing");
-    this.notify("MÈRE : Bienvenue au niveau 09. Trouvez le relais et rétablissez l'alimentation.");
+    this.notify("SILLO 8. L'entrée est juste devant. Avancez sans bruit.");
   }
 
   saveGame(): boolean {
@@ -240,7 +239,7 @@ export class Engine {
 
   hasSave(): boolean {
     try {
-      return Boolean(this.storage?.getItem("silo9-save"));
+      return Boolean(this.storage?.getItem("sillo8-save"));
     } catch {
       return false;
     }
@@ -273,7 +272,6 @@ export class Engine {
     this.player.vx = this.player.vz = 0;
     this.player.yaw = this.state.playerYaw;
     this.player.reloadTime = 0;
-    this.colossusTriggered = z < COLOSSUS_Z;
     this.horde.sync(this.state);
     this.refreshWorld();
     this.rig.snap(new Vector3(x, 0, z));
@@ -291,23 +289,14 @@ export class Engine {
     this.setMode("dialogue", character);
   }
 
-  openEnding(): void {
-    if (this.state.phase < Phase.CORE_RECOVERED || this.state.ending !== "") {
-      this.notify("Récupérez d'abord le noyau dans le secteur 04.");
+  /** Fin de l'étage 1 : l'accès à l'étage 2 est ouvert (l'étage 2 reste à construire). */
+  openFloor2(): void {
+    if (!this.state.reachFloor2() && !this.state.has("floor2")) {
+      this.notify("Accès verrouillé. Il faut une clé d'accès.");
       return;
     }
-    this.setMode("ending");
-  }
-
-  chooseEnding(choice: Character): boolean {
-    if (!this.state.chooseEnding(choice)) {
-      this.notify("Ce choix n'est pas disponible.");
-      return false;
-    }
-    this.refreshWorld();
     this.saveGame();
-    this.setMode("conclusion", choice);
-    return true;
+    this.setMode("conclusion", "floor2");
   }
 
   useMedkit(): boolean {
@@ -420,11 +409,12 @@ export class Engine {
     this.hordeContext.dormant = this.state.ending === "n7";
     this.horde.update(dt, this.hordeContext);
 
-    // Événement « colosse » à l'entrée du cœur
-    if (!this.colossusTriggered && this.player.z < COLOSSUS_Z) {
-      this.colossusTriggered = true;
-      this.world.shudder();
-      this.notify("Quelque chose bouge sous vos pieds. MÈRE : « Poursuivez. Ce n'est qu'une dilatation thermique. »");
+    // Objectifs déclenchés en se déplaçant
+    if (!this.state.has("entrance_explored") && Math.hypot(this.player.x - ENTRANCE_TRIGGER.x, this.player.z - ENTRANCE_TRIGGER.z) < ENTRANCE_TRIGGER.radius && this.state.exploreEntrance()) {
+      this.notify("La porte de sécurité est morte. Plus de courant. La génératrice doit être à l'ouest.");
+    }
+    if (!this.state.has("hub_reached") && roomAt(this.player.x, this.player.z)?.id === "hub" && this.state.reachHub()) {
+      this.notify("HUB CENTRAL. Toutes les ailes partent d'ici. Le relais radio est en salle de contrôle.");
     }
 
     this.noticeTime = Math.max(0, this.noticeTime - dt);
@@ -479,42 +469,43 @@ export class Engine {
     return best;
   }
 
-  /** Port de SiloWorld.interact. */
   interact(def: InteractableDef): void {
     const s = this.state;
     if (def.kind) {
-      if (s.collect(def.id, def.kind, def.amount ?? 1)) this.notify(def.kind === "components" ? `Composant récupéré · ${s.components} en réserve.` : "Ressource récupérée.");
+      if (s.collect(def.id, def.kind, def.amount ?? 1)) this.notify(def.kind === "components" ? `Pièce récupérée · ${s.components} en poche.` : "Ressource récupérée.");
       return;
     }
     switch (def.id) {
-      case "mother":
-      case "n7":
-        this.openConversation(def.id);
+      case "security_door":
+        this.notify("Hors tension. Il faut relancer la génératrice (3 pièces).");
+        break;
+      case "generator":
+        if (s.powerGenerator()) {
+          this.world.shudder();
+          this.notify("La génératrice tousse… puis tourne. Les portes de sécurité s'ouvrent.");
+        } else this.notify(`Il manque des pièces : ${s.components}/3. Fouillez la zone extérieure et la serre.`);
+        break;
+      case "workbench":
+        this.notify(s.craftRadioModule() ? "Module radio fabriqué. Direction la salle de contrôle." : `L'établi demande 2 pièces (${s.components} en poche).`);
+        break;
+      case "upgrade":
+        this.notify(s.upgrade() ? "Batterie améliorée : 150 énergie." : "Le banc demande 3 pièces, amélioration unique.");
+        break;
+      case "comms":
+        this.notify(s.repairComms() ? "Communication rétablie. Un signal faible répond… quelque part plus bas." : "Le relais radio est grillé. Fabriquez un module à l'atelier.");
+        break;
+      case "keycard":
+        if (s.takeKeycard()) this.notify("Clé d'accès de l'étage 2 récupérée.");
+        break;
+      case "stairs":
+        this.openFloor2();
         break;
       case "recharge":
         s.recharge();
-        this.notify("Batterie rechargée. L'ascenseur reste votre refuge.");
-        break;
-      case "upgrade":
-        this.notify(s.upgrade() ? "Batterie améliorée : 150 énergie." : "L'établi demande 3 composants, amélioration unique.");
-        break;
-      case "relay":
-        this.notify(s.repairRelay() ? "Alimentation rétablie. Le cœur est accessible." : "Révélez le relais au SCAN ÉCHO, puis apportez 3 composants.");
-        break;
-      case "evidence":
-        s.addFact("surface_signal");
-        s.remember("Le joueur a découvert un signal humain à la surface.");
-        this.notify("ARCHIVE 09 : une voix humaine a émis depuis la surface il y a 6 heures. MÈRE a classé le signal « bruit ».");
-        break;
-      case "core":
-        this.notify(s.recoverCore() ? "Cœur récupéré. Retournez à l'ascenseur et choisissez à qui le confier." : "Cœur verrouillé. Réparez le relais de maintenance.");
-        break;
-      case "ending":
-        if (s.phase === Phase.CORE_RECOVERED) this.openEnding();
-        else this.notify(s.phase === Phase.COMPLETE ? "La descente est terminée." : "Descente suspendue. Récupérez le cœur mémoriel du secteur 04.");
+        this.notify("Batterie rechargée.");
         break;
       case "device":
-        this.notify("Utilisez l'ARC-3 pour couper le verrou, ou prenez la conduite de service à droite.");
+        this.notify("Verrou sous tension. Une décharge d'ARC-3 (clic droit) le coupera.");
         break;
     }
   }

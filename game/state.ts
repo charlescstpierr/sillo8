@@ -1,15 +1,34 @@
-// Port de scripts/run_state.gd (SILO 9 : La Descente). Mêmes règles, même schéma de sauvegarde.
+// État d'une partie de SILLO 8 : ressources, objectifs de l'étage 1, sauvegarde validée.
+// Les règles de ressources viennent de SILO 9 (batterie partagée scan / ARC-3, trousses, cellules, D9).
 
-export const Phase = { ARRIVAL: 0, RELAY_FOUND: 1, POWER_RESTORED: 2, CORE_RECOVERED: 3, COMPLETE: 4 } as const;
-export type PhaseId = (typeof Phase)[keyof typeof Phase];
-export type Character = "mother" | "n7";
-export type Ending = "" | Character;
+export type Character = string;
+export type Ending = string;
 
-export const FACT_IDS = ["relay_location", "power_restored", "core_recovered", "surface_signal", "n7_autonomy", "mother_directive", "ending_mother", "ending_n7", "arc_lock_disabled"] as const;
+/** Faits de progression de l'étage 1, dans l'ordre des objectifs. */
+export const FACT_IDS = [
+  "entrance_explored",
+  "generator_powered",
+  "hub_reached",
+  "radio_module",
+  "comms_repaired",
+  "secret_revealed",
+  "keycard",
+  "floor2",
+  "arc_lock_disabled",
+] as const;
 export type FactId = (typeof FACT_IDS)[number];
+
+/** Pièces nécessaires pour relancer la génératrice, et pour fabriquer le module radio. */
+export const GENERATOR_PARTS = 3;
+export const RADIO_PARTS = 2;
+export const UPGRADE_PARTS = 3;
+
+/** Nombre d'objectifs accomplis (0 → 5), compatible avec l'ancien « phase ». */
+export const Phase = { START: 0, COMPLETE: 5 } as const;
+
 export const SAVE_LIMIT = 65536;
-export const SAVE_KEY = "silo9-save";
-export const SPAWN: [number, number, number] = [0, 0, 9.2];
+export const SAVE_KEY = "sillo8-save";
+export const SPAWN: [number, number, number] = [0, 0, 41];
 
 export interface Objective {
   title: string;
@@ -27,12 +46,11 @@ export class SiloState {
   health = 100;
   energy = 100;
   ammo = 12;
-  reserve = 48;
+  reserve = 36;
   components = 0;
-  medkits = 2;
-  cells = 2;
+  medkits = 1;
+  cells = 1;
   upgraded = false;
-  phase: number = Phase.ARRIVAL;
   ending: Ending = "";
   collected: string[] = [];
   defeated: string[] = [];
@@ -41,7 +59,7 @@ export class SiloState {
   playerPosition: [number, number, number] = [...SPAWN];
   playerYaw = Math.PI;
   elapsed = 0;
-  relations: Record<Character, number> = { mother: 0, n7: 0 };
+  relations: Record<string, number> = {};
 
   private listeners = new Set<Listener>();
 
@@ -50,7 +68,7 @@ export class SiloState {
     return () => this.listeners.delete(listener);
   }
 
-  /** Remet une partie neuve en place (nouvelle descente), en gardant les abonnés. */
+  /** Remet une partie neuve en place, en gardant les abonnés. */
   reset(): void {
     const fresh = new SiloState();
     const listeners = this.listeners;
@@ -63,10 +81,18 @@ export class SiloState {
     for (const listener of this.listeners) listener();
   }
 
+  has(fact: FactId): boolean {
+    return this.facts.includes(fact);
+  }
+
+  /** Nombre d'objectifs accomplis. */
+  get phase(): number {
+    return this.objectiveChecklist().steps.filter((s) => s.done).length;
+  }
+
   changeTrust(character: string, delta: number): boolean {
-    if (!(character === "mother" || character === "n7") || (delta !== -1 && delta !== 1)) return false;
+    if (!(character in this.relations) || (delta !== -1 && delta !== 1)) return false;
     this.relations[character] = clamp(this.relations[character] + delta, -5, 5);
-    this.remember(`Relation avec ${character} : ${delta === 1 ? "confiance renforcée" : "méfiance accrue"}.`);
     this.changed();
     return true;
   }
@@ -129,49 +155,61 @@ export class SiloState {
     return true;
   }
 
-  discoverRelay(): boolean {
-    if (this.phase !== Phase.ARRIVAL) return false;
-    this.phase = Phase.RELAY_FOUND;
-    this.addFact("relay_location");
-    this.remember("SCAN ÉCHO a révélé l'accès au relais.");
-    this.changed();
-    return true;
+  // ——— Objectifs de l'étage 1 ———
+
+  exploreEntrance(): boolean {
+    return this.grant("entrance_explored", "Le joueur a exploré l'entrée du silo.");
   }
 
-  repairRelay(): boolean {
-    if (this.phase !== Phase.RELAY_FOUND || this.components < 3) return false;
-    this.components -= 3;
-    this.phase = Phase.POWER_RESTORED;
-    this.addFact("power_restored");
-    this.remember("Le joueur a réparé le relais.");
-    this.changed();
-    return true;
+  powerGenerator(): boolean {
+    if (this.has("generator_powered") || this.components < GENERATOR_PARTS) return false;
+    this.components -= GENERATOR_PARTS;
+    return this.grant("generator_powered", "La génératrice tourne. Les portes de sécurité sont alimentées.");
   }
 
-  recoverCore(): boolean {
-    if (this.phase !== Phase.POWER_RESTORED) return false;
-    this.phase = Phase.CORE_RECOVERED;
-    this.addFact("core_recovered");
-    this.remember("Le joueur transporte le noyau de contrôle.");
-    this.changed();
-    return true;
+  reachHub(): boolean {
+    if (!this.has("generator_powered")) return false;
+    return this.grant("hub_reached", "Le joueur a atteint le hub central.");
   }
 
-  chooseEnding(choice: string): boolean {
-    if (this.phase !== Phase.CORE_RECOVERED || !(choice === "mother" || choice === "n7")) return false;
-    this.ending = choice;
-    this.phase = Phase.COMPLETE;
-    this.addFact("ending_" + choice);
-    this.remember("Le noyau a été confié à " + (choice === "mother" ? "MÈRE." : "N-7."));
+  craftRadioModule(): boolean {
+    if (this.has("radio_module") || this.components < RADIO_PARTS) return false;
+    this.components -= RADIO_PARTS;
+    return this.grant("radio_module", "Un module radio a été fabriqué à l'atelier.");
+  }
+
+  repairComms(): boolean {
+    if (this.has("comms_repaired") || !this.has("radio_module")) return false;
+    return this.grant("comms_repaired", "La communication est rétablie depuis la salle de contrôle.");
+  }
+
+  revealSecret(): boolean {
+    return this.grant("secret_revealed", "SCAN ÉCHO a révélé une pièce cachée derrière les dortoirs.");
+  }
+
+  takeKeycard(): boolean {
+    if (!this.has("secret_revealed")) return false;
+    return this.grant("keycard", "Le joueur a récupéré la clé d'accès de l'étage 2.");
+  }
+
+  reachFloor2(): boolean {
+    if (!this.has("keycard")) return false;
+    return this.grant("floor2", "Le joueur a ouvert l'accès à l'étage 2.");
+  }
+
+  private grant(fact: FactId, memory: string): boolean {
+    if (this.has(fact)) return false;
+    this.facts.push(fact);
+    this.remember(memory);
     this.changed();
     return true;
   }
 
   upgrade(): boolean {
-    if (this.upgraded || this.components < 3) return false;
-    this.components -= 3;
+    if (this.upgraded || this.components < UPGRADE_PARTS) return false;
+    this.components -= UPGRADE_PARTS;
     this.upgraded = true;
-    this.remember("La batterie de l'ascenseur a été améliorée.");
+    this.remember("La batterie a été améliorée à l'atelier.");
     this.changed();
     return true;
   }
@@ -223,27 +261,29 @@ export class SiloState {
     }
   }
 
+  /** Prochaine chose à faire, en une phrase. */
   objective(): string {
-    switch (this.phase) {
-      case Phase.ARRIVAL: return "Explorer la maintenance. SCAN ÉCHO révèle l'accès au relais.";
-      case Phase.RELAY_FOUND: return "Récupérer 3 composants et réparer le relais.";
-      case Phase.POWER_RESTORED: return "Rejoindre le cœur et récupérer le noyau de contrôle.";
-      case Phase.CORE_RECOVERED: return "Revenir à l'ascenseur. Choisir à qui confier le noyau.";
-      default: return "Mission terminée — " + (this.ending === "mother" ? "protection de MÈRE." : "autonomie de N-7.");
-    }
+    if (!this.has("entrance_explored")) return "Explorer l'entrée du silo.";
+    if (!this.has("generator_powered")) return `Alimenter la génératrice · ${Math.min(this.components, GENERATOR_PARTS)}/${GENERATOR_PARTS} pièces.`;
+    if (!this.has("hub_reached")) return "Passer la sécurité et atteindre le hub central.";
+    if (!this.has("comms_repaired")) return this.has("radio_module") ? "Installer le module radio dans la salle de contrôle." : `Fabriquer un module radio à l'atelier · ${Math.min(this.components, RADIO_PARTS)}/${RADIO_PARTS} pièces.`;
+    if (!this.has("keycard")) return this.has("secret_revealed") ? "Récupérer la clé d'accès dans la pièce cachée." : "Trouver la clé d'accès. Le SCAN ÉCHO révèle les zones secrètes.";
+    if (!this.has("floor2")) return "Ouvrir l'accès à l'étage 2.";
+    return "Étage 1 terminé.";
   }
 
-  /** Panneau d'objectifs à cocher, dérivé de objective() et de la phase. */
+  /** Panneau « OBJECTIFS INITIAUX (ÉTAGE 1) ». */
   objectiveChecklist(): Objective {
-    const p = this.phase;
-    const steps = [
-      { label: "Révéler le relais au SCAN ÉCHO", done: p >= Phase.RELAY_FOUND },
-      { label: `Réparer le relais · ${Math.min(this.components, 3)}/3 composants`, done: p >= Phase.POWER_RESTORED },
-      { label: "Extraire le noyau du cœur", done: p >= Phase.CORE_RECOVERED },
-      { label: "Confier le noyau depuis l'ascenseur", done: p >= Phase.COMPLETE },
-    ];
-    if (p >= Phase.POWER_RESTORED) steps[1].label = "Réparer le relais";
-    return { title: this.objective(), steps };
+    return {
+      title: this.objective(),
+      steps: [
+        { label: "Explorer l'entrée", done: this.has("entrance_explored") },
+        { label: "Trouver un moyen d'alimenter la génératrice", done: this.has("generator_powered") },
+        { label: "Accéder au hub central", done: this.has("hub_reached") },
+        { label: "Réparer la communication", done: this.has("comms_repaired") },
+        { label: "Obtenir une clé d'accès pour l'étage 2", done: this.has("keycard") },
+      ],
+    };
   }
 
   saveGame(store: KeyValueStore, key = SAVE_KEY): "ok" | "invalid" | "write_failed" {
@@ -282,8 +322,6 @@ export class SiloState {
     this.medkits = data.medkits;
     this.cells = data.cells;
     this.upgraded = data.upgraded;
-    this.phase = data.phase;
-    this.ending = data.ending as Ending;
     this.collected = [...data.collected];
     this.defeated = [...data.defeated];
     this.facts = [...data.facts];
@@ -291,15 +329,15 @@ export class SiloState {
     this.playerPosition = [data.player_position[0], data.player_position[1], data.player_position[2]];
     this.playerYaw = data.player_yaw;
     this.elapsed = data.elapsed;
-    this.relations = { mother: data.relations.mother, n7: data.relations.n7 };
+    this.ending = "";
     this.changed();
     return "ok";
   }
 
   snapshot(): Snapshot {
     return {
-      schema: 2,
-      relations: { ...this.relations },
+      game: "sillo8",
+      schema: 1,
       health: this.health,
       energy: this.energy,
       ammo: this.ammo,
@@ -308,8 +346,6 @@ export class SiloState {
       medkits: this.medkits,
       cells: this.cells,
       upgraded: this.upgraded,
-      phase: this.phase,
-      ending: this.ending,
       collected: [...this.collected],
       defeated: [...this.defeated],
       facts: [...this.facts],
@@ -322,8 +358,8 @@ export class SiloState {
 }
 
 export interface Snapshot {
+  game: string;
   schema: number;
-  relations: Record<Character, number>;
   health: number;
   energy: number;
   ammo: number;
@@ -332,8 +368,6 @@ export interface Snapshot {
   medkits: number;
   cells: number;
   upgraded: boolean;
-  phase: number;
-  ending: string;
   collected: string[];
   defeated: string[];
   facts: string[];
@@ -345,19 +379,23 @@ export interface Snapshot {
 
 const SNAPSHOT_KEYS = Object.keys(new SiloState().snapshot());
 
+/** Chaque fait n'est possible qu'après celui dont il dépend. */
+const REQUIRES: Partial<Record<FactId, FactId>> = {
+  hub_reached: "generator_powered",
+  comms_repaired: "radio_module",
+  keycard: "secret_revealed",
+  floor2: "keycard",
+};
+
 export function validSnapshot(data: Record<string, unknown>): boolean {
   if (Object.keys(data).length !== SNAPSHOT_KEYS.length) return false;
   for (const key of SNAPSHOT_KEYS) if (!(key in data)) return false;
   const d = data as Record<string, any>;
-  if (!num(d.schema, 2, 2) || typeof d.upgraded !== "boolean" || typeof d.ending !== "string") return false;
-  if (!isRecord(d.relations) || Object.keys(d.relations).length !== 2) return false;
-  for (const character of ["mother", "n7"]) {
-    if (!num(d.relations[character], -5, 5) || !Number.isInteger(d.relations[character])) return false;
-  }
-  for (const key of ["ammo", "reserve", "components", "medkits", "cells", "phase"]) {
+  if (d.game !== "sillo8" || !num(d.schema, 1, 1) || typeof d.upgraded !== "boolean") return false;
+  for (const key of ["ammo", "reserve", "components", "medkits", "cells"]) {
     if (!num(d[key], 0, 999) || !Number.isInteger(d[key])) return false;
   }
-  if (d.ammo > 12 || d.medkits > 99 || d.cells > 99 || d.phase > 4) return false;
+  if (d.ammo > 12 || d.medkits > 99 || d.cells > 99) return false;
   if (!num(d.health, 0, 100) || !num(d.energy, 0, d.upgraded ? 150 : 100)) return false;
   if (!num(d.elapsed, 0, 31536000) || !num(d.player_yaw, -100000, 100000)) return false;
   if (!Array.isArray(d.player_position) || d.player_position.length !== 3) return false;
@@ -365,15 +403,8 @@ export function validSnapshot(data: Record<string, unknown>): boolean {
   if (!strings(d.collected, 256, 80, true) || !strings(d.defeated, 128, 80, true)) return false;
   if (!strings(d.facts, FACT_IDS.length, 80, true) || !strings(d.memory, 32, 240, false)) return false;
   for (const fact of d.facts) if (!(FACT_IDS as readonly string[]).includes(fact)) return false;
-  const progression = ["relay_location", "power_restored", "core_recovered"];
-  for (let i = 0; i < progression.length; i++) {
-    if (d.facts.includes(progression[i]) !== d.phase >= i + 1) return false;
-  }
-  if (d.phase === Phase.COMPLETE) {
-    if (!(d.ending === "mother" || d.ending === "n7") || !d.facts.includes("ending_" + d.ending)) return false;
-  } else if (d.ending !== "") return false;
-  for (const choice of ["mother", "n7"]) {
-    if (d.facts.includes("ending_" + choice) !== (d.ending === choice)) return false;
+  for (const [fact, required] of Object.entries(REQUIRES)) {
+    if (d.facts.includes(fact) && !d.facts.includes(required)) return false;
   }
   return true;
 }

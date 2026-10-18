@@ -100,6 +100,7 @@ export function roomIndexAt(x: number, z: number): number {
 
 /** Première porte du plus court chemin (portes ouvertes seulement) ; −1 sans chemin. Renseigne `nextRoom`. */
 export function firstDoor(from: number, to: number, doorOpen: (id: string) => boolean): number {
+  if (from < 0 || to < 0 || from >= ROOMS.length || to >= ROOMS.length) return -1;
   prevRoom.fill(-1);
   prevRoom[from] = from;
   let head = 0;

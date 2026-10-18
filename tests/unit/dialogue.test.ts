@@ -127,7 +127,7 @@ describe("SiloDialogue", () => {
       expect(chat.busy).toBe(false);
 
       chat.ask("mother", "mission change");
-      state.discoverRelay();
+      state.addFact("entrance_explored");
       expect((await next(0)).mode).toBe("secours hors ligne");
 
       silent = true;

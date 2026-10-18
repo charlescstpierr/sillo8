@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Group, Scene } from "three";
 import { ARC_LOCK_RADIUS, Combat, SCAN, WEAPONS, type CombatInput } from "@/game/combat";
 import { rayDistance, type Box } from "@/game/collision";
-import { INTERACTABLES, RELAY } from "@/game/level";
+import { INTERACTABLES, SECRET } from "@/game/level";
 import { PlayerController } from "@/game/player";
 import { SiloState } from "@/game/state";
 import type { Horde, RayHit } from "@/game/types";
@@ -43,7 +43,7 @@ function fakeHorde(zombies: FakeZombie[]) {
 }
 
 const DEVICE = INTERACTABLES.find((i) => i.id === "device")!;
-const RELAY_DEF = INTERACTABLES.find((i) => i.id === "relay")!;
+const KEY_DEF = INTERACTABLES.find((i) => i.id === "keycard")!;
 
 function setup(options: { x?: number; z?: number; yaw?: number; zombies?: FakeZombie[]; colliders?: Box[]; items?: typeof INTERACTABLES } = {}) {
   const state = new SiloState();
@@ -166,7 +166,7 @@ describe("ARC-3", () => {
     step(s, 0.016, { arc: true });
     expect(zb.hp).toBe(100);
     expect(s.state.energy).toBe(5);
-    expect(s.notices).toContain("Énergie insuffisante · recharge dans l'ascenseur");
+    expect(s.notices).toContain("Énergie insuffisante · borne de recharge ou cellule");
     expect(s.noises).toHaveLength(0);
   });
 
@@ -235,30 +235,30 @@ describe("SCAN ÉCHO", () => {
     s.state.energy = 19;
     step(s, 0.016, { scan: true });
     expect(s.state.energy).toBe(19);
-    expect(s.notices).toEqual(["SCAN ÉCHO requiert 20 énergie · recharge dans l'ascenseur"]);
+    expect(s.notices).toEqual(["SCAN ÉCHO requiert 20 énergie · borne de recharge ou cellule"]);
     expect(s.noises).toHaveLength(0);
   });
 
-  it("révèle le relais seulement à 18 m ou moins", () => {
-    const far = setup({ x: RELAY.x, z: RELAY.z + 18.5 });
+  it("révèle la pièce cachée seulement à 18 m ou moins", () => {
+    const far = setup({ x: SECRET.x + 18.5, z: SECRET.z });
     step(far, 0.016, { scan: true });
-    expect(far.state.facts).not.toContain("relay_location");
+    expect(far.state.facts).not.toContain("secret_revealed");
 
-    const near = setup({ x: RELAY.x, z: RELAY.z + 17.5 });
+    const near = setup({ x: SECRET.x + 17.5, z: SECRET.z });
     step(near, 0.016, { scan: true });
-    expect(near.state.facts).toContain("relay_location");
-    expect(near.notices).toContain("ÉCHO : relais dissimulé révélé dans la maintenance. Localisation conservée.");
+    expect(near.state.facts).toContain("secret_revealed");
+    expect(near.notices).toContain("ÉCHO : un mur creux derrière les dortoirs. Une pièce cachée s'ouvre.");
   });
 
   it("marque objets et zombies proches pendant 5 s, et suit les zombies", () => {
-    const px = RELAY_DEF.x;
-    const pz = RELAY_DEF.z + 5;
+    const px = KEY_DEF.x + 5;
+    const pz = KEY_DEF.z;
     const close: FakeZombie = { id: "close", x: px + 3, z: pz + 3, hp: 100, stun: 0 };
     const distant: FakeZombie = { id: "distant", x: px, z: pz + 25, hp: 100, stun: 0 };
-    // Le verrou électrique (secteur 04) est hors de portée.
-    const s2 = setup({ x: px, z: pz, zombies: [close, distant], items: [RELAY_DEF, DEVICE] });
+    // Le verrou électrique (infirmerie) est hors de portée.
+    const s2 = setup({ x: px, z: pz, zombies: [close, distant], items: [KEY_DEF, DEVICE] });
     step(s2, 0.016, { scan: true });
-    expect([...s2.combat.markedItems]).toEqual(["relay"]);
+    expect([...s2.combat.markedItems]).toEqual(["keycard"]);
     expect([...s2.combat.markedZombies]).toEqual(["close"]);
     close.hp = 0;
     step(s2, 0.1);

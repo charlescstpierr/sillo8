@@ -1,13 +1,13 @@
 // Armes et SCAN ÉCHO (port de player.gd : fire, activate_scan ; world.gd : scan).
 // D9 : tir automatique tant que la gâchette est tenue. ARC-3 : décharge électrique (énergie), étourdit et coupe
-// le verrou électrique. SCAN ÉCHO : onde au sol, révèle le relais et marque objets et zombies pendant 5 s.
+// le verrou électrique. SCAN ÉCHO : onde au sol, révèle les zones secrètes et marque objets et zombies pendant 5 s.
 // Le moteur appelle update() à chaque image avec les commandes du joueur ; le rechargement reste dans engine.ts.
 import { Mesh, MeshBasicMaterial, SphereGeometry, Vector3, type Scene } from "three";
 import { D9, type PlayerController } from "./player";
 import type { SiloState } from "./state";
 import type { Horde } from "./types";
 import { rayDistance } from "./collision";
-import { RELAY, SCAN_NOISE, SCAN_RADIUS } from "./level";
+import { SCAN_NOISE, SCAN_RADIUS, SECRET } from "./level";
 import type { WorldView } from "./render/world";
 import type { OperatorRig } from "./render/operator";
 import { CombatFx } from "./render/fx";
@@ -152,7 +152,7 @@ export class Combat {
     const w = WEAPONS.arc;
     if (!state.spendEnergy(w.energy)) {
       this.arcQueued = 0;
-      this.notifyThrottled("Énergie insuffisante · recharge dans l'ascenseur", 1.5);
+      this.notifyThrottled("Énergie insuffisante · borne de recharge ou cellule", 1.5);
       return false;
     }
     player.cooldown = w.cooldown;
@@ -246,13 +246,13 @@ export class Combat {
     const { player, state, horde, world } = this.host;
     if (this.scanCooldown > 0) return false;
     if (!state.spendEnergy(SCAN.energy)) {
-      this.host.notify("SCAN ÉCHO requiert 20 énergie · recharge dans l'ascenseur");
+      this.host.notify("SCAN ÉCHO requiert 20 énergie · borne de recharge ou cellule");
       return false;
     }
     this.scanCooldown = SCAN.cooldown;
     this.host.notify("SCAN ÉCHO · signatures révélées");
-    if (Math.hypot(player.x - RELAY.x, player.z - RELAY.z) <= SCAN.radius && state.discoverRelay()) {
-      this.host.notify("ÉCHO : relais dissimulé révélé dans la maintenance. Localisation conservée.");
+    if (Math.hypot(player.x - SECRET.x, player.z - SECRET.z) <= SCAN.radius && state.revealSecret()) {
+      this.host.notify("ÉCHO : un mur creux derrière les dortoirs. Une pièce cachée s'ouvre.");
     }
     this.host.noise(player.x, player.z, SCAN.noise);
     this.fx.scanWave(player.x, player.z);
@@ -261,8 +261,8 @@ export class Combat {
     this.markedZombies.clear();
     for (const view of world.interactables.values()) {
       const def = view.def;
-      // La visibilité suit l'état : un relais révélé à l'instant n'apparaît qu'au prochain rafraîchissement.
-      const visible = view.group.visible || (def.id === "relay" && state.facts.includes("relay_location"));
+      // La visibilité suit l'état : un objet révélé à l'instant n'apparaît qu'au prochain rafraîchissement.
+      const visible = view.group.visible || (def.id === "keycard" && state.has("secret_revealed"));
       if (!visible || Math.hypot(def.x - player.x, def.z - player.z) > SCAN.radius) continue;
       this.markedItems.add(def.id);
       this.fx.mark("i:" + def.id, "item", def.x, view.tooltipHeight + 0.55, def.z);

@@ -442,3 +442,28 @@ export function grateTexture(): Texture {
     for (let k = 0; k < 6; k++) { g.beginPath(); g.arc(r() * w, r() * h, 10 + r() * 25, 0, Math.PI * 2); g.fill(); }
   });
 }
+
+/** Terre battue, gravier et touffes sombres (extérieur, serre). 1 texture = 2 × 2 m. */
+export function dirtGroundTexture(): Texture {
+  return make("dirt-ground", 512, 512, (g, w, h) => {
+    const r = rng(41);
+    g.fillStyle = "#a08a64";
+    g.fillRect(0, 0, w, h);
+    for (let k = 0; k < 70; k++) {
+      const x = r() * w, y = r() * h, rad = 15 + r() * 60;
+      const grad = g.createRadialGradient(x, y, 0, x, y, rad);
+      grad.addColorStop(0, r() > 0.5 ? "rgba(120,100,70,0.35)" : "rgba(170,150,110,0.3)");
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = grad;
+      g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    }
+    for (let k = 0; k < 500; k++) {
+      g.fillStyle = r() > 0.5 ? "rgba(80,66,45,0.5)" : "rgba(200,185,150,0.45)";
+      g.beginPath(); g.arc(r() * w, r() * h, 1 + r() * 2.5, 0, Math.PI * 2); g.fill();
+    }
+    for (let k = 0; k < 30; k++) {
+      g.fillStyle = r() > 0.5 ? "rgba(96,130,60,0.55)" : "rgba(120,155,70,0.5)";
+      g.beginPath(); g.ellipse(r() * w, r() * h, 6 + r() * 14, 4 + r() * 8, r() * 3, 0, Math.PI * 2); g.fill();
+    }
+  });
+}

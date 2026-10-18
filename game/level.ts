@@ -1,20 +1,28 @@
-// Plan du silo, vu de dessus. Le nord est −Z : on descend vers le cœur en allant vers le haut de l'écran.
-// Unités en mètres. Les murs sont coupés à mi-hauteur (maison de poupée).
+// SILLO 8 — étage 1, vu de dessus. Le nord est −Z (haut de l'écran). Unités en mètres.
+// D'après la carte de l'étage 1 : hub central rond, aile ouest (dortoirs, entrepôt, cafétéria, génératrice),
+// aile est (salle de contrôle, infirmerie, atelier, serre), sécurité et entrée au sud, zone extérieure au sud-est.
+// Les murs intérieurs sont coupés à mi-hauteur (maison de poupée).
 import type { Box } from "./collision";
 
 export const WALL_HEIGHT = 1.6;
 export const WALL_THICKNESS = 0.3;
 
-export type RoomId = "refuge" | "decon" | "maintenance" | "atelier" | "technique" | "archives" | "alcove" | "antechamber" | "conduit" | "core";
+export type RoomId =
+  | "plaza" | "exterior" | "security" | "hub" | "north" | "stairs" | "west" | "dorms" | "secret"
+  | "storage" | "cafeteria" | "generator" | "east" | "control" | "infirmary" | "workshop" | "greenhouse";
 
 export interface Room {
   id: RoomId;
   sector: string;
   x0: number; x1: number; z0: number; z1: number;
-  floor: "lift" | "tiles" | "concrete" | "grate";
+  floor: "tiles" | "concrete" | "grate" | "dirt" | "metal";
+  /** Extérieur : bords en rochers et grillages plutôt qu'en murs. */
+  outdoor?: boolean;
 }
 
-export interface Wall { x0: number; z0: number; x1: number; z1: number; }
+export interface Wall { x0: number; z0: number; x1: number; z1: number; outdoor: boolean; }
+
+export type LockKind = "power" | "key" | "secret" | "arc";
 
 export interface Door {
   id: string;
@@ -23,13 +31,15 @@ export interface Door {
   axis: "x" | "z";
   width: number;
   label: string;
-  /** Salles reliées (pour la navigation des zombies). */
+  /** Salles reliées (navigation des zombies). */
   rooms: [RoomId, RoomId];
   /**
-   * Fermeture : "gate" = porte du cœur, ouverte quand le relais est réparé (phase ≥ 2) ;
-   * "arc" = verrou électrique, tombe quand l'ARC-3 coupe le boîtier (fait arc_lock_disabled).
+   * "power" : s'ouvre quand la génératrice tourne ; "key" : clé d'accès de l'étage 2 ;
+   * "secret" : mur dérobé révélé par le SCAN ÉCHO ; "arc" : verrou électrique (ARC-3).
    */
-  lock?: "gate" | "arc";
+  lock?: LockKind;
+  /** Passage large sans encadrement (entre deux zones extérieures, verrière brisée…). */
+  open?: boolean;
 }
 
 export type InteractableKind = "components" | "ammo" | "cell" | "medkit";
@@ -56,83 +66,112 @@ export interface EnemySpawn {
 }
 
 export const ROOMS: Room[] = [
-  { id: "refuge", sector: "ASCENSEUR / REFUGE", x0: -5, x1: 5, z0: 4, z1: 13, floor: "lift" },
-  { id: "decon", sector: "01 / DÉCONTAMINATION", x0: -8, x1: 8, z0: -12, z1: 4, floor: "tiles" },
-  { id: "maintenance", sector: "02 / MAINTENANCE", x0: -9, x1: 9, z0: -28, z1: -12, floor: "concrete" },
-  { id: "atelier", sector: "02 / MAINTENANCE · ATELIER", x0: -17, x1: -9, z0: -24, z1: -14, floor: "concrete" },
-  { id: "technique", sector: "02 / MAINTENANCE · LOCAL TECHNIQUE", x0: 9, x1: 16, z0: -26, z1: -16, floor: "grate" },
-  { id: "archives", sector: "03 / ARCHIVES", x0: -11, x1: 11, z0: -48, z1: -28, floor: "tiles" },
-  { id: "alcove", sector: "03 / ARCHIVES · ALCÔVE DE N-7", x0: -16, x1: -11, z0: -42, z1: -34, floor: "grate" },
-  { id: "antechamber", sector: "04 / CŒUR · SAS", x0: -7, x1: 7, z0: -56, z1: -48, floor: "concrete" },
-  { id: "conduit", sector: "04 / CŒUR · CONDUITE DE SERVICE", x0: 7, x1: 10, z0: -56, z1: -50, floor: "grate" },
-  { id: "core", sector: "04 / CŒUR", x0: -11, x1: 11, z0: -74, z1: -56, floor: "concrete" },
+  // Extérieur
+  { id: "plaza", sector: "ENTRÉE (EXTÉRIEUR)", x0: -11, x1: 12, z0: 22, z1: 46, floor: "dirt", outdoor: true },
+  { id: "exterior", sector: "ZONE EXTÉRIEURE", x0: 12, x1: 48, z0: 22, z1: 46, floor: "dirt", outdoor: true },
+  // Centre
+  { id: "security", sector: "SÉCURITÉ", x0: -5, x1: 5, z0: 7, z1: 22, floor: "tiles" },
+  { id: "hub", sector: "HUB CENTRAL", x0: -7, x1: 7, z0: -7, z1: 7, floor: "metal" },
+  { id: "north", sector: "HUB CENTRAL · COULOIR NORD", x0: -2, x1: 2, z0: -14, z1: -7, floor: "metal" },
+  { id: "stairs", sector: "ACCÈS ÉTAGE 2", x0: -4, x1: 4, z0: -22, z1: -14, floor: "grate" },
+  // Aile ouest
+  { id: "west", sector: "COULOIR OUEST", x0: -11, x1: -7, z0: -20, z1: 20, floor: "concrete" },
+  { id: "dorms", sector: "DORTOIRS", x0: -32, x1: -11, z0: -20, z1: -6, floor: "tiles" },
+  { id: "secret", sector: "DORTOIRS · PIÈCE CACHÉE", x0: -37, x1: -32, z0: -18, z1: -10, floor: "concrete" },
+  { id: "storage", sector: "ENTREPÔT", x0: -32, x1: -11, z0: -6, z1: 6, floor: "concrete" },
+  { id: "cafeteria", sector: "CAFÉTÉRIA", x0: -32, x1: -11, z0: 6, z1: 20, floor: "tiles" },
+  { id: "generator", sector: "GÉNÉRATRICE", x0: -32, x1: -11, z0: 20, z1: 32, floor: "grate" },
+  // Aile est
+  { id: "east", sector: "COULOIR EST", x0: 7, x1: 10, z0: -8, z1: 8, floor: "concrete" },
+  { id: "control", sector: "SALLE DE CONTRÔLE", x0: 7, x1: 30, z0: -22, z1: -8, floor: "tiles" },
+  { id: "infirmary", sector: "INFIRMERIE", x0: 10, x1: 22, z0: -8, z1: 8, floor: "tiles" },
+  { id: "workshop", sector: "ATELIER", x0: 22, x1: 36, z0: -8, z1: 8, floor: "concrete" },
+  { id: "greenhouse", sector: "SERRE", x0: 7, x1: 30, z0: 8, z1: 22, floor: "dirt" },
 ];
 
 export const DOORS: Door[] = [
-  { id: "refuge_decon", x: 0, z: 4, axis: "x", width: 2.8, label: "01  DÉCONTAMINATION", rooms: ["refuge", "decon"] },
-  { id: "decon_maintenance", x: 0, z: -12, axis: "x", width: 2.8, label: "02  MAINTENANCE", rooms: ["decon", "maintenance"] },
-  { id: "maintenance_atelier", x: -9, z: -19, axis: "z", width: 2.2, label: "ATELIER", rooms: ["maintenance", "atelier"] },
-  { id: "maintenance_technique", x: 9, z: -21, axis: "z", width: 2.2, label: "LOCAL TECHNIQUE", rooms: ["maintenance", "technique"] },
-  { id: "maintenance_archives", x: 0, z: -28, axis: "x", width: 2.8, label: "03  ARCHIVES", rooms: ["maintenance", "archives"] },
-  { id: "archives_alcove", x: -11, z: -38, axis: "z", width: 2.0, label: "N-7", rooms: ["archives", "alcove"] },
-  { id: "archives_antechamber", x: 0, z: -48, axis: "x", width: 2.8, label: "04  CŒUR / ACCÈS RÉSERVÉ", rooms: ["archives", "antechamber"], lock: "gate" },
-  { id: "antechamber_core", x: 0, z: -56, axis: "x", width: 2.8, label: "CŒUR MÉMORIEL", rooms: ["antechamber", "core"], lock: "arc" },
-  { id: "antechamber_conduit", x: 7, z: -52, axis: "z", width: 1.6, label: "DÉTOUR →", rooms: ["antechamber", "conduit"] },
-  { id: "conduit_core", x: 8.5, z: -56, axis: "x", width: 1.6, label: "", rooms: ["conduit", "core"] },
+  // Dehors
+  { id: "plaza_exterior", x: 12, z: 34, axis: "z", width: 24, label: "", rooms: ["plaza", "exterior"], open: true },
+  { id: "plaza_security", x: 0, z: 22, axis: "x", width: 2.8, label: "SÉCURITÉ", rooms: ["plaza", "security"], lock: "power" },
+  { id: "plaza_generator", x: -11, z: 27, axis: "z", width: 2.2, label: "GÉNÉRATRICE", rooms: ["plaza", "generator"] },
+  { id: "exterior_greenhouse", x: 21, z: 22, axis: "x", width: 4, label: "SERRE", rooms: ["exterior", "greenhouse"], open: true },
+  // Portes alimentées par la génératrice
+  { id: "generator_cafeteria", x: -20, z: 20, axis: "x", width: 2.2, label: "CAFÉTÉRIA", rooms: ["generator", "cafeteria"], lock: "power" },
+  { id: "greenhouse_east", x: 8.5, z: 8, axis: "x", width: 2.2, label: "COULOIR EST", rooms: ["greenhouse", "east"], lock: "power" },
+  // Centre
+  { id: "security_hub", x: 0, z: 7, axis: "x", width: 2.8, label: "HUB CENTRAL", rooms: ["security", "hub"] },
+  { id: "hub_west", x: -7, z: 0, axis: "z", width: 2.8, label: "OUEST", rooms: ["hub", "west"] },
+  { id: "hub_east", x: 7, z: 0, axis: "z", width: 2.8, label: "EST", rooms: ["hub", "east"] },
+  { id: "hub_north", x: 0, z: -7, axis: "x", width: 2.8, label: "NORD", rooms: ["hub", "north"] },
+  { id: "north_stairs", x: 0, z: -14, axis: "x", width: 2.8, label: "ACCÈS ÉTAGE 2", rooms: ["north", "stairs"], lock: "key" },
+  // Aile ouest
+  { id: "west_dorms", x: -11, z: -13, axis: "z", width: 2.2, label: "DORTOIRS", rooms: ["west", "dorms"] },
+  { id: "west_storage", x: -11, z: 0, axis: "z", width: 2.2, label: "ENTREPÔT", rooms: ["west", "storage"] },
+  { id: "west_cafeteria", x: -11, z: 13, axis: "z", width: 2.2, label: "CAFÉTÉRIA", rooms: ["west", "cafeteria"] },
+  { id: "dorms_secret", x: -32, z: -14, axis: "z", width: 1.8, label: "", rooms: ["dorms", "secret"], lock: "secret" },
+  // Aile est
+  { id: "east_infirmary", x: 10, z: 0, axis: "z", width: 2.2, label: "INFIRMERIE", rooms: ["east", "infirmary"] },
+  { id: "east_control", x: 8.5, z: -8, axis: "x", width: 2.2, label: "SALLE DE CONTRÔLE", rooms: ["east", "control"] },
+  { id: "infirmary_workshop", x: 22, z: 0, axis: "z", width: 2.2, label: "ATELIER", rooms: ["infirmary", "workshop"], lock: "arc" },
 ];
 
-/** Position du relais caché (local technique), révélé par le SCAN ÉCHO à moins de 18 m. */
-export const RELAY = { x: 14.9, z: -24.2 };
+/** Mur dérobé des dortoirs : le SCAN ÉCHO le révèle à moins de SCAN_RADIUS. */
+export const SECRET = { x: -32, z: -14 };
 export const SCAN_RADIUS = 18;
 export const SCAN_NOISE = 24;
-/** Seuil de l'événement « colosse » : quelque chose bouge sous les pieds en entrant dans le cœur. */
-export const COLOSSUS_Z = -58;
+/** On a « exploré l'entrée » en approchant de la porte de sécurité. */
+export const ENTRANCE_TRIGGER = { x: 0, z: 27, radius: 6 };
 
 export const INTERACTABLES: InteractableDef[] = [
-  // Refuge
-  { id: "mother", name: "MÈRE", action: "Parler", x: 3.2, z: 7, radius: 0.7 },
-  { id: "recharge", name: "Borne de recharge", action: "Recharger · gratuit", x: -3.6, z: 6.2, radius: 0.6 },
-  { id: "upgrade", name: "Établi", action: "Améliorer la batterie · 3 composants", x: -3.4, z: 10.2, radius: 0.8 },
-  { id: "ending", name: "Console de descente", action: "Choix final", x: 2.6, z: 11.4, radius: 0.6 },
-  // 02 Maintenance
-  { id: "relay", name: "Relais", action: "Réparer · 3 composants", x: RELAY.x, z: RELAY.z, radius: 0.6 },
-  // 03 Archives
-  { id: "n7", name: "N-7", action: "Parler", x: -14.2, z: -38, radius: 0.6 },
-  { id: "evidence", name: "Archive 09", action: "Lire : signal de surface", x: 8.2, z: -45.2, radius: 0.6 },
-  // 04 Cœur
-  { id: "device", name: "Verrou électrique", action: "ARC-3 ou détour latéral", x: 3.4, z: -55.2, radius: 0.4 },
-  { id: "core", name: "Cœur mémoriel", action: "Extraire le noyau", x: 0, z: -67, radius: 0.9 },
-  // Ressources : 9 composants, munitions, cellules, trousse
-  { id: "component_0", name: "Composant", action: "Ramasser", x: -5.6, z: -1.2, radius: 0.35, kind: "components" },
-  { id: "component_1", name: "Composant", action: "Ramasser", x: 5.4, z: -6.4, radius: 0.35, kind: "components" },
-  { id: "component_2", name: "Composant", action: "Ramasser", x: -2.4, z: -10.2, radius: 0.35, kind: "components" },
-  { id: "component_3", name: "Composant", action: "Ramasser", x: -6.2, z: -15.4, radius: 0.35, kind: "components" },
-  { id: "component_4", name: "Composant", action: "Ramasser", x: -14.6, z: -21.2, radius: 0.35, kind: "components" },
-  { id: "component_5", name: "Composant", action: "Ramasser", x: 6.4, z: -26.2, radius: 0.35, kind: "components" },
-  { id: "component_6", name: "Composant", action: "Ramasser", x: -8.4, z: -31.2, radius: 0.35, kind: "components" },
-  { id: "component_7", name: "Composant", action: "Ramasser", x: 9.2, z: -35.6, radius: 0.35, kind: "components" },
-  { id: "component_8", name: "Composant", action: "Ramasser", x: -5.2, z: -50.4, radius: 0.35, kind: "components" },
-  { id: "ammo_1", name: "Munitions D9", action: "Ramasser", x: 6.4, z: 1.6, radius: 0.35, kind: "ammo", amount: 24 },
-  { id: "ammo_2", name: "Munitions D9", action: "Ramasser", x: -6.4, z: -44.6, radius: 0.35, kind: "ammo", amount: 24 },
-  { id: "cell_1", name: "Cellule d'énergie", action: "Ramasser", x: -3.2, z: -13.6, radius: 0.35, kind: "cell", amount: 1 },
-  { id: "cell_2", name: "Cellule d'énergie", action: "Ramasser", x: 7.4, z: -42.2, radius: 0.35, kind: "cell", amount: 1 },
-  { id: "med_1", name: "Trousse de soins", action: "Ramasser", x: 12.4, z: -17.6, radius: 0.35, kind: "medkit", amount: 1 },
+  // Objectifs
+  { id: "security_door", name: "Porte de sécurité", action: "Hors tension · trouver la génératrice", x: 0, z: 23.4, radius: 0.5, solid: false },
+  { id: "generator", name: "Génératrice", action: "Alimenter · 3 pièces", x: -22, z: 26, radius: 1.4 },
+  { id: "workbench", name: "Établi", action: "Fabriquer un module radio · 2 pièces", x: 29, z: -6, radius: 0.9 },
+  { id: "upgrade", name: "Banc de batteries", action: "Améliorer la batterie · 3 pièces", x: 33.5, z: 4, radius: 0.7 },
+  { id: "comms", name: "Console radio", action: "Réparer la communication", x: 18, z: -19.5, radius: 0.9 },
+  { id: "keycard", name: "Clé d'accès", action: "Prendre", x: -35, z: -14, radius: 0.4, solid: false },
+  { id: "stairs", name: "Accès étage 2", action: "Descendre", x: 0, z: -19, radius: 0.9 },
+  { id: "device", name: "Verrou électrique", action: "Couper à l'ARC-3 (clic droit)", x: 21.2, z: -2.2, radius: 0.4 },
+  { id: "recharge", name: "Borne de recharge", action: "Recharger · gratuit", x: 3.6, z: 11, radius: 0.5 },
+  // Pièces (3 dehors pour la génératrice, puis à l'intérieur)
+  { id: "part_0", name: "Pièce détachée", action: "Ramasser", x: -6, z: 36, radius: 0.35, kind: "components" },
+  { id: "part_1", name: "Pièce détachée", action: "Ramasser", x: 25, z: 35, radius: 0.35, kind: "components" },
+  { id: "part_2", name: "Pièce détachée", action: "Ramasser", x: 41, z: 28, radius: 0.35, kind: "components" },
+  { id: "part_3", name: "Pièce détachée", action: "Ramasser", x: 18, z: 14, radius: 0.35, kind: "components" },
+  { id: "part_4", name: "Pièce détachée", action: "Ramasser", x: -27, z: 10, radius: 0.35, kind: "components" },
+  { id: "part_5", name: "Pièce détachée", action: "Ramasser", x: -24, z: -2, radius: 0.35, kind: "components" },
+  { id: "part_6", name: "Pièce détachée", action: "Ramasser", x: 26, z: 5, radius: 0.35, kind: "components" },
+  { id: "part_7", name: "Pièce détachée", action: "Ramasser", x: -16, z: -17, radius: 0.35, kind: "components" },
+  // Ressources
+  { id: "ammo_1", name: "Munitions D9", action: "Ramasser", x: 8, z: 39, radius: 0.35, kind: "ammo", amount: 24 },
+  { id: "ammo_2", name: "Munitions D9", action: "Ramasser", x: -3, z: 18, radius: 0.35, kind: "ammo", amount: 24 },
+  { id: "ammo_3", name: "Munitions D9", action: "Ramasser", x: -15, z: 3, radius: 0.35, kind: "ammo", amount: 24 },
+  { id: "cell_1", name: "Cellule d'énergie", action: "Ramasser", x: -28, z: 30, radius: 0.35, kind: "cell", amount: 1 },
+  { id: "cell_2", name: "Cellule d'énergie", action: "Ramasser", x: -20, z: 15, radius: 0.35, kind: "cell", amount: 1 },
+  { id: "cell_3", name: "Cellule d'énergie", action: "Ramasser", x: 19, z: 4, radius: 0.35, kind: "cell", amount: 1 },
+  { id: "med_1", name: "Trousse de soins", action: "Ramasser", x: 12, z: 18, radius: 0.35, kind: "medkit", amount: 1 },
+  { id: "med_2", name: "Trousse de soins", action: "Ramasser", x: 15, z: -4, radius: 0.35, kind: "medkit", amount: 1 },
+  { id: "med_3", name: "Trousse de soins", action: "Ramasser", x: -21, z: -17, radius: 0.35, kind: "medkit", amount: 1 },
 ];
 
 export const ENEMIES: EnemySpawn[] = [
-  { id: "walker_1", kind: "walker", x: 3, z: -20, patrol: [[3, -20], [3, -16], [-2, -18]] },
-  { id: "crawler_1", kind: "crawler", x: -5, z: -25, patrol: [[-5, -25], [-5, -21], [-1, -24]] },
-  { id: "walker_2", kind: "walker", x: -3, z: -40, patrol: [[-3, -40], [-3, -35], [2, -38]] },
-  { id: "crawler_2", kind: "crawler", x: 4, z: -44, patrol: [[4, -44], [4, -40], [8, -42]] },
-  { id: "walker_3", kind: "walker", x: 0, z: -63, patrol: [[0, -63], [-5, -60], [5, -60]] },
-  { id: "crawler_3", kind: "crawler", x: -4, z: -70, patrol: [[-4, -70], [-8, -66], [3, -71]] },
+  { id: "walker_ext", kind: "walker", x: 32, z: 38, patrol: [[32, 38], [38, 32], [28, 30]] },
+  { id: "crawler_ext", kind: "crawler", x: 40, z: 40, patrol: [[40, 40], [44, 34], [36, 42]] },
+  { id: "walker_gen", kind: "walker", x: -16, z: 29, patrol: [[-16, 29], [-26, 23], [-28, 29]] },
+  { id: "walker_serre", kind: "walker", x: 22, z: 12, patrol: [[22, 12], [14, 16], [26, 18]] },
+  { id: "crawler_cafe", kind: "crawler", x: -22, z: 12, patrol: [[-22, 12], [-15, 16], [-28, 16]] },
+  { id: "walker_storage", kind: "walker", x: -20, z: -1, patrol: [[-20, -1], [-27, 3], [-14, -3]] },
+  { id: "walker_dorms", kind: "walker", x: -22, z: -12, patrol: [[-22, -12], [-28, -16], [-14, -9]] },
+  { id: "crawler_hub", kind: "crawler", x: 3, z: 3, patrol: [[3, 3], [-3, -3], [3, -3]] },
+  { id: "walker_control", kind: "walker", x: 20, z: -14, patrol: [[20, -14], [12, -12], [26, -18]] },
+  { id: "crawler_workshop", kind: "crawler", x: 30, z: 0, patrol: [[30, 0], [25, -4], [33, 5]] },
 ];
 
-export const SPAWN = { x: 0, z: 9.2, yaw: Math.PI };
+export const SPAWN = { x: 0, z: 41, yaw: Math.PI };
 
 /**
- * Murs dérivés des salles : chaque côté de salle devient un mur, percé aux portes.
- * Un côté partagé par deux salles n'est construit qu'une fois.
+ * Murs dérivés des salles : chaque côté devient un mur, percé aux portes. Un côté partagé n'est construit
+ * qu'une fois. Un mur qui ne borde que de l'extérieur est marqué `outdoor` (rochers, grillage).
  */
 export function buildWalls(): Wall[] {
   type Segment = { fixed: number; from: number; to: number; horizontal: boolean };
@@ -143,7 +182,6 @@ export function buildWalls(): Wall[] {
     raw.push({ fixed: r.x0, from: r.z0, to: r.z1, horizontal: false });
     raw.push({ fixed: r.x1, from: r.z0, to: r.z1, horizontal: false });
   }
-  // Fusionne les intervalles colinéaires (murs mitoyens), puis perce les portes.
   const key = (s: Segment) => `${s.horizontal ? "h" : "v"}:${s.fixed}`;
   const groups = new Map<string, Segment[]>();
   for (const s of raw) {
@@ -167,7 +205,8 @@ export function buildWalls(): Wall[] {
       let cursor = s.from;
       const push = (a: number, b: number) => {
         if (b - a < 0.05) return;
-        walls.push(s.horizontal ? { x0: a, z0: s.fixed, x1: b, z1: s.fixed } : { x0: s.fixed, z0: a, x1: s.fixed, z1: b });
+        const wall = s.horizontal ? { x0: a, z0: s.fixed, x1: b, z1: s.fixed } : { x0: s.fixed, z0: a, x1: s.fixed, z1: b };
+        walls.push({ ...wall, outdoor: sidesOutdoor(wall) });
       };
       for (const d of doors) {
         const center = s.horizontal ? d.x : d.z;
@@ -180,7 +219,17 @@ export function buildWalls(): Wall[] {
   return walls;
 }
 
-export function wallBox(wall: Wall): Box {
+/** Vrai si toutes les salles qui bordent le mur sont extérieures. */
+function sidesOutdoor(wall: Omit<Wall, "outdoor">): boolean {
+  const mx = (wall.x0 + wall.x1) / 2;
+  const mz = (wall.z0 + wall.z1) / 2;
+  const horizontal = wall.z0 === wall.z1;
+  const sides = horizontal ? [roomAt(mx, mz - 0.3), roomAt(mx, mz + 0.3)] : [roomAt(mx - 0.3, mz), roomAt(mx + 0.3, mz)];
+  const present = sides.filter((r): r is Room => r !== null);
+  return present.length > 0 && present.every((r) => r.outdoor);
+}
+
+export function wallBox(wall: Wall | Omit<Wall, "outdoor">): Box {
   const half = WALL_THICKNESS / 2;
   return {
     minX: Math.min(wall.x0, wall.x1) - half,
@@ -202,5 +251,5 @@ export function roomAt(x: number, z: number): Room | null {
 }
 
 export function sectorAt(x: number, z: number): string {
-  return roomAt(x, z)?.sector ?? "SILO 9";
+  return roomAt(x, z)?.sector ?? "SILLO 8";
 }
