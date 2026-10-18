@@ -402,7 +402,8 @@ export class Engine {
       else if (mode !== "menu" && mode !== "death" && mode !== "ending") this.resume();
     } else if (mode === "inventory" && this.input.consume("inventory")) this.resume();
     else if (mode === "journal" && this.input.consume("journal")) this.resume();
-    else if (mode === "note" && (this.input.consume("interact") || this.input.consume("journal"))) this.resume();
+    else if (mode === "note" && this.input.consume("journal")) this.openJournal();
+    else if (mode === "note" && this.input.consume("interact")) this.resume();
     if (this.ui.get().mode === "playing") this.simulate(dt);
     else this.input.clearPressed();
     this.render(dt);

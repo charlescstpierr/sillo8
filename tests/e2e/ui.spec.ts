@@ -166,7 +166,7 @@ test("ordi : vie basse, lance-clous en main", async ({ page }) => {
     engine.state.energy = 20;
     engine.state.health = 12;
   });
-  await expect(page.getByText("LANCE-CLOUS")).toBeVisible();
+  await expect(page.getByText("LANCE-CLOUS", { exact: true })).toBeVisible();
   await expect(page.getByText("réserve 31")).toBeVisible();
   await shot(page, "hud-low");
   expect(errors).toEqual([]);

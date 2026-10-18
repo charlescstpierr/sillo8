@@ -4,12 +4,7 @@
 
 export type Action =
   | "interact" | "reload" | "journal" | "inventory" | "pause" | "weapon1" | "weapon2" | "swap"
-  | "save" | "load" | "light" | "heal" | "cell" | "perf"
-  | LegacyAction;
-
-/** Anciens noms tolérés le temps que l'interface migre (à retirer ensuite) : "arc" → "light", "scan" → "journal". */
-type LegacyAction = "arc" | "scan";
-const LEGACY: Record<LegacyAction, Action> = { arc: "light", scan: "journal" };
+  | "save" | "load" | "light" | "heal" | "cell" | "perf";
 export type Device = "keyboard" | "gamepad" | "touch";
 
 const KEY_ACTIONS: Record<string, Action> = {
@@ -64,7 +59,7 @@ export class InputState {
   }
 
   trigger(action: Action): void {
-    this.pressed.add(LEGACY[action as LegacyAction] ?? action);
+    this.pressed.add(action);
   }
 
   clearPressed(): void {
