@@ -1,13 +1,14 @@
 // Construction 3D du silo : sols, murets coupés à mi-hauteur, portes, décor post-apocalyptique,
 // objets interactifs, lumières qui grésillent, poussière dans les faisceaux.
 import {
-  AdditiveBlending, BufferAttribute, Color, BufferGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial,
-  PlaneGeometry, PointLight, Points, PointsMaterial, BoxGeometry, SphereGeometry, CylinderGeometry, TorusGeometry,
-  type Scene,
+  AdditiveBlending, BufferAttribute, Color, BufferGeometry, DoubleSide, Euler, Group, Matrix4, Mesh, MeshBasicMaterial,
+  MeshToonMaterial, PlaneGeometry, PointLight, Points, PointsMaterial, BoxGeometry, Quaternion, SphereGeometry, CylinderGeometry,
+  TorusGeometry, Vector3, type Material, type Scene, type Texture,
 } from "three";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import {
-  DOORS, INTERACTABLES, ROOMS, WALL_HEIGHT, WALL_THICKNESS, buildWalls, doorBox, wallBox,
-  type Door, type InteractableDef, type Room,
+  DOORS, INTERACTABLES, ROOMS, WALL_HEIGHT, WALL_THICKNESS, buildWalls, doorBox, roomAt, wallBox,
+  type Door, type InteractableDef, type Room, type RoomId,
 } from "../level";
 import { doorOpen, interactableAvailable } from "../rules";
 import type { SiloState } from "../state";
@@ -16,13 +17,13 @@ import { EAST_MODELS, decorateEast } from "./sectors/east";
 import { EXTERIOR_MODELS, decorateExterior } from "./sectors/exterior";
 import { WEST_MODELS, decorateWest } from "./sectors/west";
 import type { Box } from "../collision";
-import { glow, toon } from "./toon";
+import { glow, toon, toonGradient } from "./toon";
 import { PALETTE } from "./palette";
 import {
-  beamTexture, blobTexture, concreteTexture, concreteFloorTexture, crackTexture, dirtGroundTexture, grateTexture, dirtTexture, paperTexture, sprayTexture, drawingTexture, dustTexture, grimeTexture, holeTexture, liftTexture, rng, signTexture, tilesTexture,
+  beamTexture, concreteTexture, concreteFloorTexture, crackTexture, dirtGroundTexture, grateTexture, dirtTexture, paperTexture, dustTexture, liftTexture, macroNoiseTexture, rng, roomMaskTexture, signTexture, tilesTexture,
 } from "./textures";
 import {
-  block, can, cable, crate, cylinder, decal, grass, hazardStrip, mesh, overgrowth, panel, rubble, signBoard, stringLights,
+  StaticBatch, block, can, cylinder, decal, grass, hazardStrip, mesh, panel, rubble, setStaticSink,
 } from "./props";
 import { addHighlight, type Highlight } from "./highlight";
 
@@ -81,88 +82,456 @@ export interface WorldView {
   setLowQuality(low: boolean): void;
 }
 
+/** Lot du décor statique en cours de construction (null hors de buildWorld). */
+let batch: StaticBatch | null = null;
+
+// ——— Sols ———
+
+interface FloorLook {
+  texture: () => Texture;
+  /** Mètres couverts par une répétition de la texture. */
+  size: number;
+  /** Décalage aléatoire par bloc, en fractions de texture (0 = fondu de deux échelles, pour la terre). */
+  offset: number;
+  /** Cases par répétition pour la variation de teinte case à case, et son amplitude. */
+  cells: number;
+  jitter: number;
+  mirror: boolean;
+  /** Teinte de la salle, et teinte des grandes taches (multipliées). */
+  tint: string;
+  patch: string;
+  /** Flaques (intérieur) ou herbe (terre). */
+  wet: number;
+  grime: number;
+  grass?: boolean;
+  /** Couleur multipliée dans les flaques (eau, huile). */
+  puddle?: string;
+}
+
+const LOOKS: Record<RoomId, FloorLook> = (() => {
+  const terrazzo = { texture: () => tilesTexture("terrazzo"), size: 2, offset: 4, cells: 4, jitter: 0.07, mirror: true };
+  const concrete = { texture: concreteFloorTexture, size: 4, offset: 2, cells: 2, jitter: 0.08, mirror: true };
+  const grate = { texture: grateTexture, size: 1, offset: 1, cells: 1, jitter: 0.1, mirror: false };
+  const metal = { texture: liftTexture, size: 2, offset: 2, cells: 2, jitter: 0.08, mirror: true };
+  const dirt = { texture: dirtGroundTexture, size: 3, offset: 0, cells: 1, jitter: 0, mirror: false, grass: true };
+  return {
+    plaza: { ...dirt, tint: "#fff4e4", patch: "#c79a68", wet: 0.35, grime: 0.5 },
+    exterior: { ...dirt, tint: "#f6ead6", patch: "#b98e60", wet: 0.55, grime: 0.6 },
+    greenhouse: { ...dirt, tint: "#a89c8c", patch: "#7a6a5a", wet: 0.75, grime: 0.6 },
+    security: { ...terrazzo, tint: "#e2e2d6", patch: "#b4b49c", wet: 0.3, grime: 0.8 },
+    control: { ...terrazzo, tint: "#c4d8d2", patch: "#98b0a8", wet: 0.2, grime: 0.7 },
+    infirmary: { ...terrazzo, texture: () => tilesTexture("small"), offset: 8, cells: 8, jitter: 0.04, tint: "#f4f7ee", patch: "#d4dec8", wet: 0.3, grime: 0.6 },
+    cafeteria: { ...terrazzo, texture: () => tilesTexture("checker"), offset: 2, mirror: false, tint: "#fff3df", patch: "#ddb67c", wet: 0.4, grime: 0.8 },
+    dorms: { ...terrazzo, texture: () => tilesTexture("parquet"), offset: 8, cells: 8, jitter: 0.1, tint: "#efe4d2", patch: "#bfa080", wet: 0.15, grime: 0.7 },
+    storage: { ...concrete, tint: "#fbf3e0", patch: "#c6b48a", wet: 0.3, grime: 0.9 },
+    workshop: { ...concrete, tint: "#ebe3d0", patch: "#86705a", wet: 0.9, grime: 1.1, puddle: "#4a3e34" },
+    west: { ...concrete, tint: "#e6e8d8", patch: "#bcc0a8", wet: 0.4, grime: 0.8 },
+    east: { ...concrete, tint: "#e6e8d8", patch: "#bcc0a8", wet: 0.5, grime: 0.8 },
+    secret: { ...concrete, tint: "#d6c8b2", patch: "#9e8462", wet: 0.2, grime: 1.2 },
+    generator: { ...grate, tint: "#f0cfaa", patch: "#b0602e", wet: 0.6, grime: 1.0, puddle: "#4a3e34" },
+    stairs: { ...grate, tint: "#c6d0d0", patch: "#8c9c9c", wet: 0.3, grime: 0.9 },
+    hub: { ...metal, tint: "#f2efe2", patch: "#c8b48e", wet: 0.2, grime: 0.6 },
+    north: { ...metal, tint: "#e8e8dc", patch: "#c0b08e", wet: 0.3, grime: 0.8 },
+  };
+})();
+
+/** Densité du masque peint (pixels par mètre). */
+const MASK_PX = 6;
+
+/** Portes percées dans le bord d'une salle (pour l'usure et pour épargner les seuils). */
+function roomDoors(room: Room): Door[] {
+  return DOORS.filter((d) => d.rooms.includes(room.id));
+}
+
+/** Vrai si le point (x, z) d'un bord de salle tombe dans l'ouverture d'une porte. */
+function inDoorway(x: number, z: number, margin = 0.1): boolean {
+  return DOORS.some((d) => (d.axis === "x"
+    ? Math.abs(z - d.z) < 0.05 && Math.abs(x - d.x) < d.width / 2 + margin
+    : Math.abs(x - d.x) < 0.05 && Math.abs(z - d.z) < d.width / 2 + margin));
+}
+
+/**
+ * Masque peint de la salle (voir roomMaskTexture) : usure claire entre les portes, crasse au pied des
+ * murs et dans les coins, flaques (intérieur) ou plaques d'herbe (terre) qui évitent les chemins.
+ */
+function paintMask(room: Room, look: FloorLook): Texture {
+  const w = room.x1 - room.x0, d = room.z1 - room.z0;
+  return roomMaskTexture(room.id, Math.ceil(w * MASK_PX), Math.ceil(d * MASK_PX), (g) => {
+    const r = rng(room.id.length * 131 + Math.round(room.x0 * 7 + room.z0 * 3) + 9);
+    const px = (x: number) => (x - room.x0) * MASK_PX;
+    const pz = (z: number) => (z - room.z0) * MASK_PX;
+    const blob = (x: number, z: number, radius: number, channel: string, alpha: number, hold = 0) => {
+      const grad = g.createRadialGradient(px(x), pz(z), 0, px(x), pz(z), radius * MASK_PX);
+      grad.addColorStop(0, channel.replace("A", String(alpha)));
+      if (hold > 0) grad.addColorStop(hold, channel.replace("A", String(alpha)));
+      grad.addColorStop(1, channel.replace("A", "0"));
+      g.fillStyle = grad;
+      g.beginPath(); g.arc(px(x), pz(z), radius * MASK_PX, 0, Math.PI * 2); g.fill();
+    };
+    const R = "rgba(255,0,0,A)", G = "rgba(0,255,0,A)", B = "rgba(0,0,255,A)";
+    const cx = (room.x0 + room.x1) / 2, cz = (room.z0 + room.z1) / 2;
+    const doors = roomDoors(room).filter((dr) => !dr.lock || dr.lock !== "secret");
+
+    // Crasse au pied des murs : par pas de 0,5 m, sauf dans les portes et le long des bords tout extérieurs.
+    const band = room.outdoor ? 1.6 : 0.9;
+    const edge = (x: number, z: number, nx: number, nz: number) => {
+      if (inDoorway(x, z)) return;
+      const beyond = roomAt(x - nx * 0.4, z - nz * 0.4);
+      if (room.outdoor && (!beyond || beyond.outdoor)) return;
+      const grad = g.createLinearGradient(px(x), pz(z), px(x + nx * band), pz(z + nz * band));
+      grad.addColorStop(0, G.replace("A", String(0.6 * look.grime)));
+      grad.addColorStop(0.35, G.replace("A", String(0.25 * look.grime)));
+      grad.addColorStop(1, G.replace("A", "0"));
+      g.fillStyle = grad;
+      const x0 = Math.min(x, x + nx * band) - (nz ? 0.26 : 0), z0 = Math.min(z, z + nz * band) - (nx ? 0.26 : 0);
+      g.fillRect(px(x0), pz(z0), (Math.abs(nx * band) + (nz ? 0.52 : 0)) * MASK_PX, (Math.abs(nz * band) + (nx ? 0.52 : 0)) * MASK_PX);
+    };
+    for (let x = room.x0 + 0.25; x < room.x1; x += 0.5) { edge(x, room.z0, 0, 1); edge(x, room.z1, 0, -1); }
+    for (let z = room.z0 + 0.25; z < room.z1; z += 0.5) { edge(room.x0, z, 1, 0); edge(room.x1, z, -1, 0); }
+    if (!room.outdoor) for (const [x, z] of [[room.x0, room.z0], [room.x1, room.z0], [room.x0, room.z1], [room.x1, room.z1]]) blob(x, z, 1.4, G, 0.45 * look.grime);
+
+    // Taches de crasse diffuses.
+    const area = w * d;
+    for (let i = 0; i < Math.round((area / 14) * look.grime); i++) {
+      blob(room.x0 + r() * w, room.z0 + r() * d, 0.6 + r() * 1.4, G, 0.15 + r() * 0.2);
+    }
+
+    // Usure : passages doux de chaque porte vers le centre, et entre portes ; seuils très polis.
+    g.lineCap = "round";
+    const path = (ax: number, az: number, bx: number, bz: number, strength: number) => {
+      const mx = (ax + bx) / 2 + (r() - 0.5) * 2, mz = (az + bz) / 2 + (r() - 0.5) * 2;
+      for (const [width, alpha] of [[2.4, 0.07], [1.6, 0.09], [1.0, 0.11]]) {
+        g.strokeStyle = R.replace("A", String(alpha * strength));
+        g.lineWidth = width * MASK_PX;
+        g.beginPath(); g.moveTo(px(ax), pz(az)); g.quadraticCurveTo(px(mx), pz(mz), px(bx), pz(bz)); g.stroke();
+      }
+    };
+    const wearStrength = room.outdoor ? 2.2 : 1.6;
+    for (const dr of doors) {
+      // Point juste à l'intérieur de la salle.
+      const inward = dr.axis === "x" ? [0, Math.sign(cz - dr.z) * 0.8] : [Math.sign(cx - dr.x) * 0.8, 0];
+      const ix = dr.x + inward[0], iz = dr.z + inward[1];
+      blob(dr.x, dr.z, Math.min(1.6, dr.width * 0.6), R, 0.55);
+      if (!dr.open) path(ix, iz, cx + (r() - 0.5) * w * 0.2, cz + (r() - 0.5) * d * 0.2, wearStrength);
+    }
+    for (let i = 0; i + 1 < doors.length; i++) {
+      const a = doors[i], b = doors[i + 1];
+      if (!a.open && !b.open) path(a.x, a.z, b.x, b.z, wearStrength * 0.7);
+    }
+
+    if (look.grass) {
+      // Herbe : grandes plaques douces, plus denses sur les bords extérieurs, jamais sur les chemins (shader).
+      for (let i = 0; i < Math.round(area / 7); i++) blob(room.x0 + r() * w, room.z0 + r() * d, 1.2 + r() * 2.6, B, 0.25 + r() * 0.3);
+      const rim = (x: number, z: number) => blob(x, z, 2.5 + r() * 2, B, 0.35 + r() * 0.25);
+      for (let x = room.x0; x <= room.x1; x += 2) { rim(x, room.z0 + r()); rim(x, room.z1 - r()); }
+      for (let z = room.z0; z <= room.z1; z += 2) { rim(room.x0 + r(), z); rim(room.x1 - r(), z); }
+      // Quelques flaques de boue sombre (canal G).
+      for (let i = 0; i < Math.round((area / 120) * look.wet) + 1; i++) blob(room.x0 + 2 + r() * (w - 4), room.z0 + 2 + r() * (d - 4), 0.7 + r() * 0.8, G, 0.35, 0.4);
+    } else {
+      // Flaques : grappes de disques à bord net, loin des murs.
+      const count = Math.round((area / 45) * look.wet) + (look.wet > 0.25 ? 1 : 0);
+      for (let i = 0; i < count; i++) {
+        const x = room.x0 + 1.2 + r() * Math.max(0.1, w - 2.4), z = room.z0 + 1.2 + r() * Math.max(0.1, d - 2.4);
+        const size = 0.35 + r() * 0.5;
+        for (let k = 0; k < 4; k++) blob(x + (r() - 0.5) * size * 2, z + (r() - 0.5) * size * 1.4, size * (0.6 + r() * 0.6), B, 0.5, 0.55);
+      }
+    }
+  });
+}
+
+const FLOOR_VERTEX = (shader: string) => shader
+  .replace("#include <common>", "#include <common>\nvarying vec2 vFloorXZ;\nvarying vec2 vFloorUv;")
+  .replace("#include <uv_vertex>", "#include <uv_vertex>\nvFloorUv = uv;")
+  .replace("#include <project_vertex>", "#include <project_vertex>\nvFloorXZ = (modelMatrix * vec4(transformed, 1.0)).xz;");
+
+// Échantillonne la texture en coordonnées monde, décale/retourne chaque bloc (casse le tampon répété),
+// varie la teinte case par case, puis applique le masque peint de la salle (usure, crasse, flaques, herbe).
+const FLOOR_FRAGMENT_HEAD = `
+varying vec2 vFloorXZ;
+varying vec2 vFloorUv;
+uniform sampler2D floorMask;
+uniform sampler2D floorMacro;
+uniform vec3 floorTint;
+uniform vec3 floorPatch;
+uniform vec3 floorWet;
+uniform vec3 floorGrassA;
+uniform vec3 floorGrassB;
+uniform vec4 floorA;
+uniform vec4 floorB;
+float floorHash(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}`;
+
+const FLOOR_FRAGMENT_MAP = `
+vec2 fUv = vFloorXZ / floorA.x;
+vec4 fBase;
+if (floorA.y > 0.5) {
+  vec2 fBlock = floor(fUv);
+  vec2 fIn = fract(fUv);
+  float fH1 = floorHash(fBlock);
+  float fH2 = floorHash(fBlock + 19.7);
+  if (floorB.x > 0.5) {
+    if (fH1 > 0.5) fIn.x = 1.0 - fIn.x;
+    if (fH2 > 0.5) fIn.y = 1.0 - fIn.y;
+  }
+  fIn += floor(vec2(fH2, fH1) * floorA.y) / floorA.y;
+  fBase = textureGrad(map, fIn, dFdx(fUv), dFdy(fUv));
+  float fCell = floorHash(floor(fUv * floorA.z) + 3.1);
+  fBase.rgb *= 1.0 + (fCell - 0.5) * floorA.w;
+} else {
+  vec2 fRot = vec2(fUv.x * 0.8 - fUv.y * 0.6, fUv.x * 0.6 + fUv.y * 0.8) * 0.47 + 0.31;
+  fBase = mix(texture2D(map, fUv), texture2D(map, fRot), 0.45);
+}
+vec3 fNoise = vec3(texture2D(floorMacro, vFloorXZ * 0.035).r, texture2D(floorMacro, vFloorXZ * 0.09 + 0.37).g, texture2D(floorMacro, vFloorXZ * 0.21).b);
+vec3 fCol = fBase.rgb * floorTint;
+fCol *= 0.86 + 0.28 * fNoise.x;
+fCol = mix(fCol, fCol * floorPatch, smoothstep(0.42, 0.72, fNoise.y) * 0.75);
+vec3 fMask = texture2D(floorMask, vFloorUv).rgb;
+float fLum = dot(fCol, vec3(0.299, 0.587, 0.114));
+float fWear = clamp(fMask.r * (0.7 + 0.6 * fNoise.z), 0.0, 1.0);
+fCol = mix(fCol, mix(fCol, vec3(fLum), 0.3) * 1.14, fWear * 0.85);
+fCol *= 1.0 - clamp(fMask.g * (0.75 + 0.5 * fNoise.y), 0.0, 1.0) * 0.6;
+if (floorB.y > 0.5) {
+  float gv = fMask.b + (fNoise.y - 0.5) * 0.45 + (fNoise.z - 0.5) * 0.3 - fMask.r * 1.1;
+  float gm = smoothstep(0.42, 0.52, gv);
+  float gRim = smoothstep(0.28, 0.42, gv) * (1.0 - gm);
+  fCol *= 1.0 - gRim * 0.2;
+  vec3 gCol = mix(floorGrassB, floorGrassA, clamp(fNoise.x * 0.7 + fNoise.z * 0.5 - 0.2 + (fLum - 0.25) * 1.2, 0.0, 1.0));
+  fCol = mix(fCol, gCol, gm);
+} else {
+  float wv = fMask.b + (fNoise.z - 0.5) * 0.25;
+  float fWet = smoothstep(0.38, 0.46, wv);
+  fCol = mix(fCol, fCol * floorWet, fWet * 0.85);
+  fCol += vec3(0.08, 0.095, 0.1) * (smoothstep(0.5, 0.56, wv) - smoothstep(0.58, 0.72, wv));
+}
+diffuseColor.rgb *= fCol;
+`;
+
+function floorMaterial(room: Room, look: FloorLook): MeshToonMaterial {
+  const material = new MeshToonMaterial({ color: "#ffffff", gradientMap: toonGradient(), map: look.texture() });
+  const uniforms = {
+    floorMask: { value: paintMask(room, look) },
+    floorMacro: { value: macroNoiseTexture() },
+    floorTint: { value: new Color(look.tint) },
+    floorPatch: { value: new Color(look.patch) },
+    floorWet: { value: new Color(look.puddle ?? "#6f8f9c") },
+    floorGrassA: { value: new Color("#93a862") },
+    floorGrassB: { value: new Color("#5a7440") },
+    floorA: { value: [look.size, look.offset, look.cells, look.jitter] },
+    floorB: { value: [look.mirror ? 1 : 0, look.grass ? 1 : 0, 0, 0] },
+  };
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = FLOOR_VERTEX(shader.vertexShader);
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", "#include <common>\n" + FLOOR_FRAGMENT_HEAD)
+      .replace("#include <map_fragment>", FLOOR_FRAGMENT_MAP);
+  };
+  material.customProgramCacheKey = () => "silo-floor-1";
+  return material;
+}
+
 function floor(root: Group, room: Room): void {
   const w = room.x1 - room.x0;
   const d = room.z1 - room.z0;
-  const source = { metal: liftTexture, tiles: tilesTexture, concrete: concreteFloorTexture, grate: grateTexture, dirt: dirtGroundTexture }[room.floor]();
-  const texture = source.clone();
-  texture.needsUpdate = true;
-  const tile = room.floor === "grate" ? 1 : 2;
-  texture.repeat.set(w / tile, d / tile);
-  const m = mesh(new PlaneGeometry(w, d), toon("#ffffff", { map: texture, rim: 0 }), (room.x0 + room.x1) / 2, 0, (room.z0 + room.z1) / 2, false);
+  // Un plan par salle (center.ts y perce la trémie de l'escalier) ; les UV de texture sont calculées dans le monde.
+  const m = mesh(new PlaneGeometry(w, d), floorMaterial(room, LOOKS[room.id]), (room.x0 + room.x1) / 2, 0, (room.z0 + room.z1) / 2, false);
   m.rotation.x = -Math.PI / 2;
   root.add(m);
 }
 
+// ——— Murets (coupe de maison de poupée) ———
+
+/** Peinture du soubassement côté salle, liseré, style de joints. */
+interface WallSkin { paint: string; rail: string; style: "tile" | "metal" | "plank" | "plain"; }
+const SKINS: Partial<Record<RoomId, WallSkin>> = {
+  cafeteria: { paint: "#cf9d48", rail: "#efe2c4", style: "tile" },
+  dorms: { paint: "#7d8a5a", rail: "#e6d6b0", style: "plank" },
+  storage: { paint: "#86785a", rail: PALETTE.yellow, style: "plain" },
+  generator: { paint: "#6b4f3a", rail: PALETTE.yellow, style: "metal" },
+  security: { paint: "#5f7064", rail: PALETTE.yellow, style: "tile" },
+  hub: { paint: "#4f5c60", rail: "#d8a43a", style: "metal" },
+  north: { paint: "#4f5c60", rail: "#d8a43a", style: "metal" },
+  stairs: { paint: "#4a5458", rail: PALETTE.yellow, style: "metal" },
+  west: { paint: "#6d7a66", rail: PALETTE.yellow, style: "plain" },
+  east: { paint: "#6d7a66", rail: PALETTE.yellow, style: "plain" },
+  secret: { paint: "#6b5b49", rail: "#c9b48a", style: "plank" },
+  control: { paint: "#3f6b68", rail: "#efe2c4", style: "metal" },
+  infirmary: { paint: "#9cbfae", rail: "#f4ecd6", style: "tile" },
+  workshop: { paint: "#9a6a3e", rail: PALETTE.yellow, style: "plain" },
+  greenhouse: { paint: "#6f8a4a", rail: "#efe2c4", style: "plank" },
+};
+
+const PANEL_HEIGHT = 0.78;
+const CAP_DARK = "#7a5232";
+const POST = "#5b4a3a";
+
+let wallBody: MeshToonMaterial | null = null;
+let wallPaint: MeshToonMaterial | null = null;
+/** Matériaux fusionnés des murets : béton texturé et peinture unie, teintés par couleur de sommet. */
+function wallMaterials(): [MeshToonMaterial, MeshToonMaterial] {
+  wallBody ??= new MeshToonMaterial({ color: "#ffffff", map: concreteTexture(), gradientMap: toonGradient(), vertexColors: true });
+  wallPaint ??= new MeshToonMaterial({ color: "#ffffff", gradientMap: toonGradient(), vertexColors: true });
+  return [wallBody, wallPaint];
+}
+
+const unitBox = new BoxGeometry(1, 1, 1);
+const roundCache = new Map<string, BufferGeometry>();
+const tmpMatrix = new Matrix4();
+const tmpQuat = new Quaternion();
+const tmpEuler = new Euler();
+const tmpPos = new Vector3();
+const tmpScale = new Vector3();
+const tmpColor = new Color();
+
+/**
+ * Boîte statique fusionnée : centre (x, z), bas en y, lacet `yaw` (+ inclinaison facultative).
+ * `rounded` : arrondi réel (géométrie mise en cache par dimensions) au lieu d'une boîte mise à l'échelle.
+ */
+function slab(material: Material, w: number, h: number, d: number, x: number, y: number, z: number, color: string, yaw = 0, options: { rounded?: number; tilt?: [number, number]; worldUv?: number; shadow?: boolean } = {}): void {
+  if (!batch) return;
+  tmpEuler.set(options.tilt?.[0] ?? 0, yaw, options.tilt?.[1] ?? 0);
+  tmpQuat.setFromEuler(tmpEuler);
+  let geometry: BufferGeometry = unitBox;
+  if (options.rounded) {
+    const key = `${w.toFixed(2)}:${h.toFixed(2)}:${d.toFixed(2)}:${options.rounded}`;
+    geometry = roundCache.get(key) ?? new RoundedBoxGeometry(w, h, d, 1, Math.min(options.rounded, h / 2 - 0.001, d / 2 - 0.001));
+    roundCache.set(key, geometry);
+    tmpScale.set(1, 1, 1);
+  } else tmpScale.set(w, h, d);
+  tmpMatrix.compose(tmpPos.set(x, y + h / 2, z), tmpQuat, tmpScale);
+  batch.add(geometry, tmpMatrix, material, { color: tmpColor.set(color), worldUv: options.worldUv, castShadow: options.shadow ?? true });
+}
+
+/** Légère variation d'une couleur (fait main). */
+function vary(color: string, r: () => number, amount = 0.05): string {
+  return "#" + tmpColor.set(color).offsetHSL(0, 0, (r() - 0.5) * amount).getHexString();
+}
+
 function wall(root: Group, x0: number, z0: number, x1: number, z1: number): void {
-  const length = Math.hypot(x1 - x0, z1 - z0) + WALL_THICKNESS;
-  if (length <= WALL_THICKNESS + 0.01) return;
+  const [body, paint] = wallMaterials();
+  const T = WALL_THICKNESS;
+  const length = Math.hypot(x1 - x0, z1 - z0) + T;
+  if (length <= T + 0.01) return;
   const alongX = Math.abs(x1 - x0) > Math.abs(z1 - z0);
+  const yaw = alongX ? 0 : Math.PI / 2;
   const cx = (x0 + x1) / 2;
   const cz = (z0 + z1) / 2;
   const r = rng(Math.round(Math.abs(cx * 31 + cz * 17 + length * 7)) + 1);
   // Repère local : `u` le long du mur, `v` à travers.
   const at = (u: number, v = 0): [number, number] => (alongX ? [cx + u, cz + v] : [cx + v, cz + u]);
-  const size = (along: number, across: number): [number, number] => (alongX ? [along, across] : [across, along]);
+  const box = (material: Material, along: number, h: number, across: number, u: number, y: number, v: number, color: string, options: Parameters<typeof slab>[9] = {}) => {
+    const [x, z] = at(u, v);
+    slab(material, along, h, across, x, y, z, color, yaw, options);
+  };
 
   // Le mur est découpé en tronçons : la plupart intacts, certains effondrés (béton ébréché, fer à béton).
   const pieces = Math.max(1, Math.round(length / 1.8));
   const piece = length / pieces;
+  const broken: boolean[] = [];
   for (let i = 0; i < pieces; i++) {
     const u = -length / 2 + piece * (i + 0.5);
-    const broken = pieces > 2 && r() < 0.3;
-    const height = broken ? 0.85 + r() * 0.4 : WALL_HEIGHT;
-    const texture = concreteTexture().clone();
-    texture.needsUpdate = true;
-    texture.repeat.set(piece / 2.5, height / 2.5);
-    texture.offset.set(r(), 0);
-    const [w, d] = size(piece + 0.002, WALL_THICKNESS);
-    const [px, pz] = at(u);
-    root.add(mesh(new BoxGeometry(w, height, d), toon("#ffffff", { map: texture, rim: 0.12 }), px, height / 2, pz));
-    if (!broken) {
-      const [cw, cd] = size(piece + 0.02, WALL_THICKNESS + 0.08);
-      // Tranche colorée (coupe de la maison de poupée), parfois ébréchée.
-      root.add(mesh(new BoxGeometry(cw, 0.09, cd), toon(PALETTE.wallCap), px, WALL_HEIGHT + 0.045, pz));
-      if (r() < 0.35) {
-        const [nx, nz] = at(u + (r() - 0.5) * piece * 0.6);
-        const notch = mesh(new BoxGeometry(0.35, 0.2, WALL_THICKNESS + 0.1), toon(PALETTE.concreteDark), nx, WALL_HEIGHT - 0.02, nz);
-        notch.rotation.set(0.3, alongX ? 0 : Math.PI / 2, 0.4);
-        root.add(notch);
-      }
-    } else {
-      // Sommet déchiqueté : blocs de béton inclinés + tiges de fer à béton tordues.
-      for (let k = 0; k < 4; k++) {
-        const [bx, bz] = at(u + (r() - 0.5) * piece * 0.9, (r() - 0.5) * 0.1);
-        const chunk = mesh(new BoxGeometry(0.22 + r() * 0.25, 0.18 + r() * 0.2, WALL_THICKNESS * (0.7 + r() * 0.3)), toon(r() > 0.5 ? PALETTE.concrete : PALETTE.concreteDark), bx, height + 0.06, bz);
-        chunk.rotation.set(r() - 0.5, alongX ? r() * 0.4 : Math.PI / 2 + r() * 0.4, r() - 0.5);
-        root.add(chunk);
-      }
-      for (let k = 0; k < 3; k++) {
-        const [bx, bz] = at(u + (r() - 0.5) * piece * 0.8);
-        const rod = mesh(new CylinderGeometry(0.018, 0.018, 0.5 + r() * 0.5, 5), toon(PALETTE.rust), bx, height + 0.2, bz);
-        rod.rotation.set((r() - 0.5) * 0.9, 0, (r() - 0.5) * 0.9);
-        root.add(rod);
-      }
-      // Gravats tombés de part et d'autre.
-      for (const side of [-1, 1]) {
-        const [gx, gz] = at(u, side * (WALL_THICKNESS / 2 + 0.35));
-        rubble(root, gx, gz, 5, Math.floor(r() * 1000), 0.35);
+    const isBroken = pieces > 2 && r() < 0.3;
+    broken.push(isBroken);
+    const height = isBroken ? 0.85 + r() * 0.4 : WALL_HEIGHT;
+    box(body, piece + 0.002, height, T, u, 0, 0, vary("#ffffff", r, 0.06), { worldUv: 2.5 });
+    if (!isBroken) continue;
+    // Sommet déchiqueté : blocs de béton inclinés + tiges de fer à béton tordues.
+    for (let k = 0; k < 4; k++) {
+      box(paint, 0.22 + r() * 0.25, 0.18 + r() * 0.2, T * (0.7 + r() * 0.3), u + (r() - 0.5) * piece * 0.9, height - 0.04, (r() - 0.5) * 0.1, r() > 0.5 ? PALETTE.concrete : PALETTE.concreteDark, { tilt: [r() - 0.5, r() - 0.5] });
+    }
+    // Arête cassée : bord clair du béton à vif.
+    box(paint, piece * 0.9, 0.04, T + 0.02, u, height - 0.02, 0, "#c4c8b4");
+    for (let k = 0; k < 3; k++) {
+      const [bx, bz] = at(u + (r() - 0.5) * piece * 0.8);
+      const rod = mesh(new CylinderGeometry(0.018, 0.018, 0.5 + r() * 0.5, 5), toon(PALETTE.rust), bx, height + 0.2, bz);
+      rod.rotation.set((r() - 0.5) * 0.9, 0, (r() - 0.5) * 0.9);
+      root.add(rod);
+      batch?.absorb(rod);
+    }
+    // Gravats tombés de part et d'autre.
+    for (const side of [-1, 1]) {
+      const [gx, gz] = at(u, side * (T / 2 + 0.35));
+      rubble(root, gx, gz, 5, Math.floor(r() * 1000), 0.35);
+    }
+  }
+
+  // Tranche colorée arrondie (coupe de la maison de poupée) par suite de tronçons intacts, liseré sombre dessous.
+  let start = -1;
+  for (let i = 0; i <= pieces; i++) {
+    if (i < pieces && !broken[i]) { if (start < 0) start = i; continue; }
+    if (start < 0) continue;
+    const runLength = (i - start) * piece;
+    const u = -length / 2 + piece * start + runLength / 2;
+    box(paint, runLength + 0.03, 0.035, T + 0.07, u, WALL_HEIGHT - 0.04, 0, CAP_DARK);
+    box(paint, runLength + 0.04, 0.1, T + 0.1, u, WALL_HEIGHT - 0.01, 0, vary(PALETTE.wallCap, r, 0.06), { rounded: 0.035 });
+    // Éclats dans la tranche.
+    const chips = Math.floor(r() * (runLength / 2.5 + 1));
+    for (let k = 0; k < chips; k++) {
+      const side = r() > 0.5 ? 1 : -1;
+      box(paint, 0.18 + r() * 0.2, 0.08, 0.06, u + (r() - 0.5) * runLength * 0.8, WALL_HEIGHT - 0.0, side * (T / 2 + 0.03), PALETTE.concreteDark, { tilt: [0.25 * side, 0.2] });
+    }
+    start = -1;
+  }
+
+  // Soubassement peint de chaque côté (couleur de la salle), liseré, plinthe, joints ou rivets.
+  for (const side of [-1, 1]) {
+    const [sx, sz] = at(0, side * 0.45);
+    const room = roomAt(sx, sz);
+    const facing = side * (T / 2);
+    const runLength = length - T * 0.5;
+    if (!room || room.outdoor) {
+      // Façade : socle de béton sombre, mousse au pied.
+      box(paint, runLength, 0.32, 0.05, 0, 0, facing + side * 0.025, "#5e594b");
+      continue;
+    }
+    const skin = SKINS[room.id] ?? { paint: PALETTE.wainscot, rail: PALETTE.yellow, style: "plain" as const };
+    box(paint, runLength, PANEL_HEIGHT, 0.035, 0, 0, facing + side * 0.0175, vary(skin.paint, r, 0.03));
+    box(paint, runLength, 0.05, 0.055, 0, PANEL_HEIGHT - 0.03, facing + side * 0.0275, skin.rail);
+    box(paint, runLength, 0.13, 0.055, 0, 0, facing + side * 0.0275, "#3b3029");
+    const spacing = { tile: 0.6, metal: 1.0, plank: 0.32, plain: 1.6 }[skin.style];
+    const seam = "#" + tmpColor.set(skin.paint).multiplyScalar(0.72).getHexString();
+    const count = Math.floor(runLength / spacing);
+    for (let k = 1; k < count; k++) {
+      const u = -runLength / 2 + k * (runLength / count);
+      box(paint, skin.style === "plank" ? 0.015 : 0.025, PANEL_HEIGHT - 0.2, 0.012, u, 0.14, facing + side * 0.04, seam, { shadow: false });
+      if (skin.style === "metal") {
+        for (const y of [0.22, PANEL_HEIGHT - 0.14]) for (const du of [-0.07, 0.07]) {
+          box(paint, 0.04, 0.04, 0.02, u + du, y, facing + side * 0.042, "#a8b0ae", { shadow: false });
+        }
       }
     }
   }
-  // Plinthe sombre et liseré jaune, sur toute la longueur.
-  const [sw, sd] = size(length + 0.02, WALL_THICKNESS + 0.04);
-  root.add(mesh(new BoxGeometry(sw, 0.42, sd), toon(PALETTE.wainscot), cx, 0.21, cz));
-  const [tw, td] = size(length + 0.02, WALL_THICKNESS + 0.045);
-  root.add(mesh(new BoxGeometry(tw, 0.05, td), toon(PALETTE.yellow), cx, 0.44, cz, false));
-  // Salissures au pied du mur, des deux côtés (fausse occlusion ambiante).
-  for (const side of [-1, 1]) {
-    const [gx, gz] = at(0, side * (WALL_THICKNESS / 2 + 0.3));
-    const grime = decal(root, grimeTexture(), gx, gz, 1, 1, 0, 0.008);
-    grime.scale.set(length, 0.6, 1);
-    // La partie sombre du dégradé touche le mur.
-    grime.rotation.z = (alongX ? 0 : Math.PI / 2) + (side < 0 ? Math.PI : 0);
+}
+
+/** Montant d'angle là où les murets se rejoignent (et aux extrémités libres). */
+function cornerPost(x: number, z: number, seed: number): void {
+  const [, paint] = wallMaterials();
+  const r = rng(seed);
+  const s = WALL_THICKNESS + 0.12;
+  slab(paint, s, WALL_HEIGHT - 0.02, s, x, 0, z, POST);
+  slab(paint, s + 0.02, 0.035, s + 0.02, x, WALL_HEIGHT - 0.05, z, CAP_DARK);
+  slab(paint, s + 0.06, 0.12, s + 0.06, x, WALL_HEIGHT - 0.02, z, vary("#b5793f", r, 0.05), 0, { rounded: 0.04 });
+  // Bande jaune usée à hauteur de chariot.
+  slab(paint, s + 0.012, 0.08, s + 0.012, x, 0.42, z, "#d9a83a", 0, { shadow: false });
+}
+
+/** Extrémités des murets intérieurs, sans les montants de porte (déjà encadrés). */
+function postsFor(walls: { x0: number; z0: number; x1: number; z1: number; outdoor: boolean }[]): [number, number][] {
+  const points: [number, number][] = [];
+  const jamb = (x: number, z: number) => DOORS.some((d) => !d.open && (d.axis === "x"
+    ? Math.abs(z - d.z) < 0.05 && Math.abs(Math.abs(x - d.x) - d.width / 2) < 0.1
+    : Math.abs(x - d.x) < 0.05 && Math.abs(Math.abs(z - d.z) - d.width / 2) < 0.1));
+  for (const w of walls) {
+    if (w.outdoor) continue;
+    for (const [x, z] of [[w.x0, w.z0], [w.x1, w.z1]]) {
+      if (jamb(x, z) || points.some(([px, pz]) => Math.abs(px - x) < 0.05 && Math.abs(pz - z) < 0.05)) continue;
+      points.push([x, z]);
+    }
   }
+  return points;
 }
 
 interface LockView { door: Door; group: Group; open: boolean; box: Box; }
@@ -184,7 +553,39 @@ function outdoorEdge(root: Group, x0: number, z0: number, x1: number, z1: number
     rock.scale.set(size, size * (0.7 + r() * 0.5), size * (0.8 + r() * 0.4));
     rock.rotation.y = r() * 3;
     root.add(rock);
-    if (r() < 0.45) grass(root, x + (r() - 0.5), z + (r() - 0.5), 0.5 + r() * 0.3);
+    batch?.absorb(rock);
+    // Petit galet et touffes au pied, pour fondre le rocher dans l'herbe.
+    if (r() < 0.6) {
+      const pebble = mesh(new SphereGeometry(1, 6, 4), toon("#968f7c"), x + (r() - 0.5) * size * 2, 0.08, z + (r() - 0.5) * size * 2);
+      pebble.scale.set(0.22, 0.14, 0.18);
+      root.add(pebble);
+      batch?.absorb(pebble);
+    }
+    if (r() < 0.7) grass(root, x + (r() - 0.5) * 1.2, z + (r() - 0.5) * 1.2, 0.45 + r() * 0.35);
+    if (r() < 0.4) grass(root, x + (r() - 0.5) * 1.6, z + (r() - 0.5) * 1.6, 0.35 + r() * 0.25);
+  }
+}
+
+/** Seuil de porte : plaque d'acier striée, rails de porte coulissante, rivets, bandes de danger de chaque côté. */
+function threshold(root: Group, door: Door): void {
+  const [, paint] = wallMaterials();
+  const yaw = door.axis === "x" ? 0 : Math.PI / 2;
+  const along = door.width + 0.3;
+  const across = WALL_THICKNESS + 0.8;
+  const at = (u: number, v: number): [number, number] => (door.axis === "x" ? [door.x + u, door.z + v] : [door.x + v, door.z + u]);
+  slab(paint, along + 0.08, 0.018, across + 0.08, door.x, 0, door.z, "#3e4447", yaw, { shadow: false });
+  slab(paint, along, 0.03, across, door.x, 0, door.z, "#8e9799", yaw, { rounded: 0.012, shadow: false });
+  for (const v of [-0.09, 0.09]) {
+    const [x, z] = at(0, v);
+    slab(paint, along - 0.1, 0.012, 0.04, x, 0.028, z, "#2e2925", yaw, { shadow: false });
+  }
+  for (const u of [-along / 2 + 0.08, along / 2 - 0.08]) for (const v of [-across / 2 + 0.08, across / 2 - 0.08]) {
+    const [x, z] = at(u, v);
+    slab(paint, 0.05, 0.02, 0.05, x, 0.026, z, "#b9c1bf", yaw, { shadow: false });
+  }
+  for (const side of [-1, 1]) {
+    const [x, z] = at(0, side * (across / 2 + 0.16));
+    hazardStrip(root, x, z, door.width, 0.2, door.axis === "x" ? 0 : Math.PI / 2);
   }
 }
 
@@ -192,18 +593,22 @@ function doorFrame(root: Group, index: number, locks: LockView[]): void {
   const door = DOORS[index];
   if (door.open) return;
   if (door.lock === "secret") return lockedDoor(root, door, locks);
+  const [, paint] = wallMaterials();
   const half = door.width / 2;
+  const yaw = door.axis === "x" ? 0 : Math.PI / 2;
   for (const side of [-1, 1]) {
     const x = door.axis === "x" ? door.x + side * (half + 0.12) : door.x;
     const z = door.axis === "x" ? door.z : door.z + side * (half + 0.12);
-    block(root, 0.3, 2.1, 0.42, PALETTE.steelDark, x, 0, z, 0.05);
-    block(root, 0.32, 0.1, 0.44, PALETTE.yellow, x, 1.75, z, 0.02);
+    slab(paint, 0.3, 2.1, 0.42, x, 0, z, PALETTE.steelDark, yaw, { rounded: 0.05 });
+    slab(paint, 0.32, 0.1, 0.44, x, 1.7, z, PALETTE.yellow, yaw, { rounded: 0.02 });
+    slab(paint, 0.36, 0.08, 0.48, x, 2.1, z, PALETTE.wallCap, yaw, { rounded: 0.03 });
+    // Butée de porte, bandes jaunes et noires en bas du montant.
+    slab(paint, 0.32, 0.22, 0.44, x, 0, z, PALETTE.stripeDark, yaw, { rounded: 0.02 });
   }
-  // Numéro de secteur peint au sol, lisible depuis la caméra.
+  threshold(root, door);
+  // Numéro de secteur peint au sol, lisible depuis la caméra (au-dessus du seuil).
   const label = signTexture(door.label, { bg: "rgba(0,0,0,0)", fg: "rgba(246,236,214,0.85)", font: "'Special Elite', monospace", width: 512, height: 96 });
-  decal(root, label, door.x, door.z + 1.0, 3.2, 0.6, 0, 0.016);
-  hazardStrip(root, door.x, door.z + 0.3, door.width, 0.2);
-  hazardStrip(root, door.x, door.z - 0.3, door.width, 0.2);
+  decal(root, label, door.x, door.z + 1.0, 3.2, 0.6, 0, 0.04);
   if (door.lock) lockedDoor(root, door, locks);
 }
 
@@ -260,6 +665,7 @@ function beam(root: Group, x: number, top: number, z: number, radius: number, co
     plane.rotation.y = angle + 0.4;
     plane.renderOrder = 2;
     root.add(plane);
+    if (batch && root === batch.root) batch.absorb(plane);
   }
 }
 
@@ -282,17 +688,19 @@ function dust(root: Group, centers: [number, number, number][], perCenter: numbe
   return points;
 }
 
-/** Couche de ruine commune : fissures, salissures, papiers, dalles tombées. */
+/** Couche de ruine commune : fissures, salissures, papiers, dalles tombées (fondues dans le lot statique). */
 export function ruin(root: Group, x0: number, x1: number, z0: number, z1: number, seed: number, slabs: number, density = 1): void {
   const r = rng(seed);
   const rx = () => x0 + 0.8 + r() * (x1 - x0 - 1.6);
   const rz = () => z0 + 0.8 + r() * (z1 - z0 - 1.6);
+  const keep = (m: Mesh) => { if (batch && root === batch.root) batch.absorb(m); return m; };
   const area = (x1 - x0) * (z1 - z0) * density;
-  for (let i = 0; i < Math.round(area / 22); i++) decal(root, crackTexture(1 + (i % 4)), rx(), rz(), 2 + r() * 2, 2 + r() * 2, r() * 6, 0.011);
-  for (let i = 0; i < Math.round(area / 30); i++) decal(root, dirtTexture(1 + (i % 3)), rx(), rz(), 3 + r() * 3, 3 + r() * 3, r() * 6, 0.009);
+  for (let i = 0; i < Math.round(area / 22); i++) keep(decal(root, crackTexture(1 + (i % 4)), rx(), rz(), 2 + r() * 2, 2 + r() * 2, r() * 6, 0.011));
+  for (let i = 0; i < Math.round(area / 30); i++) keep(decal(root, dirtTexture(1 + (i % 3)), rx(), rz(), 3 + r() * 3, 3 + r() * 3, r() * 6, 0.009));
   for (let i = 0; i < Math.round(area / 9); i++) {
     const sheet = decal(root, paperTexture(1 + (i % 4)), rx(), rz(), 0.22, 0.28, r() * 6, 0.02);
     sheet.renderOrder = 2;
+    keep(sheet);
   }
   for (let i = 0; i < Math.round(area / 25); i++) rubble(root, rx(), rz(), 3 + Math.floor(r() * 4), Math.floor(r() * 9999), 0.3);
   // Dalles de béton tombées, inclinées contre le sol.
@@ -303,6 +711,8 @@ export function ruin(root: Group, x0: number, x1: number, z0: number, z1: number
     const rod = mesh(new CylinderGeometry(0.015, 0.015, 0.7, 5), toon(PALETTE.rust), slab.position.x + 0.3, 0.35, slab.position.z);
     rod.rotation.set(0.9, r() * 3, 0.4);
     root.add(rod);
+    keep(slab);
+    keep(rod);
   }
 }
 
@@ -439,16 +849,27 @@ export function buildWorld(scene: Scene): WorldView {
   root.add(ground);
 
   for (const room of ROOMS) floor(root, room);
-  for (const w of buildWalls()) {
+  // Décor statique (murets, seuils, gravats, herbes, papiers…) fondu par matériau et par case de 12 m.
+  batch = new StaticBatch(root, 12);
+  setStaticSink(batch);
+  const walls = buildWalls();
+  for (const w of walls) {
     if (w.outdoor) outdoorEdge(root, w.x0, w.z0, w.x1, w.z1);
     else wall(root, w.x0, w.z0, w.x1, w.z1);
     colliders.push(wallBox(w));
   }
+  postsFor(walls).forEach(([x, z], i) => cornerPost(x, z, i + 1));
   DOORS.forEach((_, i) => doorFrame(root, i, locks));
-  decorateExterior(decor);
-  decorateCenter(decor);
-  decorateWest(decor);
-  decorateEast(decor);
+  try {
+    decorateExterior(decor);
+    decorateCenter(decor);
+    decorateWest(decor);
+    decorateEast(decor);
+  } finally {
+    setStaticSink(null);
+    batch.flush();
+    batch = null;
+  }
 
   const interactables = new Map<string, InteractableView>();
   const solidItems = new Map<string, Box>();

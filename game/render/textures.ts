@@ -53,106 +53,157 @@ function crack(g: CanvasRenderingContext2D, r: () => number, x: number, y: numbe
   g.stroke();
 }
 
-/** Carrelage terrazzo fissuré (décontamination). 1 texture = 2 × 2 m. */
-export function tilesTexture(): Texture {
-  return make("tiles", 512, 512, (g, w, h) => {
-    const r = rng(7);
-    g.fillStyle = PALETTE.tile;
+/** Tache douce (dégradé radial) : base de toutes les salissures peintes. */
+function soft(g: CanvasRenderingContext2D, x: number, y: number, radius: number, color: string, alpha: number, sx = 1, sy = 1): void {
+  g.save();
+  g.translate(x, y);
+  g.scale(sx, sy);
+  const grad = g.createRadialGradient(0, 0, 0, 0, 0, radius);
+  grad.addColorStop(0, color.replace("A", String(alpha)));
+  grad.addColorStop(1, color.replace("A", "0"));
+  g.fillStyle = grad;
+  g.fillRect(-radius, -radius, radius * 2, radius * 2);
+  g.restore();
+}
+
+/** Bord biseauté d'une case : liseré clair en haut à gauche, ombre en bas à droite (lecture « jouet »). */
+function bevel(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, light: string, dark: string, size = 2): void {
+  g.fillStyle = light;
+  g.fillRect(x, y, w, size);
+  g.fillRect(x, y, size, h);
+  g.fillStyle = dark;
+  g.fillRect(x, y + h - size, w, size);
+  g.fillRect(x + w - size, y, size, h);
+}
+
+export type TileVariant = "terrazzo" | "checker" | "small" | "parquet";
+
+/**
+ * Carrelage des salles vivantes. 1 texture = 2 × 2 m. Les variations à grande échelle (teinte, usure,
+ * flaques) viennent du shader de sol : la texture reste sobre pour ne pas se répéter à l'œil.
+ * terrazzo : sécurité, contrôle · checker : damier crème/moutarde de la cafétéria ·
+ * small : petits carreaux blancs de l'infirmerie · parquet : lames de bois des dortoirs.
+ */
+export function tilesTexture(variant: TileVariant = "terrazzo"): Texture {
+  return make("tiles-" + variant, 512, 512, (g, w, h) => {
+    const r = rng(7 + variant.length);
+    if (variant === "parquet") {
+      // Lames de 25 cm, longueurs variées, veinure douce.
+      const rows = 8, lane = h / rows;
+      g.fillStyle = "#6e4a30";
+      g.fillRect(0, 0, w, h);
+      for (let j = 0; j < rows; j++) {
+        let x = -((j * 97) % 160);
+        while (x < w) {
+          const len = 140 + Math.floor(r() * 4) * 40;
+          const tone = ["#ab9070", "#9d8264", "#b49a7a", "#94795c"][Math.floor(r() * 4)];
+          g.fillStyle = tone;
+          g.fillRect(x + 2, j * lane + 2, len - 4, lane - 4);
+          g.strokeStyle = "rgba(90,60,35,0.25)";
+          g.lineWidth = 1.5;
+          for (let k = 0; k < 3; k++) {
+            const y = j * lane + 8 + r() * (lane - 16);
+            g.beginPath(); g.moveTo(x + 6, y); g.bezierCurveTo(x + len * 0.3, y + 4, x + len * 0.6, y - 4, x + len - 6, y + 1); g.stroke();
+          }
+          bevel(g, x + 2, j * lane + 2, len - 4, lane - 4, "rgba(255,235,200,0.18)", "rgba(60,35,20,0.25)", 2);
+          x += len;
+        }
+      }
+      return;
+    }
+    const n = variant === "small" ? 8 : 4;
+    const cell = w / n;
+    const grout = variant === "small" ? "#b9bcae" : variant === "checker" ? "#8c7656" : "#a69f88";
+    g.fillStyle = grout;
     g.fillRect(0, 0, w, h);
-    const cell = w / 4;
-    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
-      const shade = 0.94 + r() * 0.08;
-      g.fillStyle = `rgba(${Math.round(220 * shade)}, ${Math.round(213 * shade)}, ${Math.round(191 * shade)}, 1)`;
-      g.fillRect(i * cell + 2, j * cell + 2, cell - 4, cell - 4);
+    const gap = variant === "small" ? 2 : 3;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      const shade = 0.96 + r() * 0.06;
+      let base: [number, number, number];
+      if (variant === "checker") base = (i + j) % 2 ? [204, 170, 116] : [234, 226, 204];
+      else if (variant === "small") base = [236, 238, 228];
+      else base = [222, 214, 192];
+      g.fillStyle = `rgb(${Math.round(base[0] * shade)},${Math.round(base[1] * shade)},${Math.round(base[2] * shade)})`;
+      g.fillRect(i * cell + gap, j * cell + gap, cell - gap * 2, cell - gap * 2);
+      bevel(g, i * cell + gap, j * cell + gap, cell - gap * 2, cell - gap * 2, "rgba(255,255,245,0.35)", "rgba(80,65,45,0.18)", variant === "small" ? 2 : 3);
     }
-    for (let k = 0; k < 900; k++) {
-      const colors = ["#9b9583", "#7f8a7a", "#b7ad93", "#5f6a60", "#c29a6a"];
-      g.fillStyle = colors[Math.floor(r() * colors.length)];
-      g.globalAlpha = 0.55;
-      const s = 1 + r() * 3.5;
-      g.beginPath();
-      g.ellipse(r() * w, r() * h, s, s * (0.5 + r() * 0.5), r() * Math.PI, 0, Math.PI * 2);
-      g.fill();
+    if (variant === "terrazzo") {
+      // Éclats du terrazzo, très fins.
+      const colors = ["#9b9583", "#7f8a7a", "#b7ad93", "#c29a6a"];
+      g.globalAlpha = 0.4;
+      for (let k = 0; k < 700; k++) {
+        g.fillStyle = colors[Math.floor(r() * colors.length)];
+        const s = 1 + r() * 2.5;
+        g.beginPath(); g.ellipse(r() * w, r() * h, s, s * (0.5 + r() * 0.5), r() * Math.PI, 0, Math.PI * 2); g.fill();
+      }
+      g.globalAlpha = 1;
     }
-    g.globalAlpha = 1;
-    g.strokeStyle = "#a69f88";
-    g.lineWidth = 3;
-    for (let i = 0; i <= 4; i++) {
-      g.beginPath(); g.moveTo(i * cell, 0); g.lineTo(i * cell, h); g.stroke();
-      g.beginPath(); g.moveTo(0, i * cell); g.lineTo(w, i * cell); g.stroke();
-    }
-    for (let k = 0; k < 5; k++) crack(g, r, r() * w, r() * h, 120 + r() * 80, "rgba(60,50,40,0.6)");
-    for (let k = 0; k < 12; k++) {
-      const x = r() * w, y = r() * h, rad = 20 + r() * 50;
-      const grad = g.createRadialGradient(x, y, 0, x, y, rad);
-      grad.addColorStop(0, "rgba(70,58,40,0.18)");
-      grad.addColorStop(1, "rgba(70,58,40,0)");
-      g.fillStyle = grad;
-      g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
-    }
-    // Carreaux fendus en diagonale
-    g.strokeStyle = "rgba(60,50,40,0.5)";
+    // Un carreau fendu, un coin ébréché : rares, pour ne pas marquer la répétition.
+    g.strokeStyle = "rgba(60,50,40,0.45)";
     g.lineWidth = 2;
-    for (let k = 0; k < 4; k++) {
-      const i = Math.floor(r() * 4), j = Math.floor(r() * 4);
-      g.beginPath(); g.moveTo(i * cell + 4, j * cell + r() * cell); g.lineTo((i + 1) * cell - 4, j * cell + r() * cell); g.stroke();
-    }
+    const i = Math.floor(r() * n), j = Math.floor(r() * n);
+    g.beginPath(); g.moveTo(i * cell + 5, j * cell + r() * cell); g.lineTo((i + 1) * cell - 5, j * cell + r() * cell); g.stroke();
+    g.fillStyle = grout;
+    g.beginPath(); g.moveTo(cell * 2 + gap, cell + gap); g.lineTo(cell * 2 + gap + 14, cell + gap); g.lineTo(cell * 2 + gap, cell + gap + 10); g.fill();
   });
 }
 
-/** Plaques d'acier de la cabine d'ascenseur, rivets et usure. 1 texture = 2 × 2 m. */
+/** Plaques d'acier du hub, rivets et motif antidérapant. 1 texture = 2 × 2 m (2 × 2 plaques). */
 export function liftTexture(): Texture {
   return make("lift", 512, 512, (g, w, h) => {
     const r = rng(11);
-    g.fillStyle = PALETTE.liftFloor;
+    g.fillStyle = "#5f6a6c";
     g.fillRect(0, 0, w, h);
     const plate = w / 2;
     for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
-      g.fillStyle = r() > 0.5 ? "#96a1a2" : "#879294";
-      g.fillRect(i * plate + 3, j * plate + 3, plate - 6, plate - 6);
-      g.fillStyle = "#6c777a";
-      for (const [x, y] of [[14, 14], [plate - 14, 14], [14, plate - 14], [plate - 14, plate - 14]]) {
-        g.beginPath(); g.arc(i * plate + x, j * plate + y, 5, 0, Math.PI * 2); g.fill();
-      }
-      // Motif antidérapant
-      g.strokeStyle = "rgba(70,80,84,0.45)";
+      const x0 = i * plate + 3, y0 = j * plate + 3, s = plate - 6;
+      g.fillStyle = ["#9aa4a3", "#8f9a9a", "#a3aba7", "#949e9c"][i + j * 2];
+      g.fillRect(x0, y0, s, s);
+      // Motif antidérapant en chevrons réguliers.
+      g.strokeStyle = "rgba(70,80,84,0.32)";
       g.lineWidth = 4;
-      for (let k = 0; k < 18; k++) {
-        const x = i * plate + 30 + r() * (plate - 60);
-        const y = j * plate + 30 + r() * (plate - 60);
-        const a = k % 2 ? Math.PI / 4 : -Math.PI / 4;
-        g.beginPath(); g.moveTo(x - Math.cos(a) * 10, y - Math.sin(a) * 10); g.lineTo(x + Math.cos(a) * 10, y + Math.sin(a) * 10); g.stroke();
+      g.lineCap = "round";
+      for (let y = 26; y < s - 16; y += 26) for (let x = 26; x < s - 16; x += 26) {
+        const a = ((x + y) / 26) % 2 ? Math.PI / 4 : -Math.PI / 4;
+        g.beginPath(); g.moveTo(x0 + x - Math.cos(a) * 7, y0 + y - Math.sin(a) * 7); g.lineTo(x0 + x + Math.cos(a) * 7, y0 + y + Math.sin(a) * 7); g.stroke();
+      }
+      bevel(g, x0, y0, s, s, "rgba(255,255,240,0.3)", "rgba(30,35,38,0.35)", 4);
+      for (const [x, y] of [[14, 14], [s - 14, 14], [14, s - 14], [s - 14, s - 14], [s / 2, 12], [s / 2, s - 12]]) {
+        g.fillStyle = "#5d686b";
+        g.beginPath(); g.arc(x0 + x, y0 + y, 5, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "rgba(255,255,240,0.45)";
+        g.beginPath(); g.arc(x0 + x - 1.5, y0 + y - 1.5, 2, 0, Math.PI * 2); g.fill();
       }
     }
-    g.fillStyle = "rgba(60,50,40,0.12)";
-    for (let k = 0; k < 6; k++) {
-      g.beginPath(); g.ellipse(r() * w, r() * h, 20 + r() * 40, 10 + r() * 20, r() * 3, 0, Math.PI * 2); g.fill();
-    }
+    for (let k = 0; k < 4; k++) soft(g, r() * w, r() * h, 30 + r() * 40, "rgba(60,50,40,A)", 0.1);
   });
 }
 
-/** Béton gris-vert taché pour les murs. */
+/** Béton gris-vert des murs : banché (joints horizontaux), taches douces, coulures de rouille. 1 texture = 2,5 m. */
 export function concreteTexture(): Texture {
   return make("concrete", 256, 256, (g, w, h) => {
     const r = rng(3);
     g.fillStyle = PALETTE.concrete;
     g.fillRect(0, 0, w, h);
-    for (let k = 0; k < 40; k++) {
-      g.fillStyle = r() > 0.5 ? "rgba(255,255,240,0.06)" : "rgba(40,50,40,0.07)";
-      g.beginPath(); g.ellipse(r() * w, r() * h, 8 + r() * 30, 6 + r() * 20, r() * 3, 0, Math.PI * 2); g.fill();
-    }
+    for (let k = 0; k < 30; k++) soft(g, r() * w, r() * h, 12 + r() * 34, r() > 0.5 ? "rgba(255,255,240,A)" : "rgba(40,50,40,A)", 0.09, 1, 0.6);
+    // Joints de banches et trous de tiges.
+    g.fillStyle = "rgba(50,58,48,0.22)";
+    for (const y of [h * 0.32, h * 0.66]) g.fillRect(0, y, w, 2);
+    g.fillStyle = "rgba(50,58,48,0.35)";
+    for (let x = 32; x < w; x += 64) for (const y of [h * 0.16, h * 0.5, h * 0.84]) { g.beginPath(); g.arc(x, y, 2.5, 0, Math.PI * 2); g.fill(); }
     // Coulures de rouille
-    for (let k = 0; k < 4; k++) {
+    for (let k = 0; k < 3; k++) {
       const x = r() * w;
-      const grad = g.createLinearGradient(x, 0, x, h * 0.8);
-      grad.addColorStop(0, "rgba(168,86,46,0.45)");
+      const grad = g.createLinearGradient(x, 0, x, h * 0.7);
+      grad.addColorStop(0, "rgba(168,86,46,0.35)");
       grad.addColorStop(1, "rgba(168,86,46,0)");
       g.fillStyle = grad;
-      g.fillRect(x, 0, 3 + r() * 6, h * 0.8);
+      g.fillRect(x, 0, 2 + r() * 4, h * 0.7);
     }
-    for (let k = 0; k < 2; k++) crack(g, r, r() * w, r() * h, 70, "rgba(50,55,45,0.5)", 1.5);
+    crack(g, r, r() * w, r() * h, 60, "rgba(50,55,45,0.4)", 1.5);
   });
 }
+
 
 /** Bandes de sécurité jaunes et noires. */
 export function hazardTexture(): Texture {
@@ -406,66 +457,139 @@ export function sprayTexture(text: string, color: string): Texture {
   }, false);
 }
 
-/** Dalle de béton brut fissurée (maintenance, cœur). 1 texture = 2 × 2 m. */
+/** Dalle de béton lissé : 2 × 2 dalles de 2 m, joints sciés, granulats fins, traces de taloche. 1 texture = 4 × 4 m. */
 export function concreteFloorTexture(): Texture {
   return make("concrete-floor", 512, 512, (g, w, h) => {
     const r = rng(19);
-    g.fillStyle = "#9c9a8c";
+    g.fillStyle = "#a29e8e";
     g.fillRect(0, 0, w, h);
-    for (let k = 0; k < 60; k++) {
-      const x = r() * w, y = r() * h, rad = 10 + r() * 60;
-      const grad = g.createRadialGradient(x, y, 0, x, y, rad);
-      grad.addColorStop(0, r() > 0.5 ? "rgba(255,250,235,0.08)" : "rgba(50,45,35,0.12)");
-      grad.addColorStop(1, "rgba(0,0,0,0)");
-      g.fillStyle = grad;
-      g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    const slab = w / 2;
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+      g.fillStyle = ["#a7a393", "#9e9a8a", "#a39f8d", "#a9a493"][i + j * 2];
+      g.fillRect(i * slab + 3, j * slab + 3, slab - 6, slab - 6);
+      // Traces de taloche : arcs très pâles.
+      g.strokeStyle = "rgba(255,250,235,0.035)";
+      g.lineWidth = 14;
+      for (let k = 0; k < 5; k++) {
+        const cx = i * slab + r() * slab, cy = j * slab + r() * slab;
+        g.beginPath(); g.arc(cx, cy, 30 + r() * 40, r() * 6, r() * 6 + 1.6); g.stroke();
+      }
+      bevel(g, i * slab + 3, j * slab + 3, slab - 6, slab - 6, "rgba(255,250,235,0.16)", "rgba(50,45,35,0.22)", 3);
     }
-    g.strokeStyle = "rgba(60,55,45,0.5)";
-    g.lineWidth = 3;
-    g.strokeRect(0, 0, w, h);
-    for (let k = 0; k < 4; k++) crack(g, r, r() * w, r() * h, 140, "rgba(50,45,35,0.55)");
+    for (let k = 0; k < 40; k++) soft(g, r() * w, r() * h, 12 + r() * 50, r() > 0.5 ? "rgba(255,250,235,A)" : "rgba(50,45,35,A)", 0.08);
+    for (let k = 0; k < 900; k++) {
+      g.fillStyle = r() > 0.5 ? "rgba(70,64,52,0.3)" : "rgba(235,230,215,0.3)";
+      g.fillRect(r() * w, r() * h, 1.5, 1.5);
+    }
+    for (let k = 0; k < 2; k++) crack(g, r, r() * w, r() * h, 110, "rgba(50,45,35,0.45)", 2);
   });
 }
 
-/** Caillebotis métallique (conduites, local technique). 1 texture = 1 × 1 m. */
+/** Caillebotis métallique sur fond sombre (génératrice, escalier). 1 texture = 1 × 1 m. */
 export function grateTexture(): Texture {
   return make("grate", 256, 256, (g, w, h) => {
-    g.fillStyle = "#2a2f30";
+    g.fillStyle = "#262a2a";
     g.fillRect(0, 0, w, h);
-    g.fillStyle = "#7d8a8c";
-    for (let i = 0; i < 8; i++) {
-      g.fillRect(i * 32 + 3, 0, 6, h);
-      g.fillRect(0, i * 32 + 3, w, 6);
-    }
-    g.fillStyle = "rgba(168,86,46,0.35)";
+    // Fond visible à travers la grille : quelques reflets.
     const r = rng(23);
-    for (let k = 0; k < 6; k++) { g.beginPath(); g.arc(r() * w, r() * h, 10 + r() * 25, 0, Math.PI * 2); g.fill(); }
+    for (let k = 0; k < 5; k++) soft(g, r() * w, r() * h, 30 + r() * 30, "rgba(120,110,90,A)", 0.25);
+    for (let i = 0; i < 8; i++) {
+      g.fillStyle = "#7d8a8c";
+      g.fillRect(i * 32 + 3, 0, 6, h);
+      g.fillStyle = "#8d999a";
+      g.fillRect(0, i * 32 + 3, w, 6);
+      g.fillStyle = "rgba(255,255,240,0.25)";
+      g.fillRect(0, i * 32 + 3, w, 2);
+    }
+    // Cadre de la dalle (1 m) : plat plus large.
+    g.fillStyle = "#6c7779";
+    g.fillRect(0, 0, w, 5); g.fillRect(0, 0, 5, h);
+    for (let k = 0; k < 4; k++) soft(g, r() * w, r() * h, 12 + r() * 22, "rgba(168,86,46,A)", 0.45);
   });
 }
 
-/** Terre battue, gravier et touffes sombres (extérieur, serre). 1 texture = 2 × 2 m. */
+/** Terre battue peinte : taches douces, gravillons. L'herbe vient du masque de salle (shader de sol). 1 texture = 3 × 3 m. */
 export function dirtGroundTexture(): Texture {
   return make("dirt-ground", 512, 512, (g, w, h) => {
     const r = rng(41);
-    g.fillStyle = "#a08a64";
+    g.fillStyle = "#a88f66";
     g.fillRect(0, 0, w, h);
-    for (let k = 0; k < 70; k++) {
-      const x = r() * w, y = r() * h, rad = 15 + r() * 60;
-      const grad = g.createRadialGradient(x, y, 0, x, y, rad);
-      grad.addColorStop(0, r() > 0.5 ? "rgba(120,100,70,0.35)" : "rgba(170,150,110,0.3)");
-      grad.addColorStop(1, "rgba(0,0,0,0)");
-      g.fillStyle = grad;
-      g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    for (let k = 0; k < 60; k++) soft(g, r() * w, r() * h, 25 + r() * 70, r() > 0.5 ? "rgba(120,96,64,A)" : "rgba(196,176,132,A)", 0.3, 1, 0.7);
+    // Coups de pinceau allongés.
+    g.lineCap = "round";
+    for (let k = 0; k < 50; k++) {
+      g.strokeStyle = r() > 0.5 ? "rgba(140,114,78,0.25)" : "rgba(200,182,140,0.22)";
+      g.lineWidth = 4 + r() * 8;
+      const x = r() * w, y = r() * h, a = r() * Math.PI;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * 30, y + Math.sin(a) * 30); g.stroke();
     }
-    for (let k = 0; k < 500; k++) {
-      g.fillStyle = r() > 0.5 ? "rgba(80,66,45,0.5)" : "rgba(200,185,150,0.45)";
-      g.beginPath(); g.arc(r() * w, r() * h, 1 + r() * 2.5, 0, Math.PI * 2); g.fill();
-    }
-    for (let k = 0; k < 30; k++) {
-      g.fillStyle = r() > 0.5 ? "rgba(96,130,60,0.55)" : "rgba(120,155,70,0.5)";
-      g.beginPath(); g.ellipse(r() * w, r() * h, 6 + r() * 14, 4 + r() * 8, r() * 3, 0, Math.PI * 2); g.fill();
+    for (let k = 0; k < 220; k++) {
+      const x = r() * w, y = r() * h, s = 1.5 + r() * 2.5;
+      g.fillStyle = "rgba(80,66,45,0.45)";
+      g.beginPath(); g.arc(x + 1, y + 1, s, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "rgba(214,200,166,0.7)";
+      g.beginPath(); g.arc(x, y, s, 0, Math.PI * 2); g.fill();
     }
   });
+}
+
+/** Bruit doux tuilable (R, G : deux bruits indépendants) pour les variations à grande échelle des sols. */
+export function macroNoiseTexture(): Texture {
+  const cached = cache.get("macro-noise");
+  if (cached) return cached;
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const g = canvas.getContext("2d")!;
+  const image = g.createImageData(size, size);
+  const lattice = (seed: number, period: number) => {
+    const r = rng(seed);
+    const values = Array.from({ length: period * period }, () => r());
+    return (x: number, y: number) => {
+      const fx = (x / size) * period, fy = (y / size) * period;
+      const ix = Math.floor(fx), iy = Math.floor(fy);
+      const tx = fx - ix, ty = fy - iy;
+      const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+      const at = (a: number, b: number) => values[((b + period) % period) * period + ((a + period) % period)];
+      const top = at(ix, iy) + (at(ix + 1, iy) - at(ix, iy)) * sx;
+      const bottom = at(ix, iy + 1) + (at(ix + 1, iy + 1) - at(ix, iy + 1)) * sx;
+      return top + (bottom - top) * sy;
+    };
+  };
+  const a1 = lattice(101, 4), a2 = lattice(102, 8), b1 = lattice(201, 4), b2 = lattice(202, 8), c1 = lattice(301, 16);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const i = (y * size + x) * 4;
+    image.data[i] = Math.round((a1(x, y) * 0.65 + a2(x, y) * 0.35) * 255);
+    image.data[i + 1] = Math.round((b1(x, y) * 0.6 + b2(x, y) * 0.4) * 255);
+    image.data[i + 2] = Math.round(c1(x, y) * 255);
+    image.data[i + 3] = 255;
+  }
+  g.putImageData(image, 0, 0);
+  const texture = new CanvasTexture(canvas);
+  texture.wrapS = texture.wrapT = RepeatWrapping;
+  cache.set("macro-noise", texture);
+  return texture;
+}
+
+/**
+ * Masque peint d'une salle, en données (pas de conversion sRGB) : R = usure, G = crasse, B = flaques ou herbe.
+ * Fond noir opaque, canaux peints en mode additif (« lighter ») pour rester indépendants.
+ */
+export function roomMaskTexture(key: string, width: number, height: number, draw: (g: CanvasRenderingContext2D, w: number, h: number) => void): Texture {
+  const cached = cache.get("mask:" + key);
+  if (cached) return cached;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const g = canvas.getContext("2d")!;
+  g.fillStyle = "#000";
+  g.fillRect(0, 0, width, height);
+  g.globalCompositeOperation = "lighter";
+  draw(g, width, height);
+  const texture = new CanvasTexture(canvas);
+  texture.wrapS = texture.wrapT = ClampToEdgeWrapping;
+  cache.set("mask:" + key, texture);
+  return texture;
 }
 
 // ——— Extérieur (entrée et zone extérieure) ———
