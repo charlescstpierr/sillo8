@@ -11,8 +11,9 @@ const DESKTOP: [string, string][] = [
   ["Clic droit", "éblouir à la lampe"],
   ["1 / 2", "clé à molette / lance-clous"],
   ["R", "recharger les clous"],
-  ["E", "interagir · lire"],
-  ["J", "carnet de notes"],
+  ["E", "examiner · lire"],
+  ["U", "lampe UV : voir les traces"],
+  ["J", "carnet · tableau d'enquête"],
   ["Tab", "sac"],
   ["H · B", "se soigner · mettre une pile"],
   ["Échap", "pause"],
@@ -20,10 +21,10 @@ const DESKTOP: [string, string][] = [
 
 const TOUCH: [string, string][] = [
   ["Stick gauche", "se déplacer (à fond : courir)"],
+  ["EXAMINER", "examiner · lire"],
+  ["LAMPE · UV", "éblouir les mordus · voir les traces"],
   ["FRAPPER / TIRER", "visée assistée"],
-  ["LAMPE", "éblouir les mordus"],
   ["⇄ · R", "changer d'arme · recharger"],
-  ["✋", "interagir · lire"],
   ["CARNET · SAC", "notes · inventaire"],
   ["❚❚", "pause"],
 ];

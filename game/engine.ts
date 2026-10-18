@@ -28,6 +28,8 @@ import { decal } from "./render/props";
 import { arrowVisible, nearestUnreadNote, nearestZombie, TutorialDirector } from "./tutorial";
 import { buildGuide } from "./render/guide";
 import { Atmosphere } from "./render/atmosphere";
+import { InquiryDirector } from "./investigation/director";
+import { recordKey, recordOf } from "./investigation/record";
 
 export interface EngineOptions {
   lowQuality?: boolean;
@@ -65,6 +67,8 @@ export class Engine {
   /** Tutoriel léger, flèche d'objectif et astuces (logique dans tutorial.ts). */
   readonly tutorial: TutorialDirector;
   readonly guide = buildGuide();
+  /** Enquête : gros plans, lampe UV, pensées de Lou, tableau (game/investigation). */
+  readonly inquiry: InquiryDirector;
 
   private clock = new Clock();
   private frame = 0;
@@ -139,6 +143,11 @@ export class Engine {
       notify: (text) => this.notify(text),
       noise: (x, z, radius) => this.horde.hearNoise(x, z, radius),
     });
+    this.inquiry = new InquiryDirector({
+      scene: this.scene, state: this.state, notify: (text) => this.notify(text),
+      emit: (event) => this.events.emit(event), setMode: (mode, id) => this.setMode(mode, id),
+    });
+    this.inquiry.attach(this.world.interactables);
     this.progressEffects = {
       notify: (text) => this.notify(text),
       shudder: () => this.world.shudder(),
@@ -150,7 +159,7 @@ export class Engine {
     this.state.subscribe(() => {
       this.worldDirty = true;
       // Un progrès (objectif, note, objet ramassé) déclenche une sauvegarde automatique.
-      const key = `${this.state.facts.length}:${this.state.notes.length}:${this.state.collected.length}:${this.state.upgraded}`;
+      const key = `${this.state.facts.length}:${this.state.notes.length}:${this.state.collected.length}:${this.state.upgraded}:${recordKey(recordOf(this.state))}`;
       if (key !== this.progressKey) {
         this.progressKey = key;
         this.autosaveDue = true;
@@ -329,6 +338,7 @@ export class Engine {
     this.refreshWorld();
     this.rig.snap(new Vector3(x, 0, z));
     this.tutorial.start(this.state);
+    this.inquiry.reset();
     this.atmosphere.snap();
   }
 
@@ -448,7 +458,7 @@ export class Engine {
     } else if (mode === "inventory" && this.input.consume("inventory")) this.resume();
     else if (mode === "journal" && this.input.consume("journal")) this.resume();
     else if (mode === "note" && this.input.consume("journal")) this.openJournal();
-    else if (mode === "note" && this.input.consume("interact")) this.resume();
+    else if ((mode === "note" || mode === "closeup") && this.input.consume("interact")) this.resume();
     if (this.ui.get().mode === "playing") this.simulate(dt);
     else this.input.clearPressed();
     this.render(dt);
@@ -493,11 +503,12 @@ export class Engine {
     // Armes et lampe
     this.combat.update(dt, {
       firing: input.firing,
-      light: input.consume("light"),
+      light: this.inquiry.lampPressed(input.consume("light")),
       swap: input.consume("swap"),
       weapon1: input.consume("weapon1"),
       weapon2: input.consume("weapon2"),
     });
+    if (input.consume("uv")) this.inquiry.toggleUv();
     if (input.consume("reload")) this.startReload(false);
     // Lance-clous vide : rechargement automatique s'il reste des clous dans la sacoche.
     if (this.combat.weapon === 1 && this.state.ammo === 0 && this.state.reserve > 0 && !this.player.reloading) this.startReload(true);
@@ -523,6 +534,7 @@ export class Engine {
 
     // Objectifs déclenchés en se déplaçant
     for (const message of checkTriggers(this.state, this.player.x, this.player.z)) this.notify(message);
+    this.inquiry.update(dt, this.player.x, this.player.z, this.player.yaw);
 
     this.noticeTime = Math.max(0, this.noticeTime - dt);
     this.state.playerPosition = [this.player.x, 0, this.player.z];
@@ -601,6 +613,10 @@ export class Engine {
   }
 
   interact(def: InteractableDef): void {
+    if (def.examine) {
+      this.events.emit({ type: "interact", id: def.id, changed: this.inquiry.examine(def.examine) });
+      return;
+    }
     this.events.emit({ type: "interact", id: def.id, changed: interactWith(def, this.state, this.progressEffects) });
   }
 
@@ -626,6 +642,7 @@ export class Engine {
       dt, x: this.player.x, z: this.player.z, focus: this.rig.focus, distance: this.rig.distance,
       aspect: this.camera.aspect, state: this.state, headlamp: this.operator.headlamp,
     });
+    this.inquiry.render(dt, this.camera, this.operator.headlamp, this.player, this.canvas.clientWidth, this.canvas.clientHeight, this.ui.get().mode);
     this.renderer.render(this.scene, this.camera);
     this.placeTooltip();
     this.fpsFrames += 1;

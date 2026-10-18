@@ -22,7 +22,8 @@ export interface Room {
 
 export interface Wall { x0: number; z0: number; x1: number; z1: number; outdoor: boolean; }
 
-export type LockKind = "power" | "key" | "secret";
+/** "inquiry" : s'ouvre quand une déduction l'a débloquée (game/investigation). */
+export type LockKind = "power" | "key" | "secret" | "inquiry";
 
 export interface Door {
   id: string;
@@ -57,6 +58,8 @@ export interface InteractableDef {
   solid?: boolean;
   /** Note de survivant à lire (identifiant dans game/notes.ts). */
   note?: string;
+  /** Objet d'enquête à examiner en gros plan (identifiant dans game/investigation/content). */
+  examine?: string;
 }
 
 export interface EnemySpawn {

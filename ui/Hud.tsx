@@ -165,7 +165,7 @@ function TutorialBubble({ hud }: { hud: ReturnType<typeof useHud> }) {
 
 const HINT: [string, string][] = [
   ["Clic", "frapper/tirer"], ["Clic droit", "éblouir"], ["1/2", "arme"], ["R", "recharger"],
-  ["E", "interagir"], ["J", "carnet"], ["M", "plan"], ["Tab", "sac"],
+  ["E", "examiner"], ["U", "lampe UV"], ["J", "carnet"], ["M", "plan"], ["Tab", "sac"],
 ];
 
 export function Hud({ engine }: { engine: Engine }) {
@@ -249,7 +249,7 @@ export function Hud({ engine }: { engine: Engine }) {
         {hud.prompt ? (
           <>
             <strong>{hud.prompt.name}</strong>
-            <span><kbd>{touch ? "✋" : hud.device === "gamepad" ? "A" : "E"}</kbd> {hud.prompt.action}</span>
+            <span>{touch ? null : <kbd>{hud.device === "gamepad" ? "A" : "E"}</kbd>} {hud.prompt.action}</span>
           </>
         ) : null}
       </div>

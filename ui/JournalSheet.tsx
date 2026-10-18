@@ -1,6 +1,7 @@
 "use client";
-// Carnet de cuir, deux onglets : « Notes » (objectif en cours, notes trouvées à gauche, note choisie à droite)
-// et « Plan » (plan de l'étage 1 croqué à la main, touche M). L'onglet ouvert suit engine.ui : "plan" ouvre le plan.
+// Carnet de cuir, trois onglets : « Notes » (objectif en cours, notes trouvées à gauche, note choisie à droite),
+// « Enquête » (tableau d'enquête, ui/InquiryBoard.tsx) et « Plan » (plan de l'étage 1 croqué à la main, touche M).
+// L'onglet ouvert suit engine.ui : "plan" ouvre le plan, "enquete" le tableau.
 import { useMemo, useState, type ReactNode } from "react";
 import type { Engine } from "@/game/engine";
 import { NOTES } from "@/game/notes";
@@ -8,6 +9,7 @@ import { buildPlan } from "@/game/plan";
 import { PaperButton } from "./Paper";
 import { NotePaper } from "./NoteSheet";
 import { PlanSketch } from "./PlanSketch";
+import { InquiryBoard } from "./InquiryBoard";
 import { useHud } from "./useHud";
 import { NOTE_TOTAL, setMode } from "./compat";
 import styles from "./sheets.module.css";
@@ -16,6 +18,8 @@ const ORDER = Object.keys(NOTES);
 
 /** Valeur de engine.ui.character qui ouvre le carnet sur le plan. */
 export const PLAN_PAGE = "plan";
+/** Valeur de engine.ui.character qui ouvre le carnet sur le tableau d'enquête. */
+export const INQUIRY_PAGE = "enquete";
 
 export function JournalSheet({ engine, initial, touch }: { engine: Engine; initial: string; touch: boolean }) {
   const hud = useHud(engine.hud);
@@ -23,9 +27,9 @@ export function JournalSheet({ engine, initial, touch }: { engine: Engine; initi
   const [selected, setSelected] = useState<string | null>(() =>
     found.includes(initial) ? initial : found[found.length - 1] ?? null,
   );
-  const view = initial === PLAN_PAGE ? "plan" : "notes";
-  const show = (next: "notes" | "plan") => {
-    if (next !== view) setMode(engine, "journal", next === "plan" ? PLAN_PAGE : selected ?? "");
+  const view = initial === PLAN_PAGE ? "plan" : initial === INQUIRY_PAGE ? "inquiry" : "notes";
+  const show = (next: "notes" | "plan" | "inquiry") => {
+    if (next !== view) setMode(engine, "journal", next === "plan" ? PLAN_PAGE : next === "inquiry" ? INQUIRY_PAGE : selected ?? "");
   };
   const note = selected ? NOTES[selected] : null;
   const close = (
@@ -38,10 +42,13 @@ export function JournalSheet({ engine, initial, touch }: { engine: Engine; initi
       <span className={styles.strap} aria-hidden />
       <div className={styles.journalTabs} role="tablist" aria-label="Pages du carnet">
         <JournalTab active={view === "notes"} onSelect={() => show("notes")} hotkey={touch ? undefined : "J"} icon={<NotesIcon />}>Notes</JournalTab>
+        <JournalTab active={view === "inquiry"} onSelect={() => show("inquiry")} icon={<BoardIcon />}>Enquête</JournalTab>
         <JournalTab active={view === "plan"} onSelect={() => show("plan")} hotkey={touch ? undefined : "M"} icon={<MapIcon />}>Plan</JournalTab>
       </div>
       {view === "plan" ? (
         <PlanPage engine={engine} objective={hud.objective.title} close={close} />
+      ) : view === "inquiry" ? (
+        <InquiryBoard engine={engine} touch={touch} close={close} />
       ) : (
         <div className={styles.journalPages} role="tabpanel" aria-label="Notes">
           <div className={styles.page} data-side="left">
@@ -127,6 +134,17 @@ function NotesIcon() {
     <svg viewBox="0 0 24 24" aria-hidden>
       <path d="M6 3.5h9l3.5 3.5v13.5H6z" fill="#fffaf0" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
       <path d="M9 10h7M9 13.5h7M9 17h4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function BoardIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <rect x="2.5" y="4" width="19" height="16" rx="2" fill="#fffaf0" stroke="currentColor" strokeWidth="1.8" />
+      <rect x="5" y="7" width="5" height="4" fill="#f4ecd6" stroke="currentColor" strokeWidth="1.2" />
+      <rect x="14" y="13" width="5" height="4" fill="#f4ecd6" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M8 11c2 4 5 1 7 3" fill="none" stroke="#c4412a" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }

@@ -12,6 +12,7 @@ import { DialogueSheet } from "./DialogueSheet";
 import { ConclusionSheet, DeathSheet, EndingSheet } from "./OutcomeSheets";
 import { NoteSheet } from "./NoteSheet";
 import { JournalSheet, PLAN_PAGE } from "./JournalSheet";
+import { CloseupSheet } from "./CloseupSheet";
 import { heal, openJournal, setMode, useCell, type AnyMode } from "./compat";
 import styles from "./sheets.module.css";
 
@@ -127,6 +128,12 @@ export function Overlay({ engine }: { engine: Engine }) {
       return (
         <div className={styles.backdrop} data-tone="journal">
           <JournalSheet engine={engine} initial={ui.character} touch={touch} />
+        </div>
+      );
+    case "closeup":
+      return (
+        <div className={styles.backdrop} data-tone="note">
+          <CloseupSheet key={ui.character} engine={engine} id={ui.character} touch={touch} />
         </div>
       );
     case "dialogue":

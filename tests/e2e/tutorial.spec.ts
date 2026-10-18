@@ -57,7 +57,7 @@ async function expectApart(bubble: Locator, others: [string, Locator][]) {
 const bubble = (page: Page) => page.getByRole("note", { name: "Conseil" });
 
 function touchObstacles(page: Page): [string, Locator][] {
-  const named = ["Frapper", "Éblouir", "Changer d'arme", "Interagir", "S'accroupir", "Pause", "Sac", "Carnet"]
+  const named = ["Examiner", "Frapper", "Éblouir", "Lampe UV", "Changer d'arme", "S'accroupir", "Pause", "Sac", "Carnet"]
     .map((name) => [name, page.getByRole("button", { name, exact: true })] as [string, Locator]);
   return [
     ...named,
@@ -147,7 +147,7 @@ test("téléphone portrait : bulles au-dessus des commandes, pointées vers le b
   await expect(bubble(page)).toHaveCount(0, { timeout: 15_000 });
   await page.evaluate(() => { (window as any).__silo.input.touchMove.y = 0; });
 
-  // Près de la note de l'entrée : examiner avec ✋ (enquête d'abord).
+  // Près de la note de l'entrée : le gros bouton EXAMINER (enquête d'abord).
   await page.evaluate(() => {
     const engine = (window as any).__silo;
     engine.player.x = -8;
@@ -155,8 +155,8 @@ test("téléphone portrait : bulles au-dessus des commandes, pointées vers le b
     engine.player.vx = engine.player.vz = 0;
     engine.rig.snap(new engine.rig.focus.constructor(-8, 0, 32));
   });
-  await expect(bubble(page)).toContainText("✋", { timeout: 15_000 });
-  await expect(page.getByRole("button", { name: "Interagir", exact: true })).toHaveAttribute("data-tutorial", "true");
+  await expect(bubble(page)).toContainText("EXAMINER", { timeout: 15_000 });
+  await expect(page.getByRole("button", { name: "Examiner", exact: true })).toHaveAttribute("data-tutorial", "true");
   await expectApart(bubble(page), touchObstacles(page));
   await shot(page, "tuto-portrait-examiner");
   expect(errors).toEqual([]);

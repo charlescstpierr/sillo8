@@ -5,6 +5,7 @@ import { Hud, Notice } from "./Hud";
 import { Overlay } from "./Overlay";
 import { applyStartupSettings } from "./settings";
 import { TouchControls } from "./TouchControls";
+import { InquiryLayer } from "./InquiryLayer";
 
 function storage() {
   try {
@@ -53,6 +54,7 @@ export default function GameCanvas() {
     <div style={{ position: "fixed", inset: 0 }}>
       <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block", touchAction: "none" }} tabIndex={0} />
       {engine ? <Hud engine={engine} /> : null}
+      {engine ? <InquiryLayer engine={engine} /> : null}
       {engine ? <TouchControls engine={engine} /> : null}
       {engine ? <Overlay engine={engine} /> : null}
       {engine ? <Notice engine={engine} /> : null}

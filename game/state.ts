@@ -76,6 +76,11 @@ export class SiloState {
   relations: Record<string, number> = {};
   /** Pièces déjà visitées (plan du carnet), dans l'ordre de découverte. */
   visited: string[] = [];
+  /**
+   * Données sauvegardées des systèmes annexes, une clé par système, en JSON simple
+   * (ex. « investigation » : game/investigation/record.ts). Lues avec getExt, écrites avec setExt.
+   */
+  ext: Record<string, unknown> = {};
 
   private listeners = new Set<Listener>();
 
@@ -95,6 +100,23 @@ export class SiloState {
 
   private changed(): void {
     for (const listener of this.listeners) listener();
+  }
+
+  /** Prévient les abonnés d'un changement fait hors de cette classe (ex. enquête modifiée sur place). */
+  markChanged(): void {
+    this.changed();
+  }
+
+  /** Range les données d'un système annexe (JSON simple). */
+  setExt(key: string, value: unknown): void {
+    this.ext[key] = value;
+    this.changed();
+  }
+
+  /** Lit les données d'un système : `read` valide (null si invalide), sinon `fallback`. */
+  getExt<T>(key: string, read: (raw: unknown) => T | null, fallback: () => T): T {
+    const raw = this.ext[key];
+    return (raw === undefined ? null : read(raw)) ?? fallback();
   }
 
   has(fact: FactId): boolean {
@@ -412,6 +434,8 @@ export class SiloState {
     this.elapsed = data.elapsed;
     // Sauvegardes antérieures au plan : aucune pièce connue, le moteur note la pièce courante.
     this.visited = data.visited ? [...data.visited] : [];
+    // Sauvegardes antérieures aux systèmes annexes (enquête…) : rien à lire.
+    this.ext = data.ext ? JSON.parse(JSON.stringify(data.ext)) : {};
     this.ending = "";
     this.changed();
     return "ok";
@@ -440,6 +464,7 @@ export class SiloState {
       player_yaw: this.playerYaw,
       elapsed: this.elapsed,
       visited: [...this.visited],
+      ext: JSON.parse(JSON.stringify(this.ext)),
     };
   }
 }
@@ -467,10 +492,12 @@ export interface Snapshot {
   elapsed: number;
   /** Optionnel : absent des sauvegardes antérieures au plan du carnet. */
   visited?: string[];
+  /** Optionnel : systèmes annexes (une clé par système), absent des anciennes sauvegardes. */
+  ext?: Record<string, unknown>;
 }
 
 /** Champs facultatifs : une sauvegarde peut ne pas les avoir. */
-const OPTIONAL_KEYS = ["visited"];
+const OPTIONAL_KEYS = ["visited", "ext"];
 const SNAPSHOT_KEYS = Object.keys(new SiloState().snapshot()).filter((key) => !OPTIONAL_KEYS.includes(key));
 
 /** Chaque fait n'est possible qu'après celui dont il dépend. */
@@ -506,6 +533,8 @@ export function validSnapshot(data: Record<string, unknown>): boolean {
     if (!strings(d.visited, ROOM_IDS.length, 40, true)) return false;
     for (const room of d.visited) if (!ROOM_IDS.includes(room)) return false;
   }
+  // Chaque système valide ses propres données à la lecture (getExt) ; ici, seulement la forme.
+  if ("ext" in d && (!isRecord(d.ext) || Object.keys(d.ext).length > 32)) return false;
   return true;
 }
 

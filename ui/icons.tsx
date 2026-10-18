@@ -6,7 +6,7 @@ const line = { stroke: INK, strokeWidth: 3, strokeLinejoin: "round" as const, st
 
 export type IconName =
   | "scrap" | "cell" | "bandage" | "medkit" | "can" | "wrench" | "nailgun" | "nails"
-  | "lamp" | "heart" | "journal" | "bag" | "hand" | "swap";
+  | "lamp" | "heart" | "journal" | "bag" | "hand" | "swap" | "examine" | "uv";
 
 const ICONS: Record<IconName, ReactNode> = {
   // Ferraille : roue dentée et boulon
@@ -120,6 +120,27 @@ const ICONS: Record<IconName, ReactNode> = {
   swap: (
     <>
       <path d="M8 17h28l-6-6M40 31H12l6 6" fill="none" {...line} strokeWidth={3.5} />
+    </>
+  ),
+  // Examiner : loupe de cuivre sur une main ouverte
+  examine: (
+    <>
+      <path d="M31 31l10 10" stroke="#7a4a2a" strokeWidth="7" strokeLinecap="round" />
+      <path d="M31 31l10 10" stroke={INK} strokeWidth="2" strokeLinecap="round" />
+      <circle cx="21" cy="21" r="13" fill="#fff6e2" stroke="#d8a43a" strokeWidth="5" />
+      <circle cx="21" cy="21" r="13" fill="none" stroke={INK} strokeWidth="2.2" />
+      <path d="M14 18a8 8 0 0 1 7-6" fill="none" stroke="#9fb6c4" strokeWidth="3" strokeLinecap="round" />
+    </>
+  ),
+  // Lampe UV : lampe et faisceau violet
+  uv: (
+    <>
+      <path d="M28 20L44 8M30 24l15-4M24 18l8-14" stroke="#9a6cf0" strokeWidth="3.4" strokeLinecap="round" />
+      <g transform="rotate(-45 22 26)">
+        <rect x="4" y="20" width="22" height="12" rx="3" fill="#4b3f6b" {...line} />
+        <path d="M26 17h9l3 3v12l-3 3h-9z" fill="#9a6cf0" {...line} />
+        <path d="M38 21v10" stroke="#e6d6ff" strokeWidth="3" strokeLinecap="round" />
+      </g>
     </>
   ),
 };

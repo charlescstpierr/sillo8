@@ -4,7 +4,9 @@
 
 export type Action =
   | "interact" | "reload" | "journal" | "inventory" | "pause" | "weapon1" | "weapon2" | "swap"
-  | "save" | "load" | "light" | "heal" | "cell" | "perf";
+  | "save" | "load" | "light" | "heal" | "cell" | "perf"
+  /** Lampe UV : bascule lumière blanche / lumière noire. */
+  | "uv";
 export type Device = "keyboard" | "gamepad" | "touch";
 
 const KEY_ACTIONS: Record<string, Action> = {
@@ -21,6 +23,7 @@ const KEY_ACTIONS: Record<string, Action> = {
   KeyH: "heal",
   KeyB: "cell",
   F3: "perf",
+  KeyU: "uv",
 };
 
 const MOVE_KEYS: Record<string, [number, number]> = {
@@ -195,7 +198,7 @@ export class InputState {
         sprint = sprint || button(10);
         crouch = crouch || button(1);
         firing = firing || button(7);
-        const edges: [number, Action][] = [[0, "interact"], [2, "reload"], [3, "journal"], [6, "light"], [4, "swap"], [5, "swap"], [8, "inventory"], [9, "pause"]];
+        const edges: [number, Action][] = [[0, "interact"], [2, "reload"], [3, "journal"], [6, "light"], [4, "swap"], [5, "swap"], [8, "inventory"], [9, "pause"], [11, "uv"], [14, "uv"]];
         for (const [index, action] of edges) {
           if (button(index) && !this.gamepadPrev[index]) this.pressed.add(action);
         }
