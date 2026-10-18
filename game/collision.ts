@@ -70,3 +70,34 @@ export function segmentClear(ax: number, az: number, bx: number, bz: number, box
   }
   return true;
 }
+
+/**
+ * Distance le long d'un rayon (origine a, direction d normalisée) jusqu'à la première boîte, plafonnée à `max`.
+ * Les boîtes qui contiennent déjà l'origine sont ignorées.
+ */
+export function rayDistance(ax: number, az: number, dx: number, dz: number, max: number, boxes: readonly Box[]): number {
+  let best = max;
+  for (const box of boxes) {
+    let t0 = -Infinity;
+    let t1 = Infinity;
+    if (Math.abs(dx) < 1e-12) {
+      if (ax < box.minX || ax > box.maxX) continue;
+    } else {
+      const a = (box.minX - ax) / dx;
+      const b = (box.maxX - ax) / dx;
+      t0 = Math.max(t0, Math.min(a, b));
+      t1 = Math.min(t1, Math.max(a, b));
+    }
+    if (Math.abs(dz) < 1e-12) {
+      if (az < box.minZ || az > box.maxZ) continue;
+    } else {
+      const a = (box.minZ - az) / dz;
+      const b = (box.maxZ - az) / dz;
+      t0 = Math.max(t0, Math.min(a, b));
+      t1 = Math.min(t1, Math.max(a, b));
+    }
+    if (t0 > t1 || t0 < 0) continue;
+    if (t0 < best) best = t0;
+  }
+  return best;
+}
