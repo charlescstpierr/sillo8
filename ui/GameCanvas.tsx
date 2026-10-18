@@ -8,7 +8,7 @@ import { TouchControls } from "./TouchControls";
 
 function storage() {
   try {
-    const probe = "__silo9_probe";
+    const probe = "__sillo8_probe";
     window.localStorage.setItem(probe, "1");
     window.localStorage.removeItem(probe);
     return window.localStorage;

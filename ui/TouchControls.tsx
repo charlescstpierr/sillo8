@@ -1,14 +1,16 @@
 "use client";
+// Commandes tactiles : stick à gauche, frappe / tir, lampe, changement d'arme, interaction à droite ;
+// pause, sac et carnet en haut à gauche. Visée assistée côté moteur.
 import { useEffect, useRef, useState } from "react";
 import type { Engine } from "@/game/engine";
-import type { Action } from "@/game/input";
 import { useHud } from "./useHud";
 import { useUi } from "./useUi";
+import { hudExtra, openJournal, trigger } from "./compat";
+import { Icon } from "./icons";
 import styles from "./touch.module.css";
 
 const STICK_RADIUS = 56;
 
-/** Commandes tactiles : stick gauche, gros boutons à droite. Visée assistée côté moteur. */
 export function TouchControls({ engine }: { engine: Engine }) {
   const hud = useHud(engine.hud);
   const ui = useUi(engine.ui);
@@ -27,6 +29,8 @@ export function TouchControls({ engine }: { engine: Engine }) {
   // Uniquement en jeu : les fiches ont leurs propres boutons.
   if ((!coarse && hud.device !== "touch") || ui.mode !== "playing") return null;
   const input = engine.input;
+  const extra = hudExtra(engine, hud);
+  const nailgun = extra.weapon === 1;
 
   const onStickDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (pointerId.current !== null) return;
@@ -55,11 +59,19 @@ export function TouchControls({ engine }: { engine: Engine }) {
     setStick(null);
   };
 
-  const tap = (action: Action) => (e: React.PointerEvent) => {
+  const tap = (action: string) => (e: React.PointerEvent) => {
     e.preventDefault();
     input.device = "touch";
-    input.trigger(action);
+    trigger(engine, action);
   };
+  const press = (run: () => void) => (e: React.PointerEvent) => {
+    e.preventDefault();
+    input.device = "touch";
+    run();
+  };
+  // Choix explicite de l'autre arme : fonctionne avec « 1 / 2 » comme avec un échange.
+  const swap = press(() => trigger(engine, nailgun ? "weapon1" : "weapon2"));
+  const fireUp = () => { input.touchFiring = false; };
 
   return (
     <div className={styles.layer}>
@@ -75,24 +87,42 @@ export function TouchControls({ engine }: { engine: Engine }) {
       <div className={styles.buttons}>
         <button
           className={styles.fire}
+          data-weapon={extra.weapon}
+          aria-label={nailgun ? "Tirer" : "Frapper"}
           onPointerDown={(e) => { e.preventDefault(); input.device = "touch"; input.touchFiring = true; }}
-          onPointerUp={() => { input.touchFiring = false; }}
-          onPointerCancel={() => { input.touchFiring = false; }}
-          onPointerLeave={() => { input.touchFiring = false; }}
-        >TIR</button>
-        <button className={styles.small} data-slot="arc" onPointerDown={tap("arc")}>ARC</button>
-        <button className={styles.small} data-slot="scan" onPointerDown={tap("scan")}>ÉCHO</button>
-        <button className={styles.small} data-slot="use" data-ready={hud.prompt !== null} onPointerDown={tap("interact")}>✋</button>
-        <button className={styles.small} data-slot="reload" onPointerDown={tap("reload")}>R</button>
+          onPointerUp={fireUp}
+          onPointerCancel={fireUp}
+          onPointerLeave={fireUp}
+        >
+          <Icon name={nailgun ? "nailgun" : "wrench"} />
+          <span>{nailgun ? "TIRER" : "FRAPPER"}</span>
+        </button>
+        <button className={styles.small} data-slot="lamp" aria-label="Éblouir" onPointerDown={tap("light")}>
+          <Icon name="lamp" />
+          <span>LAMPE</span>
+        </button>
+        <button className={styles.small} data-slot="swap" aria-label="Changer d'arme" onPointerDown={swap}>⇄</button>
+        {nailgun ? <button className={styles.small} data-slot="reload" aria-label="Recharger" onPointerDown={tap("reload")}>R</button> : null}
+        <button className={styles.small} data-slot="use" aria-label="Interagir" data-ready={hud.prompt !== null} onPointerDown={tap("interact")}>✋</button>
         <button
           className={styles.small}
           data-slot="crouch"
+          aria-label="S'accroupir"
           data-ready={input.touchCrouch}
           onPointerDown={(e) => { e.preventDefault(); input.touchCrouch = !input.touchCrouch; }}
         >⤓</button>
       </div>
-      <button className={styles.pause} onPointerDown={tap("pause")} aria-label="Pause">❚❚</button>
-      <button className={styles.bag} onPointerDown={tap("inventory")} aria-label="Inventaire">Sac</button>
+      <div className={styles.menu}>
+        <button className={styles.pause} onPointerDown={tap("pause")} aria-label="Pause">❚❚</button>
+        <button className={styles.bag} onPointerDown={tap("inventory")} aria-label="Sac">
+          <Icon name="bag" />
+          <span>SAC</span>
+        </button>
+        <button className={styles.journal} onPointerDown={press(() => openJournal(engine))} aria-label="Carnet">
+          <Icon name="journal" />
+          <span>CARNET</span>
+        </button>
+      </div>
     </div>
   );
 }

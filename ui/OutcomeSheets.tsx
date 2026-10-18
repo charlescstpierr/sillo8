@@ -4,7 +4,7 @@ import type { Engine } from "@/game/engine";
 import type { Character } from "@/game/state";
 import { PaperButton, Stamp, Tag } from "./Paper";
 import { CharacterPortrait } from "./Portraits";
-import { CHARACTERS, ENDINGS, ENDING_ORDER, ENDING_PROMPT } from "./story";
+import { ENDINGS, ENDING_ORDER, ENDING_PROMPT, characterSheet } from "./story";
 import styles from "./sheets.module.css";
 
 export function EndingSheet({ engine, touch }: { engine: Engine; touch: boolean }) {
@@ -19,11 +19,11 @@ export function EndingSheet({ engine, touch }: { engine: Engine; touch: boolean 
           <div key={id} className={styles.choice}>
             <div className={styles.choiceHead}>
               <div className={styles.avatar}><CharacterPortrait character={id} /></div>
-              <Tag>{CHARACTERS[id].name} · {CHARACTERS[id].title}</Tag>
+              <Tag>{characterSheet(id).name} · {characterSheet(id).title}</Tag>
             </div>
-            <p>{ENDINGS[id].description}</p>
+            <p>{ENDINGS[id]?.description}</p>
             <PaperButton variant={index === 0 ? "olive" : "primary"} autoFocus={!touch && index === 0} onClick={() => engine.chooseEnding(id)}>
-              {ENDINGS[id].choice}
+              {ENDINGS[id]?.choice}
             </PaperButton>
           </div>
         ))}
@@ -37,7 +37,7 @@ export function ConclusionSheet({ engine, choice, touch }: { engine: Engine; cho
   const story = ENDINGS[choice] ?? ENDINGS.floor2;
   return (
     <section className={styles.conclusion} aria-label={story.stamp} data-sheet>
-      <Tag>MISSION ACCOMPLIE / SILLO 8</Tag>
+      <Tag>CARNET DE SURVIE / SILLO 8</Tag>
       <div><Stamp className={styles.bigStamp}>{story.stamp}</Stamp></div>
       {story.conclusion.map((text) => <p key={text} className={styles.text}>{text}</p>)}
       <p className={styles.muted} style={{ marginTop: 0, marginBottom: 12 }}>
@@ -54,12 +54,12 @@ export function ConclusionSheet({ engine, choice, touch }: { engine: Engine; cho
 
 export function DeathSheet({ engine, touch }: { engine: Engine; touch: boolean }) {
   return (
-    <section className={styles.sheet} aria-label="Signal perdu" data-sheet style={{ ["--tilt" as string]: "1.2deg" }}>
-      <Stamp>OPÉRATEUR HORS LIGNE</Stamp>
-      <Tag>SILLO 8 / TÉLÉMÉTRIE</Tag>
-      <h1 className={styles.title}>Signal perdu</h1>
+    <section className={styles.sheet} aria-label="Mordu" data-sheet style={{ ["--tilt" as string]: "1.2deg" }}>
+      <Stamp>MORDU</Stamp>
+      <Tag>SILLO 8 / ÉTAGE 1</Tag>
+      <h1 className={styles.title}>Vous êtes tombé</h1>
       <p className={styles.text}>
-        Votre dernier enregistrement reste intact. Repérez les zombies avant qu&apos;ils ne vous encerclent, et gardez toujours de l&apos;énergie en réserve.
+        Votre dernière sauvegarde reste intacte. Avancez accroupi, gardez la lampe chargée : un faisceau en pleine face fige les mordus le temps de filer.
       </p>
       <div className={styles.buttons}>
         <PaperButton variant="primary" arrow autoFocus={!touch} disabled={!engine.hasSave()} onClick={() => engine.loadGame()}>Recharger la sauvegarde</PaperButton>

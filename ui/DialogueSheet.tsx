@@ -1,11 +1,11 @@
 "use client";
-// Canal de communication, générique : nom et rôle viennent de story.ts.
+// Conversation radio, générique : nom et rôle viennent de story.ts.
 import { useEffect, useRef, useState } from "react";
 import type { Engine } from "@/game/engine";
 import type { Character } from "@/game/state";
 import { PaperButton, Tag } from "./Paper";
 import { CharacterPortrait } from "./Portraits";
-import { CHARACTERS } from "./story";
+import { characterSheet } from "./story";
 import styles from "./sheets.module.css";
 
 interface Line {
@@ -68,13 +68,14 @@ export function DialogueSheet({ engine, character, touch }: { engine: Engine; ch
     push({ who: "char", text: engine.dialogue.offlineReply(character, question), tag: "[dialogue scénarisé]" });
   };
 
-  const name = CHARACTERS[character].name;
+  const sheet = characterSheet(character);
+  const name = sheet.name;
   return (
-    <section className={styles.dialogue} aria-label={`Canal de communication avec ${name}`} data-sheet>
+    <section className={styles.dialogue} aria-label={`Radio avec ${name}`} data-sheet>
       <header className={styles.dialogueHead}>
         <div className={styles.avatar}><CharacterPortrait character={character} /></div>
         <div>
-          <Tag>CANAL DE COMMUNICATION · {CHARACTERS[character].title}</Tag>
+          <Tag>RADIO · {sheet.title}</Tag>
           <h1 className={styles.title}>{name}</h1>
         </div>
       </header>
@@ -102,7 +103,7 @@ export function DialogueSheet({ engine, character, touch }: { engine: Engine; ch
           autoComplete="off"
           autoCorrect="on"
           maxLength={600}
-          placeholder="Écrivez à ce personnage…"
+          placeholder="Parlez dans la radio…"
           aria-label={`Message pour ${name}`}
           value={draft}
           autoFocus={!touch}
@@ -117,7 +118,7 @@ export function DialogueSheet({ engine, character, touch }: { engine: Engine; ch
 
       <div className={styles.quick}>
         <PaperButton variant="olive" onClick={() => hint("Que dois-je faire ?")}>Indice de mission • réponse immédiate</PaperButton>
-        <PaperButton onClick={() => hint("surface")}>Que savez-vous de la surface ?</PaperButton>
+        <PaperButton onClick={() => hint("surface")}>Et dehors, à la surface ?</PaperButton>
         <PaperButton variant="ghost" onClick={close}>Fermer la liaison</PaperButton>
       </div>
     </section>

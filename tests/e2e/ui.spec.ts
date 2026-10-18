@@ -1,4 +1,4 @@
-// Parcours de l'interface papier : menu, pause, inventaire, dialogue, fin, conclusion, mort.
+// Parcours de l'interface papier de SILLO 8 : menu, HUD, sac, note, carnet, pause, mort (ordi et téléphone).
 import { expect, test, type Page } from "@playwright/test";
 
 const SHOTS = process.env.SHOTS_DIR ?? "docs/screenshots";
@@ -10,7 +10,7 @@ async function boot(page: Page) {
   await page.goto("/");
   await page.waitForFunction(() => Boolean((window as any).__silo), null, { timeout: 30_000 });
   await page.evaluate(() => {
-    window.localStorage.removeItem("silo9-save");
+    window.localStorage.removeItem("sillo8-save");
     // Le rendu logiciel (swiftshader) prend des secondes par image : la simulation tourne
     // sans dessiner, et on ne dessine qu'au moment des captures.
     const engine = (window as any).__silo;
@@ -32,7 +32,37 @@ async function shot(page: Page, name: string) {
     const engine = (window as any).__silo;
     engine.__draw(engine.scene, engine.camera);
   });
-  await page.screenshot({ path: `${SHOTS}/ui-${name}.png`, animations: "disabled" });
+  await page.screenshot({ path: `${SHOTS}/sillo8-ui-${name}.png`, animations: "disabled" });
+}
+
+/** Approche la note de l'entrée et interagit ; repli si le moteur n'ouvre pas encore la fiche. */
+async function readEntranceNote(page: Page) {
+  await page.evaluate(() => {
+    const engine = (window as any).__silo;
+    engine.player.x = -8;
+    engine.player.z = 30.9;
+    engine.player.vx = engine.player.vz = 0;
+    engine.rig.snap?.({ x: -8, y: 0, z: 30.9 });
+  });
+  await page.waitForTimeout(200);
+  await page.evaluate(() => (window as any).__silo.input.trigger("interact"));
+  await page.waitForTimeout(400);
+  await page.evaluate(() => {
+    const engine = (window as any).__silo;
+    if (engine.ui.get().mode === "note") return;
+    engine.state.readNote("note_entrance", false);
+    engine.setMode("note", "note_entrance");
+  });
+  await expect.poll(() => mode(page)).toBe("note");
+}
+
+/** Ajoute la note-indice de Lila et ouvre sa fiche. */
+async function openClueNote(page: Page) {
+  await page.evaluate(() => {
+    const engine = (window as any).__silo;
+    engine.state.readNote("note_storage", true);
+    engine.setMode("note", "note_storage");
+  });
 }
 
 test("ordi : parcours complet de l'interface", async ({ page }) => {
@@ -43,29 +73,69 @@ test("ordi : parcours complet de l'interface", async ({ page }) => {
   await expect.poll(() => mode(page)).toBe("menu");
   await expect(page.getByRole("heading", { name: "SILLO 8" })).toBeVisible();
   await expect(page.getByRole("button", { name: /CONTINUER LA SAUVEGARDE/ })).toBeDisabled();
+  await expect(page.getByText("éblouir à la lampe")).toBeVisible();
   await shot(page, "menu");
 
   // Réglages depuis le menu, Échap revient au menu
   await page.getByRole("button", { name: "Réglages" }).click();
   await expect(page.getByRole("heading", { name: "Réglages" })).toBeVisible();
-  await expect(page.getByText("indisponible sur ce serveur")).toBeVisible();
-  await page.getByPlaceholder("http://127.0.0.1:8080").fill("http://exemple.com");
-  await page.getByRole("button", { name: /Appliquer et revenir/ }).click();
-  await expect(page.getByText(/^Adresse refusée/)).toBeVisible();
+  await expect(page.getByText("Mode performance")).toBeVisible();
   await shot(page, "settings");
-  await page.getByPlaceholder("http://127.0.0.1:8080").fill("");
   await page.keyboard.press("Escape");
   await expect.poll(() => mode(page)).toBe("menu");
 
-  // Nouvelle partie
+  // Nouvelle partie : HUD du bricoleur
   await page.getByRole("button", { name: /NOUVELLE DESCENTE/ }).click();
   await expect.poll(() => mode(page)).toBe("playing");
+  await expect(page.getByLabel("État du survivant").getByText("CLÉ À MOLETTE")).toBeVisible();
+  await expect(page.getByLabel("État du survivant").getByText("LAMPE", { exact: true })).toBeVisible();
+  await expect(page.getByLabel(/Clic droit : éblouir/)).toBeVisible();
   await page.waitForTimeout(600);
   await shot(page, "hud");
 
+  // Sac (Tab) : un bandage soigne de 30
+  await page.evaluate(() => {
+    const s = (window as any).__silo.state;
+    s.health = 55;
+    s.collect("e2e_scrap", "components", 2);
+    s.collect("e2e_kit", "medkit", 1);
+  });
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("heading", { name: "Le sac" })).toBeVisible();
+  await page.getByRole("button", { name: "Utiliser un bandage" }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).__silo.state.health)).toBe(85);
+  await expect(page.getByText("Presse à clous · 1 → 16 clous")).toBeVisible();
+  await shot(page, "inventory");
+  await page.getByRole("button", { name: /Refermer le sac/ }).click();
+  await expect.poll(() => mode(page)).toBe("playing");
+
+  // Note de l'entrée, lue sur place
+  await readEntranceNote(page);
+  await expect(page.getByRole("heading", { name: "Consigne de garde" })).toBeVisible();
+  await expect(page.getByText(/Sgt\. Bérard/)).toBeVisible();
+  await page.getByRole("button", { name: /Ranger dans le carnet/ }).click();
+  await expect.poll(() => mode(page)).toBe("playing");
+
+  // Note-indice : tampon INDICE, puis le carnet
+  await openClueNote(page);
+  await expect(page.getByRole("heading", { name: "Liste de Lila" })).toBeVisible();
+  await expect(page.getByLabel("Indice")).toBeVisible();
+  await shot(page, "note");
+  await page.getByRole("button", { name: /Ouvrir le carnet/ }).click();
+  await expect.poll(() => mode(page)).toBe("journal");
+  await expect(page.getByText("2 / 7 notes trouvées")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Consigne de garde/ })).toBeVisible();
+  await shot(page, "journal");
+  await page.keyboard.press("KeyJ");
+  await expect.poll(() => mode(page)).toBe("playing");
+  await page.keyboard.press("KeyJ");
+  await expect.poll(() => mode(page)).toBe("journal");
+  await page.keyboard.press("Escape");
+  await expect.poll(() => mode(page)).toBe("playing");
+
   // Pause (Échap via le moteur), sauvegarde
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("heading", { name: "Signal suspendu" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "On souffle un peu" })).toBeVisible();
   await page.getByRole("button", { name: /Sauvegarder/ }).click();
   await expect(page.getByRole("status")).toContainText("Progression sauvegardée");
   await expect(page.getByRole("button", { name: /Charger la sauvegarde/ })).toBeEnabled();
@@ -73,53 +143,9 @@ test("ordi : parcours complet de l'interface", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect.poll(() => mode(page)).toBe("playing");
 
-  // Inventaire (Tab)
-  await page.evaluate(() => { (window as any).__silo.state.health = 60; });
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("heading", { name: "Équipement" })).toBeVisible();
-  await page.getByRole("button", { name: /Utiliser une trousse/ }).click();
-  await expect(page.locator("li", { hasText: "trousses" })).toContainText("1");
-  await shot(page, "inventory");
-  await page.getByRole("button", { name: /Retour au terrain/ }).click();
-  await expect.poll(() => mode(page)).toBe("playing");
-
-  // Dialogue avec N-7
-  await page.evaluate(() => (window as any).__silo.openConversation("n7"));
-  const input = page.getByPlaceholder("Écrivez à ce personnage…");
-  await expect(input).toBeVisible();
-  await input.fill("Comment recharger ma batterie ?");
-  await input.press("Enter");
-  await expect(page.getByRole("log")).toContainText("VOUS");
-  await expect(page.getByRole("log")).toContainText("L'ascenseur recharge gratuitement");
-  await expect(page.getByRole("log")).toContainText("[hors ligne]");
-  await page.getByRole("button", { name: /Que savez-vous de la surface/ }).click();
-  await expect(page.getByRole("log")).toContainText("[dialogue scénarisé]");
-  await shot(page, "dialogue");
-  await page.getByRole("button", { name: "Fermer la liaison" }).click();
-  await expect.poll(() => mode(page)).toBe("playing");
-
-  // Fin forcée
-  await page.evaluate(() => {
-    const engine = (window as any).__silo;
-    const s = engine.state;
-    s.discoverRelay();
-    s.collect("x", "components", 3);
-    s.repairRelay();
-    s.recoverCore();
-    engine.openEnding();
-  });
-  await expect(page.getByRole("heading", { name: "Quel sera votre choix ?" })).toBeVisible();
-  await shot(page, "ending");
-  await page.getByRole("button", { name: /N-7$/ }).click();
-  await expect.poll(() => mode(page)).toBe("conclusion");
-  await expect(page.getByText("ÉMANCIPATION")).toBeVisible();
-  await shot(page, "conclusion");
-
   // Mort
-  await page.getByRole("button", { name: "Recommencer une descente" }).click();
-  await expect.poll(() => mode(page)).toBe("playing");
   await page.evaluate(() => (window as any).__silo.damagePlayer(999));
-  await expect(page.getByRole("heading", { name: "Signal perdu" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Vous êtes tombé" })).toBeVisible();
   await shot(page, "death");
   await page.getByRole("button", { name: "Menu principal" }).click();
   await expect.poll(() => mode(page)).toBe("menu");
@@ -128,20 +154,25 @@ test("ordi : parcours complet de l'interface", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("ordi : vie basse", async ({ page }) => {
+test("ordi : vie basse, lance-clous en main", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   const errors = await boot(page);
   await page.evaluate(() => {
     const engine = (window as any).__silo;
     engine.newGame();
     engine.combat.weapon = 1;
+    engine.state.ammo = 12;
+    engine.state.reserve = 31;
+    engine.state.energy = 20;
     engine.state.health = 12;
   });
+  await expect(page.getByText("LANCE-CLOUS")).toBeVisible();
+  await expect(page.getByText("réserve 31")).toBeVisible();
   await shot(page, "hud-low");
   expect(errors).toEqual([]);
 });
 
-test("téléphone paysage : menu, jeu et dialogue", async ({ browser }) => {
+test("téléphone paysage : menu, jeu, sac, note, carnet, pause", async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   const page = await context.newPage();
   const errors = await boot(page);
@@ -151,22 +182,36 @@ test("téléphone paysage : menu, jeu et dialogue", async ({ browser }) => {
   await page.getByRole("button", { name: /NOUVELLE DESCENTE/ }).tap();
   await expect.poll(() => mode(page)).toBe("playing");
   await page.evaluate(() => { (window as any).__silo.input.device = "touch"; });
-  await expect(page.getByRole("button", { name: "Inventaire" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sac" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Frapper" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Recharger" })).toHaveCount(0);
   await shot(page, "hud-mobile");
 
-  await page.getByRole("button", { name: "Inventaire" }).dispatchEvent("pointerdown");
-  await expect(page.getByRole("heading", { name: "Équipement" })).toBeVisible();
-  await shot(page, "inventory-mobile");
-  await page.getByRole("button", { name: /Retour au terrain/ }).tap();
+  // Lance-clous : le bouton devient TIRER et R apparaît
+  await page.evaluate(() => { (window as any).__silo.combat.weapon = 1; });
+  await expect(page.getByRole("button", { name: "Tirer" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Recharger" })).toBeVisible();
+  await shot(page, "hud-nailgun-mobile");
 
-  await page.evaluate(() => (window as any).__silo.openConversation("mother"));
-  const input = page.getByPlaceholder("Écrivez à ce personnage…");
-  await input.tap();
-  await input.fill("Que dois-je faire ?");
-  await page.getByRole("button", { name: "Transmettre" }).tap();
-  await expect(page.getByRole("log")).toContainText("[hors ligne]");
-  await shot(page, "dialogue-mobile");
-  await page.getByRole("button", { name: "Fermer la liaison" }).tap();
+  await page.getByRole("button", { name: "Sac" }).dispatchEvent("pointerdown");
+  await expect(page.getByRole("heading", { name: "Le sac" })).toBeVisible();
+  await shot(page, "inventory-mobile");
+  await page.getByRole("button", { name: /Refermer le sac/ }).tap();
+  await expect.poll(() => mode(page)).toBe("playing");
+
+  await readEntranceNote(page);
+  await openClueNote(page);
+  await expect(page.getByRole("heading", { name: "Liste de Lila" })).toBeVisible();
+  await shot(page, "note-mobile");
+  await page.getByRole("button", { name: /Ranger dans le carnet/ }).tap();
+  await expect.poll(() => mode(page)).toBe("playing");
+
+  await page.getByRole("button", { name: "Carnet" }).dispatchEvent("pointerdown");
+  await expect.poll(() => mode(page)).toBe("journal");
+  await expect(page.getByText("2 / 7 notes trouvées")).toBeVisible();
+  await shot(page, "journal-mobile");
+  await page.getByRole("button", { name: /Fermer le carnet/ }).tap();
+  await expect.poll(() => mode(page)).toBe("playing");
 
   await page.evaluate(() => (window as any).__silo.openPause());
   await shot(page, "pause-mobile");

@@ -628,68 +628,639 @@
   border-radius: 8px;
 }
 
-/* ——— Inventaire ——— */
+/* ——— Sac ——— */
 
 .inventory {
   composes: sheet;
-  width: min(600px, 100%);
-  --tilt: -0.5deg;
+  width: min(820px, 100%);
+  padding: 22px 26px 18px;
+  --tilt: -0.4deg;
 }
 
-.items {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  margin: 8px 0 14px;
-}
-
-.item {
-  position: relative;
+.invHead {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 10px 4px 8px;
-  background: #fbf4e2;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.invHead .title {
+  margin: 0;
+}
+
+.invHead .tag {
+  margin: 0;
+}
+
+.invLife {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 0 auto;
+  margin-right: 150px;
+  font-family: var(--font-title);
+  font-size: 15px;
+}
+
+.invLife svg {
+  width: 22px;
+  height: 22px;
+}
+
+.invLife b {
+  font-size: 20px;
+  color: var(--rust);
+}
+
+.pockets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: "armes soins" "lampe materiaux";
+  gap: 12px 14px;
+  margin: 12px 0 10px;
+}
+
+/* Poche de toile cousue */
+.pocket {
+  position: relative;
+  padding: 18px 10px 8px;
+  background-color: #efe3c4;
+  background-image: repeating-linear-gradient(45deg, rgba(106, 69, 40, 0.05) 0 2px, transparent 2px 6px);
   border: 2px solid var(--ink);
   border-radius: 12px;
-  box-shadow: 0 3px 0 rgba(30, 20, 13, 0.35);
-  text-align: center;
+  box-shadow: 0 3px 0 rgba(30, 20, 13, 0.3), inset 0 0 0 4px #efe3c4, inset 0 0 0 5.5px rgba(106, 69, 40, 0.35);
   animation: paperIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
 }
 
-.item:nth-child(odd) { transform: rotate(-1.2deg); }
-.item:nth-child(even) { transform: rotate(1deg); }
-.item:nth-child(2) { animation-delay: 0.04s; }
-.item:nth-child(3) { animation-delay: 0.08s; }
-.item:nth-child(4) { animation-delay: 0.12s; }
-.item:nth-child(5) { animation-delay: 0.16s; }
+.pocket:nth-child(2) { animation-delay: 0.05s; }
+.pocket:nth-child(3) { animation-delay: 0.1s; }
+.pocket:nth-child(4) { animation-delay: 0.15s; }
 
-.item svg {
-  width: 46px;
-  height: 46px;
+.pocketTitle {
+  position: absolute;
+  top: -12px;
+  left: 12px;
+  margin: 0;
+  padding: 1px 12px 2px;
+  font-family: var(--font-title);
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--cream);
+  background: var(--leather-light);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 2px 0 rgba(30, 20, 13, 0.4);
 }
 
-.item b {
+.pocket[data-area="soins"] .pocketTitle,
+.pocket[data-area="materiaux"] .pocketTitle {
+  background: var(--olive);
+  transform: rotate(1.2deg);
+}
+
+.slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 3px 4px;
+  border-bottom: 1.5px dashed rgba(106, 69, 40, 0.3);
+}
+
+.slot:last-child {
+  border-bottom: none;
+}
+
+.slot[data-empty="true"] .slotIcon,
+.slot[data-empty="true"] .slotText {
+  opacity: 0.5;
+}
+
+.slotIcon {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  padding: 2px;
+  background: #fbf4e2;
+  border: 2px solid rgba(58, 42, 28, 0.7);
+  border-radius: 10px;
+}
+
+.slotText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+  line-height: 1.12;
+}
+
+.slotText b {
   font-family: var(--font-title);
-  font-size: 22px;
-  line-height: 1;
+  font-size: 16px;
+}
+
+.slotText small {
+  font-size: 14px;
+  color: rgba(58, 42, 28, 0.78);
+}
+
+.slotText small b {
+  font-size: 14px;
   color: var(--leather-light);
 }
 
-.item span {
-  font-size: 14px;
-  line-height: 1.1;
+.slotCount {
+  color: var(--rust);
 }
 
-.itemButtons {
+.slotBadge {
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  font-family: var(--font-stamp);
+  font-size: 11px;
+  color: var(--olive-deep);
+  border: 2px solid var(--olive-deep);
+  border-radius: 4px;
+  transform: rotate(-4deg);
+}
+
+.slot .useBtn {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: 14px;
+  border-radius: 10px;
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.slot .useBtn .kbd {
+  margin-left: 4px;
+}
+
+.lampGauge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 6px;
+  border-bottom: 1.5px dashed rgba(106, 69, 40, 0.3);
+}
+
+.lampGauge svg {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+}
+
+.lampGauge b {
+  font-family: var(--font-title);
+  font-size: 15px;
+}
+
+.lampBar {
+  flex: 1 1 auto;
+  height: 16px;
+  background: rgba(58, 42, 28, 0.12);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.lampBar > div {
+  height: 100%;
+  background: linear-gradient(180deg, #f6d37a, var(--mustard));
+}
+
+.recipes {
+  margin: 2px 0 0;
+  padding: 0 4px;
+  list-style: none;
+  font-size: 14.5px;
+  line-height: 1.25;
+}
+
+.recipes li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+/* Pointillés entre la recette et son coût */
+.recipes li::after {
+  content: "";
+  order: 1;
+  flex: 1 1 auto;
+  border-bottom: 2px dotted rgba(58, 42, 28, 0.35);
+}
+
+.recipes b {
+  order: 2;
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-title);
+  font-size: 14px;
+  color: var(--leather-light);
+}
+
+.recipes b::after {
+  content: " ⚙";
+  margin-left: 3px;
+  color: var(--mustard-deep);
+}
+
+.invFoot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.invFoot .back {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.invFoot .muted {
+  margin: 0;
+}
+
+/* ——— Note de survivant ——— */
+
+.backdrop[data-tone="note"] {
+  background: radial-gradient(ellipse at 50% 45%, rgba(40, 28, 16, 0.5) 0%, rgba(18, 12, 7, 0.86) 100%);
+}
+
+.noteSheet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(540px, 100%);
+}
+
+.noteCount {
+  margin: 0;
+  font-family: var(--font-stamp);
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: rgba(233, 220, 192, 0.8);
+}
+
+.notePaper {
+  position: relative;
+  width: 100%;
+  padding: 34px 30px 22px 54px;
+  background-color: #fbf3dc;
+  background-image:
+    radial-gradient(ellipse at 100% 0%, rgba(185, 135, 34, 0.18), transparent 45%),
+    linear-gradient(90deg, transparent 38px, rgba(196, 65, 42, 0.45) 38px 40px, transparent 40px),
+    repeating-linear-gradient(180deg, transparent 0 29px, rgba(70, 110, 140, 0.22) 29px 30px);
+  background-position: 0 0, 0 0, 0 14px;
+  border-radius: 3px;
+  box-shadow: 0 2px 0 rgba(30, 20, 13, 0.25), 0 18px 36px rgba(8, 5, 2, 0.55), inset 0 0 30px rgba(160, 120, 70, 0.22);
+  transform: rotate(-1.6deg);
+  animation: noteIn 0.38s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  clip-path: polygon(0 1%, 4% 0, 30% 0.6%, 62% 0, 100% 0.8%, 99.4% 40%, 100% 72%, 99% 100%, 70% 99.2%, 36% 100%, 2% 99.4%, 0.6% 62%);
+}
+
+.notePaper[data-compact] {
+  padding: 26px 18px 14px 44px;
+  background-image:
+    radial-gradient(ellipse at 100% 0%, rgba(185, 135, 34, 0.18), transparent 45%),
+    linear-gradient(90deg, transparent 30px, rgba(196, 65, 42, 0.45) 30px 32px, transparent 32px),
+    repeating-linear-gradient(180deg, transparent 0 25px, rgba(70, 110, 140, 0.22) 25px 26px);
+  transform: rotate(1deg);
+  box-shadow: 0 2px 0 rgba(30, 20, 13, 0.25), 0 8px 16px rgba(8, 5, 2, 0.25), inset 0 0 24px rgba(160, 120, 70, 0.22);
+  clip-path: none;
+  animation-duration: 0.25s;
+}
+
+@keyframes noteIn {
+  from { opacity: 0; transform: translateY(26px) rotate(-5deg) scale(0.96); }
+}
+
+/* Morceaux de scotch */
+.tape {
+  position: absolute;
+  top: -6px;
+  width: 92px;
+  height: 26px;
+  background: rgba(233, 214, 160, 0.78);
+  border-left: 2px dotted rgba(58, 42, 28, 0.2);
+  border-right: 2px dotted rgba(58, 42, 28, 0.2);
+  box-shadow: 0 1px 2px rgba(30, 20, 13, 0.2);
+}
+
+.tape[data-side="left"] { left: 10px; transform: rotate(-8deg); }
+.tape[data-side="right"] { right: 6px; transform: rotate(7deg); }
+
+/* Tache de café */
+.coffee {
+  position: absolute;
+  right: 18px;
+  bottom: 34px;
+  width: 92px;
+  height: 86px;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 56%, rgba(122, 74, 42, 0.32) 60%, rgba(122, 74, 42, 0.12) 66%, transparent 70%),
+    radial-gradient(ellipse at 40% 45%, rgba(122, 74, 42, 0.08), transparent 60%);
+  transform: rotate(18deg);
+  pointer-events: none;
+}
+
+.notePaper[data-compact] .coffee {
+  width: 70px;
+  height: 64px;
+  bottom: 20px;
+  right: 10px;
+}
+
+.clueStamp {
+  position: absolute;
+  top: 24px;
+  right: 22px;
+  padding: 3px 12px 1px;
+  font-family: var(--font-stamp);
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: #c4412a;
+  border: 3px double #c4412a;
+  border-radius: 6px;
+  transform: rotate(9deg);
+  opacity: 0.85;
+  mix-blend-mode: multiply;
+  animation: stampIn 0.45s 0.25s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+.noteTitle {
+  margin: 0 0 6px;
+  padding-right: 110px;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+  color: #2e3d58;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(46, 61, 88, 0.45);
+}
+
+.noteText {
+  position: relative;
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 22px;
+  line-height: 30px;
+  color: #2e3d58;
+  user-select: text;
+}
+
+.noteAuthor {
+  margin: 12px 0 0;
+  text-align: right;
+  font-family: var(--font-body);
+  font-size: 22px;
+  color: #2e3d58;
+  transform: rotate(-2deg);
+}
+
+.notePaper[data-compact] .noteTitle { font-size: 24px; padding-right: 90px; }
+.notePaper[data-compact] .noteText { font-size: 18px; line-height: 26px; }
+.notePaper[data-compact] .noteAuthor { font-size: 18px; margin-top: 8px; }
+.notePaper[data-compact] .clueStamp { font-size: 17px; top: 18px; right: 12px; }
+
+.noteButtons {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.noteButtons .btn {
+  white-space: nowrap;
+}
+
+/* ——— Carnet de cuir ——— */
+
+.backdrop[data-tone="journal"] {
+  background: radial-gradient(ellipse at 50% 45%, rgba(40, 28, 16, 0.5) 0%, rgba(18, 12, 7, 0.88) 100%);
+}
+
+.journal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(900px, 100%);
+  height: min(560px, 100%);
+  padding: 16px 44px 16px 16px;
+  background-color: #6a4528;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1  0 0 0 0 0.06  0 0 0 0 0.03  0 0 0 0.35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+    radial-gradient(ellipse at 30% 0%, rgba(160, 100, 60, 0.55), transparent 60%),
+    radial-gradient(ellipse at 100% 100%, rgba(30, 16, 8, 0.5), transparent 60%);
+  border: 2.5px solid #2a1a0e;
+  border-radius: 18px 22px 22px 18px;
+  box-shadow: 0 6px 0 #2a1a0e, 0 26px 50px rgba(5, 3, 1, 0.6), inset 0 0 0 2px rgba(160, 100, 60, 0.35);
+  transform: rotate(-0.5deg);
+  animation: paperIn 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+/* Couture du cuir */
+.journal::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 2px dashed rgba(233, 200, 150, 0.55);
+  border-radius: 13px 17px 17px 13px;
+  pointer-events: none;
+}
+
+/* Élastique moutarde */
+.strap {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  right: 14px;
+  width: 16px;
+  background: linear-gradient(90deg, #b98722, var(--mustard) 40%, #b98722);
+  border: 2px solid #2a1a0e;
+  border-radius: 3px;
+  z-index: 2;
+  box-shadow: 2px 0 3px rgba(20, 10, 4, 0.35);
+}
+
+.journalPages {
+  position: relative;
+  flex: 1 1 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  min-height: 0;
+  background: #f4ecd6;
+  border: 2px solid #2a1a0e;
+  border-radius: 6px;
+  box-shadow: 3px 3px 0 #e4d6b4, 5px 5px 0 #2a1a0e33;
+}
+
+/* Reliure : ombre au pli central */
+.journalPages::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 46px;
+  margin-left: -23px;
+  background: linear-gradient(90deg, transparent, rgba(90, 60, 30, 0.22) 46%, rgba(60, 38, 18, 0.4) 50%, rgba(90, 60, 30, 0.22) 54%, transparent);
+  pointer-events: none;
+}
+
+.page {
+  position: relative;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 26px 14px 22px;
+  background-image: repeating-linear-gradient(180deg, transparent 0 27px, rgba(107, 117, 80, 0.18) 27px 28px);
+  background-position: 0 10px;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.page[data-side="right"] {
+  padding: 22px 24px 70px 32px;
+}
+
+.journalHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 10px;
 }
 
-.itemButtons .back {
-  grid-column: 1 / -1;
+.journalTitle {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 30px;
+  color: var(--leather);
+}
+
+.journalCount {
+  font-family: var(--font-stamp);
+  font-size: 13px;
+  color: var(--rust);
+  white-space: nowrap;
+}
+
+.objectiveBox {
+  margin: 8px 0 10px;
+  padding: 6px 10px 7px;
+  background: rgba(216, 164, 58, 0.22);
+  border: 2px solid var(--mustard-deep);
+  border-radius: 8px;
+  transform: rotate(-0.6deg);
+}
+
+.objectiveBox small {
+  display: block;
+  font-family: var(--font-stamp);
+  font-size: 11.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--mustard-deep);
+}
+
+.objectiveBox p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.noteList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.noteList li {
+  min-height: 28px;
+}
+
+.noteList button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 34px;
+  padding: 2px 8px;
+  font-family: var(--font-body);
+  font-size: 18px;
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.noteList button:hover {
+  background: rgba(216, 164, 58, 0.16);
+}
+
+.noteList button:focus-visible {
+  outline: 3px dashed var(--rust);
+  outline-offset: 1px;
+}
+
+.noteList button[data-active="true"] {
+  background: rgba(107, 117, 80, 0.2);
+  border-color: var(--olive);
+}
+
+.noteNum {
+  font-family: var(--font-title);
+  font-size: 13px;
+  color: var(--leather-light);
+  min-width: 18px;
+}
+
+.clueDot {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  font-family: var(--font-title);
+  font-size: 12px;
+  color: #fff6e2;
+  background: #c4412a;
+  border-radius: 50%;
+}
+
+.missing {
+  display: block;
+  padding: 4px 10px;
+  font-size: 17px;
+  color: rgba(58, 42, 28, 0.38);
+}
+
+.emptyPage {
+  margin: 40px 10px 0;
+  font-size: 19px;
+  line-height: 1.35;
+  color: rgba(58, 42, 28, 0.6);
+  text-align: center;
+}
+
+.journalFoot {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+}
+
+.journalFoot .btn {
+  width: auto;
 }
 
 /* ——— Dialogue ——— */
@@ -931,13 +1502,70 @@
   .controlsStamp { display: none; }
   .version { display: none; }
 
-  .items { gap: 6px; margin: 4px 0 8px; }
-  .item { padding: 6px 2px 5px; }
-  .item svg { width: 32px; height: 32px; }
-  .item b { font-size: 17px; }
-  .item span { font-size: 12px; }
-  .itemButtons { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-  .itemButtons .back { grid-column: auto; }
+  .inventory { padding: 12px 16px 10px; width: min(820px, 100%); }
+  .invHead { gap: 10px; }
+  .invHead .tag { display: none; }
+  .invLife { font-size: 13px; margin-right: 140px; }
+  .invLife b { font-size: 16px; }
+  .pockets {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-areas: "armes soins lampe" "armes soins materiaux";
+    gap: 12px 10px;
+    margin: 10px 0 6px;
+  }
+  .pocket { padding: 13px 6px 3px; }
+  .pocketTitle { font-size: 11.5px; top: -10px; padding: 0 8px 1px; }
+  .slot { min-height: 36px; gap: 5px; padding: 2px; }
+  .slotIcon { flex-basis: 28px; width: 28px; height: 28px; border-radius: 7px; }
+  .slotText b { font-size: 13.5px; }
+  .slotText small, .slotText small b { font-size: 12px; }
+  .slotBadge { font-size: 9px; padding: 0 4px; }
+  .slot .useBtn { min-height: 30px; padding: 2px 8px; font-size: 12px; }
+  .lampGauge { padding: 2px; gap: 5px; }
+  .lampGauge svg { flex-basis: 26px; width: 26px; height: 26px; }
+  .lampGauge b { font-size: 12px; }
+  .lampBar { height: 12px; }
+  .recipes { font-size: 12px; line-height: 1.15; }
+  .recipes b { font-size: 12px; }
+  .invFoot { gap: 10px; }
+  .invFoot .back { min-height: 38px; }
+
+  .noteSheet { gap: 8px; width: min(560px, 100%); }
+  .noteCount { font-size: 11px; }
+  .notePaper {
+    padding: 22px 20px 12px 44px;
+    background-image:
+      radial-gradient(ellipse at 100% 0%, rgba(185, 135, 34, 0.18), transparent 45%),
+      linear-gradient(90deg, transparent 30px, rgba(196, 65, 42, 0.45) 30px 32px, transparent 32px),
+      repeating-linear-gradient(180deg, transparent 0 23px, rgba(70, 110, 140, 0.22) 23px 24px);
+  }
+  .noteTitle { font-size: 22px; }
+  .noteText { font-size: 17px; line-height: 24px; }
+  .noteAuthor { font-size: 17px; margin-top: 4px; }
+  .clueStamp { font-size: 16px; top: 16px; }
+  .coffee { width: 64px; height: 60px; bottom: 14px; }
+  .tape { width: 70px; height: 20px; }
+  .noteButtons .btn { min-height: 40px; }
+
+  .journal { height: 100%; padding: 8px 30px 8px 10px; border-radius: 12px 16px 16px 12px; }
+  .journal::before { inset: 3px; }
+  .strap { right: 8px; width: 12px; }
+  .page { padding: 8px 18px 8px 14px; }
+  .page[data-side="right"] { padding: 12px 16px 54px 24px; }
+  .journalTitle { font-size: 22px; }
+  .journalCount { font-size: 11px; }
+  .objectiveBox { margin: 4px 0 6px; padding: 3px 8px 4px; }
+  .objectiveBox small { font-size: 10px; }
+  .objectiveBox p { font-size: 14.5px; }
+  .noteList li { min-height: 0; }
+  .noteList button { min-height: 28px; font-size: 15px; padding: 1px 6px; }
+  .missing { font-size: 14px; padding: 2px 8px; }
+  .notePaper[data-compact] { padding: 18px 12px 10px 38px; }
+  .notePaper[data-compact] .noteTitle { font-size: 19px; }
+  .notePaper[data-compact] .noteText { font-size: 15px; line-height: 22px; }
+  .notePaper[data-compact] .noteAuthor { font-size: 15px; }
+  .journalFoot { right: 12px; bottom: 8px; }
+  .journalFoot .btn { min-height: 38px; }
 
   .dialogue {
     top: max(8px, env(safe-area-inset-top));
@@ -976,12 +1604,13 @@
 @media (max-width: 640px) and (min-height: 481px) {
   .menu { grid-template-columns: 1fr; }
   .controls { display: none; }
-  .items { grid-template-columns: repeat(3, 1fr); }
+  .pockets { grid-template-columns: 1fr; grid-template-areas: "armes" "soins" "lampe" "materiaux"; }
+  .journalPages { grid-template-columns: 1fr; }
   .choices { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .backdrop, .sheet, .item, .line, .stamp, .portrait, .menuBg::before, .menuBg::after {
+  .backdrop, .sheet, .pocket, .notePaper, .journal, .clueStamp, .line, .stamp, .portrait, .menuBg::before, .menuBg::after {
     animation: none !important;
   }
 }
