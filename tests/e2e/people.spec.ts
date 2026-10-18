@@ -111,7 +111,11 @@ test("téléphone en portrait : voix de l'opératrice à la guérite, Cuisine se
   await page.getByRole("button", { name: "Examiner" }).tap({ force: true }); // le bouton respire : jamais « stable »
   await expect.poll(() => mode(page)).toBe("dialogue");
   await expect(page.getByRole("heading", { name: "L'OPÉRATRICE DE NUIT" })).toBeVisible();
-  await expect(page.getByText("…il y a quelqu'un ?")).toBeVisible();
+  // La voix a déjà passé dans l'accroche (avis + carte) : la conversation commence par la réponse de Lou.
+  await expect(page.getByText("[La radio grésille encore, tout bas.]")).toBeVisible();
+  await expect(page.getByText(/c'est l'heure de la relève/)).toHaveCount(0);
+  expect(await page.evaluate(() => (window as any).__silo.state.ext?.investigation?.cards?.filter((c: string) => c === "audio_gate").length
+    ?? 0)).toBe(1);
   await shot(page, "guerite-portrait");
   await page.getByRole("button", { name: /Allô \? Je suis là/ }).tap();
   await expect(page.getByText(/La pile de la radio meurt/)).toBeVisible();

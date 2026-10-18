@@ -6,13 +6,14 @@ import type { Engine } from "@/game/engine";
 import { INDEX } from "@/game/investigation/world";
 import { useInquiry } from "./inquiry/useInquiry";
 import { useUi } from "./useUi";
+import { frenchSpaces } from "./typo";
 import styles from "./inquiry.module.css";
 
 /** Bulle de pensée papier (« … » quand Lou se tait). */
 export function ThoughtPaper({ text }: { text: string | null }) {
   return (
     <p className={styles.thoughtPaper} role="status" aria-label="Pensée de Lou" data-silent={text === null ? true : undefined}>
-      {text ?? "…"}
+      {text === null ? "…" : frenchSpaces(text)}
     </p>
   );
 }

@@ -4,7 +4,7 @@
 import type { GameAudio } from "./audio";
 import type { GameEvent, GameEvents } from "./events";
 import type { ZombieHorde } from "./enemy";
-import type { MixMode, Threat } from "./mix";
+import { hushed, type MixMode, type Threat } from "./mix";
 import type { PlayerController } from "./player";
 import type { SiloState } from "./state";
 import type { Horde } from "./types";
@@ -62,6 +62,10 @@ export class SoundDirector {
   private zombies = new Map<string, ZombieMemo>();
   private growlGap = 0;
   private readonly threats: Threat[] = [];
+  /** Distance au mordu muet (Marceau) le plus proche, mesurée à cette image. */
+  private silentDistance = Infinity;
+  /** Musique coupée parce que Marceau est tout près (mix.ts, hushed). */
+  private hush = false;
 
   constructor(private audio: GameAudio, private events: GameEvents) {
     events.on((e) => audio.handle(e));
@@ -90,6 +94,7 @@ export class SoundDirector {
     this.z = player.z;
     this.doors = LOCKED_DOORS.map((d) => doorOpen(d, state));
     this.zombies.clear();
+    this.hush = false;
   }
 
   update(dt: number, src: SoundSource): void {
@@ -142,8 +147,12 @@ export class SoundDirector {
     this.autosaved = autosaved;
 
     this.threats.length = 0;
-    if (mode === "playing") this.playing(dt, src);
-    else {
+    this.silentDistance = Infinity;
+    if (mode === "playing") {
+      this.playing(dt, src);
+      // Hors jeu (gros plan, carnet…), la musique garde l'état de la dernière image jouée.
+      this.hush = hushed(this.hush, this.silentDistance);
+    } else {
       this.stepIndex = Math.floor(player.stride / Math.PI);
       this.zombieMemo(src, 0, false);
     }
@@ -166,6 +175,7 @@ export class SoundDirector {
       powered: state.has("generator_powered"),
       threats: this.threats,
       health: state.health,
+      hush: this.hush,
     });
   }
 
@@ -217,6 +227,7 @@ export class SoundDirector {
           const chasing = z.mode === "chase";
           const alert = chasing || z.mode === "investigate" || z.mode === "search";
           this.threats.push({ distance, alert, chasing });
+          if (z.spawn?.silent) this.silentDistance = Math.min(this.silentDistance, distance);
           memo.growl -= dt;
           // Repéré : grognement immédiat ; sinon espacés, plus fréquents en poursuite.
           const spotted = chasing && memo.mode !== "chase";

@@ -258,7 +258,7 @@ function director() {
   });
   const close = () => { mode = "playing"; };
   const tick = (x: number, z: number, seconds = 0.1) => { for (let t = 0; t < seconds; t += 0.05) people.update(0.05, x, z); };
-  return { state, horde, people, opened, notices, close, tick, events };
+  return { state, horde, people, inquiry, opened, notices, close, tick, events };
 }
 
 describe("directeur des personnes", () => {
@@ -342,10 +342,38 @@ describe("directeur des personnes", () => {
     expect(d.people.available(radio)).toBe(true);
     d.people.interact(radio);
     expect(d.opened).toEqual(["radio_guerite"]);
+    // La voix passe dans l'accroche automatique (d1) ; la conversation commence par la réponse de Lou.
     const run = new ConversationRun(CONVERSATIONS.radio_guerite, d.state);
-    expect(run.view().lines.map((l) => l.text).join(" ")).toContain("…ici l'opératrice de nuit… c'est l'heure de la relève…");
+    const said = run.view().lines.map((l) => l.text).join(" ");
+    expect(said).not.toContain("relève");
+    expect(said).not.toContain("il y a quelqu'un");
+    expect(run.view().choices[0].text).toMatch(/^Allô \?/);
     run.choose(0);
     expect(d.people.available(radio)).toBe(false);
+  });
+
+  it("radio de la guérite : l'accroche automatique puis « Écouter » donnent la même carte, une seule fois", () => {
+    const d = director();
+    const record = () => recordOf(d.state);
+    // Lou s'approche : avis court, puis la carte 1,5 s plus tard.
+    for (let t = 0; t < 2; t += 0.05) d.inquiry.update(0.05, 4.7, 25.0, 0);
+    expect(record().events).toContain("d1");
+    expect(d.notices.filter((n) => n.includes("il y a quelqu'un ?"))).toHaveLength(1);
+    expect(record().cards.filter((c) => c === "audio_gate")).toHaveLength(1);
+    const radio = d.people.defs.find((def) => def.talk === "radio_guerite")!;
+    d.people.interact(radio);
+    expect(record().cards.filter((c) => c === "audio_gate")).toHaveLength(1);
+  });
+
+  it("radio de la guérite : « Écouter » avant que la carte de l'accroche tombe ne la donne pas deux fois", () => {
+    const d = director();
+    const record = () => recordOf(d.state);
+    d.inquiry.update(0.05, 4.7, 25.0, 0);
+    const radio = d.people.defs.find((def) => def.talk === "radio_guerite")!;
+    d.people.interact(radio);
+    expect(record().cards.filter((c) => c === "audio_gate")).toHaveLength(1);
+    for (let t = 0; t < 5; t += 0.05) d.inquiry.update(0.05, 4.7, 25.0, 0);
+    expect(record().cards.filter((c) => c === "audio_gate")).toHaveLength(1);
   });
 });
 

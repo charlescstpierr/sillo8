@@ -77,6 +77,8 @@ function Word({ puzzle, onTry, touch }: { puzzle: Puzzle; onTry: (input: string[
     if (!onTry(wheels ? value.split("") : [value]) && !wheels) setValue("");
   };
 
+  const screen = <p className={styles.screen} aria-live="polite">{value || "_"}<span className={styles.caret} aria-hidden>▌</span></p>;
+
   return (
     <div className={styles.word}>
       {wheels ? (
@@ -89,30 +91,32 @@ function Word({ puzzle, onTry, touch }: { puzzle: Puzzle; onTry: (input: string[
             </div>
           ))}
         </div>
-      ) : (
-        <p className={styles.screen} aria-live="polite">{value || "_"}<span className={styles.caret} aria-hidden>▌</span></p>
-      )}
+      ) : touch ? null : screen}
       <form
         className={styles.typeRow}
+        data-touch={touch || undefined}
         onSubmit={(e) => { e.preventDefault(); submit(); }}
       >
-        <input
-          ref={inputRef}
-          className={styles.field}
-          value={wheels ? typed : value}
-          placeholder={wheels ? "ou tapez les lettres" : "tapez le mot"}
-          aria-label={wheels ? "Taper les lettres du cadenas" : "Mot de passe"}
-          autoComplete="off"
-          autoCapitalize="characters"
-          spellCheck={false}
-          inputMode={touch ? "none" : "text"}
-          readOnly={touch}
-          onChange={(e) => type(e.target.value)}
-        />
+        {/* Au doigt, l'écran du terminal et « Valider » tiennent sur une seule ligne. */}
+        {!wheels && touch ? screen : null}
+        {/* Au doigt, le champ ne sert à rien (pas de clavier du téléphone) : molettes ou clavier à lettres. */}
+        {touch ? null : (
+          <input
+            ref={inputRef}
+            className={styles.field}
+            value={wheels ? typed : value}
+            placeholder={wheels ? "ou tapez les lettres" : "tapez le mot"}
+            aria-label={wheels ? "Taper les lettres du cadenas" : "Mot de passe"}
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            onChange={(e) => type(e.target.value)}
+          />
+        )}
         <button type="submit" className={styles.go}>{wheels ? "Ouvrir" : "Valider"}</button>
       </form>
       {!wheels ? (
-        <div className={styles.keys} role="group" aria-label="Clavier">
+        <div className={styles.keys} role="group" aria-label="Clavier" data-touch={touch || undefined}>
           {LETTERS.map((l) => (
             <button key={l} type="button" className={styles.key} onClick={() => setValue((v) => clean(v + l))} aria-label={`Lettre ${l}`}>{l}</button>
           ))}

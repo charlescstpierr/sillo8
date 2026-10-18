@@ -181,7 +181,7 @@ export class Engine {
     this.state.subscribe(() => {
       this.worldDirty = true;
       // Un progrès (objectif, note, objet ramassé) déclenche une sauvegarde automatique.
-      const key = `${this.state.facts.length}:${this.state.notes.length}:${this.state.collected.length}:${this.state.upgraded}:${recordKey(recordOf(this.state))}:${this.state.flags.length}:${JSON.stringify(this.state.relations)}`;
+      const key = this.currentProgressKey();
       if (key !== this.progressKey) {
         this.progressKey = key;
         this.autosaveDue = true;
@@ -330,6 +330,12 @@ export class Engine {
     return ok;
   }
 
+  /** Empreinte du progrès (objectifs, notes, objets, enquête, faits, confiance) : un changement appelle une sauvegarde. */
+  private currentProgressKey(): string {
+    const s = this.state;
+    return `${s.facts.length}:${s.notes.length}:${s.collected.length}:${s.upgraded}:${recordKey(recordOf(s))}:${s.flags.length}:${JSON.stringify(s.relations)}`;
+  }
+
   /** Vrai en lieu sûr : pièce sûre, aucun mordu en alerte proche, pas de vie basse en plein combat (safety.ts). */
   safeNow(): boolean {
     return safeSpot({
@@ -384,7 +390,8 @@ export class Engine {
     loadSlot(this.state, this.storage, target);
     this.startRun();
     // Pas de sauvegarde automatique immédiate : charger un ancien emplacement n'écrase pas aussitôt le « Lieu sûr ».
-    this.progressKey = `${this.state.facts.length}:${this.state.notes.length}:${this.state.collected.length}:${this.state.upgraded}`;
+    // Même clé que l'abonnement : sinon le premier changement d'état passait pour un progrès et écrasait aussitôt le « Lieu sûr ».
+    this.progressKey = this.currentProgressKey();
     this.autosaveDue = false;
     this.autosaveClock = 0;
     this.hurtAt = -Infinity;

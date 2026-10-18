@@ -1,6 +1,7 @@
 // Musique générative : boîte à musique mystérieuse et douce en exploration (accords en ré dorien,
 // notes rares qui résonnent), couche de tension discrète (pulsation basse, grappe en trémolo)
-// et battement de cœur quand la vie est basse. Tout est programmé un peu en avance sur l'horloge audio.
+// et battement de cœur quand la vie est basse. Elle se tait quand Marceau, le mordu muet, approche (levels.hush).
+// Tout est programmé un peu en avance sur l'horloge audio.
 import { heartbeatInterval } from "./mix";
 import { midiToHz, Voice, VoicePool } from "./synth";
 
@@ -29,6 +30,11 @@ export interface MusicLevels {
   tension: number;
   heartbeat: number;
   health: number;
+  /**
+   * Coupure 0 → 1 quand Marceau, le mordu muet, est tout près : boîte à musique et tension se taisent (le battement
+   * de cœur, qui dit la vie basse, reste). Le fondu est fait en amont (game/audio.ts).
+   */
+  hush?: number;
   /** Faux : on ne programme plus de notes (bus muet, onglet caché). */
   active: boolean;
 }
@@ -76,8 +82,9 @@ export class Music {
 
   update(levels: MusicLevels): void {
     const now = this.ctx.currentTime;
-    this.exploreBus.gain.setTargetAtTime(levels.explore, now, 0.8);
-    this.tensionBus.gain.setTargetAtTime(Math.min(1, levels.tension * 1.2), now, 0.6);
+    const open = 1 - Math.min(1, Math.max(0, levels.hush ?? 0));
+    this.exploreBus.gain.setTargetAtTime(levels.explore * open, now, open < 1 ? 0.25 : 0.8);
+    this.tensionBus.gain.setTargetAtTime(Math.min(1, levels.tension * 1.2) * open, now, open < 1 ? 0.25 : 0.6);
     if (!this.started) {
       this.started = true;
       this.nextBar = this.nextBeat = this.nextPulse = this.nextHeart = now + 0.2;

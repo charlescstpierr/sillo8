@@ -42,17 +42,20 @@ const fact = (id: string): Condition => ({ fact: id });
 
 // ——— Première minute : la voix à la radio de la guérite ———
 
+/**
+ * La voix elle-même ne passe qu'une fois, dans l'accroche automatique (événement d1 de
+ * game/investigation/content/story.ts : avis court et carte « La voix de la guérite »). Quand Lou « Écoute » ensuite
+ * la radio, la conversation commence directement par sa réponse, sans rejouer la phrase. Ce chemin range la même
+ * carte (PeopleDirector.interact) ; elle n'est jamais donnée deux fois.
+ */
 export const RADIO_GUERITE: Conversation = {
   id: "radio_guerite",
   speaker: RADIO_OPERATRICE,
-  start: "voix",
+  start: "reponse",
   nodes: {
-    voix: {
-      lines: [
-        { who: "narration", text: "[La radio de la guérite grésille.]" },
-        { who: "speaker", text: "…ici l'opératrice de nuit… c'est l'heure de la relève…" },
-        { who: "speaker", text: "…il y a quelqu'un ?" },
-      ],
+    reponse: {
+      // Proposé : la radio grésille encore, tout bas ; à Lou de répondre.
+      lines: [{ who: "narration", text: "[La radio grésille encore, tout bas.]" }],
       choices: [
         // Proposé : la réponse de Lou.
         { text: "Allô ? Je suis là. Vous m'entendez ?", next: "silence" },

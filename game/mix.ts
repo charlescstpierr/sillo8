@@ -161,3 +161,16 @@ export type MysteryCue = (typeof MYSTERY_CUES)[number];
 export function nextMysteryDelay(random: number): number {
   return 50 + clamp01(random) * 70;
 }
+
+/**
+ * Marceau, le Silencieux (mordu muet `walker_gen`, HISTOIRE_PROPOSITION § 7, d2) : la musique se coupe en fondu
+ * quand il approche à moins de HUSH_NEAR mètres, et revient quand il s'éloigne au-delà de HUSH_FAR (l'écart évite
+ * que la musique hésite quand il fait les cent pas à la limite).
+ */
+export const HUSH_NEAR = 8;
+export const HUSH_FAR = 9.5;
+
+/** Musique coupée ? `was` : l'état de l'image précédente ; `distance` : distance au mordu muet le plus proche. */
+export function hushed(was: boolean, distance: number): boolean {
+  return was ? distance < HUSH_FAR : distance < HUSH_NEAR;
+}

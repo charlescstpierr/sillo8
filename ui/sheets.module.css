@@ -19,6 +19,23 @@
   background: linear-gradient(90deg, rgba(22, 15, 9, 0.05) 0%, rgba(22, 15, 9, 0.5) 100%);
 }
 
+/*
+ * Fiche à la taille de l'écran (gros plan) : la ligne de la grille est celle de l'écran, pas celle du contenu ;
+ * ainsi « height: 100% » de la fiche tient vraiment dans l'écran et ses boutons du bas restent visibles.
+ */
+.backdrop[data-fit] {
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Téléphone en portrait : marges latérales réduites, pour un clavier de 7 touches de 44 px par ligne. */
+@media (max-width: 640px) and (min-height: 481px) {
+  .backdrop[data-fit] {
+    padding-left: max(6px, env(safe-area-inset-left));
+    padding-right: max(6px, env(safe-area-inset-right));
+  }
+}
+
 .backdrop[data-tone="death"] {
   background: radial-gradient(ellipse at 50% 45%, rgba(90, 24, 14, 0.5) 0%, rgba(26, 8, 5, 0.88) 100%);
 }
@@ -2010,6 +2027,12 @@
   .planLegend { flex-direction: row; flex-wrap: wrap; gap: 0 12px; }
   .journalPages[data-view="plan"]::before { display: none; }
   .choices { grid-template-columns: 1fr; }
+  /* Réponses d'une conversation : en portrait, elles passent à la ligne au lieu de défiler hors de l'écran
+     (une réponse coupée au bord droit passait inaperçue). */
+  .quick { flex-wrap: wrap; overflow-x: visible; }
+  .quick .btn { flex: 1 1 auto; white-space: normal; text-align: left; }
+  /* Tampon « ÉTAGE 1 TERMINÉ » : penché, il mordait sur la première ligne. */
+  .bigStamp { margin: 8px 0 26px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

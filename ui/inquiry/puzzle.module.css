@@ -31,7 +31,7 @@
 .wheels {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .wheel {
@@ -42,8 +42,8 @@
 }
 
 .roll {
-  width: 40px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   font-size: 13px;
   color: var(--ink, #3a2a1c);
   background: #e7dcc0;
@@ -55,7 +55,7 @@
 .letter {
   display: grid;
   place-items: center;
-  width: 40px;
+  width: 44px;
   height: 40px;
   font-family: var(--font-stamp, "Special Elite", monospace);
   font-size: 24px;
@@ -91,10 +91,24 @@
   gap: 6px;
 }
 
+/* Au doigt : l'écran du terminal et « Valider » sur une ligne ; « Ouvrir » (cadenas) sur toute la largeur. */
+.typeRow[data-touch] .screen {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px 10px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.typeRow[data-touch] .go:only-child {
+  flex: 1;
+}
+
 .field {
   flex: 1;
   min-width: 0;
-  height: 36px;
+  height: 44px;
   padding: 0 10px;
   font-family: var(--font-stamp, "Special Elite", monospace);
   font-size: 16px;
@@ -107,7 +121,7 @@
 
 .go,
 .reset {
-  height: 36px;
+  min-height: 44px;
   padding: 0 14px;
   font-family: var(--font-stamp, "Special Elite", monospace);
   font-size: 15px;
@@ -128,14 +142,15 @@
   opacity: 0.45;
 }
 
+/* Touches d'au moins 44 × 44 px : autant de colonnes que la largeur le permet (6 sur un téléphone en portrait). */
 .keys {
   display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
   gap: 4px;
 }
 
 .key {
-  height: 34px;
+  height: 44px;
   min-width: 0;
   padding: 0;
   font-family: var(--font-stamp, "Special Elite", monospace);
@@ -263,4 +278,20 @@
 
 @media (prefers-reduced-motion: reduce) {
   .caret, .blackout { animation: none; opacity: 0; }
+}
+
+/* À la souris (ordi), le clavier à lettres est un appoint (on tape au clavier) : touches plus basses, sur 2 lignes,
+   pour laisser voir le terminal et son post-it. Au doigt, elles gardent 44 × 44 px. */
+.keys:not([data-touch]) {
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+}
+
+.keys:not([data-touch]) .key {
+  height: 34px;
+}
+
+/* Téléphone en portrait : marges serrées, pour 7 touches de 44 px par ligne dès 375 px de large. */
+@media (max-width: 640px) and (min-height: 481px) {
+  .panel { padding: 8px 6px; }
+  .keys { gap: 3px; }
 }

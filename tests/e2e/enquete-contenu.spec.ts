@@ -256,3 +256,85 @@ test("le paquet noué de la sacoche ne s'ouvre pas : « Pas maintenant. »", asy
   await shot(page, "paquet-ordi");
   expect(errors).toEqual([]);
 });
+
+test("téléphone portrait : un avis arrivé pendant le gros plan (disjoncteur) s'affiche dans la feuille, sous le titre", async ({ browser }) => {
+  test.setTimeout(600_000);
+  const context = await browser.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+  const errors = await boot(page);
+  await page.evaluate(() => {
+    const engine = (window as any).__silo;
+    engine.input.device = "touch";
+    engine.state.collect("e2e-p", "components", 3);
+    engine.state.exploreEntrance();
+    engine.state.powerGenerator();
+    // Un avis d'avant le gros plan n'est pas repris dans la feuille.
+    engine.notify("Avis d'avant le gros plan.");
+    engine.inquiry.examine("levers");
+  });
+  await expect.poll(() => mode(page)).toBe("closeup");
+  const heading = page.getByRole("heading", { name: "Tableau des circuits" });
+  await expect(heading).toBeVisible();
+  const notice = page.getByTestId("closeup-notice");
+  await expect(notice).toHaveCount(0);
+  // Mauvais ordre : le disjoncteur claque.
+  for (const label of ["CONTRÔLE", "DORTOIRS", "CAFÉTÉRIA", "INFIRMERIE"]) await page.getByRole("button", { name: `Levier ${label}` }).tap();
+  await expect(notice).toContainText("Le disjoncteur claque.");
+  // L'avis flottant du jeu reste masqué en gros plan (il couvrait le titre).
+  await expect(page.locator("p[data-mode]")).toHaveCount(0);
+  await page.waitForTimeout(500); // la ligne glisse en place (animation d'entrée)
+  const title = (await heading.boundingBox())!;
+  const line = (await notice.boundingBox())!;
+  const close = (await page.getByRole("button", { name: /Reposer/ }).boundingBox())!;
+  expect(line.y).toBeGreaterThanOrEqual(title.y + title.height);
+  expect(line.y + line.height).toBeLessThanOrEqual(close.y + 1);
+  expect(close.y + close.height).toBeLessThanOrEqual(760);
+  await shot(page, "avis-gros-plan-portrait");
+  // Le bon ordre : le courant revient ; l'avis suivant remplace le premier.
+  await page.waitForTimeout(500);
+  for (const label of ["DORTOIRS", "CAFÉTÉRIA", "INFIRMERIE", "CONTRÔLE"]) await page.getByRole("button", { name: `Levier ${label}` }).tap();
+  await expect(notice).toContainText("Le courant revient");
+  expect(errors).toEqual([]);
+  await context.close();
+});
+
+for (const [width, height] of [[390, 760], [375, 667]] as const) {
+  test(`téléphone portrait ${width}×${height} : le clavier du terminal tient à l'écran, « Reposer » compris, cibles de 44 px`, async ({ browser }) => {
+    test.setTimeout(600_000);
+    const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    const page = await context.newPage();
+    const errors = await boot(page);
+    await page.evaluate(() => {
+      const engine = (window as any).__silo;
+      engine.input.device = "touch";
+      engine.inquiry.examine("terminal");
+    });
+    await expect.poll(() => mode(page)).toBe("closeup");
+    for (const l of "GUETTEUR") await page.getByRole("button", { name: `Lettre ${l}`, exact: true }).tap();
+    await page.getByRole("button", { name: "Valider", exact: true }).tap();
+    await expect(page.getByLabel(/^Énigme/).getByRole("status", { name: "Pensée de Lou" })).toContainText("il l'a laissé dehors");
+    // Un avis en plus (le cas le plus chargé) : tout reste à l'écran.
+    await page.evaluate(() => (window as any).__silo.notify("Le disjoncteur claque. Trois secondes de noir. Les leviers retombent."));
+    await expect(page.getByTestId("closeup-notice")).toBeVisible();
+    const problems = await page.locator("section[data-sheet]").evaluate((root, [vw, vh]) => {
+      const out: string[] = [];
+      for (const el of root.querySelectorAll("button, h1, [data-testid=closeup-notice]")) {
+        const r = el.getBoundingClientRect();
+        if (!r.width) continue;
+        const name = (el.getAttribute("aria-label") || el.textContent || "").trim().slice(0, 24);
+        if (r.top < -0.5 || r.left < -0.5 || r.bottom > vh + 0.5 || r.right > vw + 0.5) out.push(`${name} hors de l'écran`);
+        if (el.tagName === "BUTTON" && (r.width < 44 || r.height < 44)) out.push(`${name} : ${Math.round(r.width)}×${Math.round(r.height)}`);
+      }
+      return out;
+    }, [width, height] as const);
+    expect(problems).toEqual([]);
+    await shot(page, `terminal-${width}x${height}`);
+    for (const l of "MARCEAU") await page.getByRole("button", { name: `Lettre ${l}`, exact: true }).tap();
+    await page.getByRole("button", { name: "Valider", exact: true }).tap();
+    await expect(page.getByText("Le terminal s'allume sur le journal du poste.")).toBeVisible();
+    await page.getByRole("button", { name: /Reposer/ }).tap();
+    await expect.poll(() => mode(page)).toBe("playing");
+    expect(errors).toEqual([]);
+    await context.close();
+  });
+}

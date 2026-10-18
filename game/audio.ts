@@ -24,6 +24,8 @@ export interface AudioFrame {
   powered: boolean;
   threats: readonly Threat[];
   health: number;
+  /** Marceau, le mordu muet, est tout près : la musique se coupe en fondu (game/sound.ts, mix.ts hushed). */
+  hush?: boolean;
 }
 
 export interface PlayOptions {
@@ -523,6 +525,8 @@ export interface AudioDebug {
   started: boolean;
   voices: number;
   musicNotes: number;
+  /** Musique coupée par Marceau : 0 (jouée) → 1 (coupée). */
+  hush: number;
   tension: number;
   heartbeat: number;
   room: string | null;
@@ -544,6 +548,8 @@ export class GameAudio {
   ctx: AudioContext | null = null;
   tension = 0;
   heartbeat = 0;
+  /** Coupure de la musique quand Marceau approche : 0 → 1, en fondu (sortie ~1 s, retour plus lent). */
+  hush = 0;
   readonly requested: Record<string, number> = {};
   readonly played: Record<string, number> = {};
   dropped = 0;
@@ -771,6 +777,8 @@ export class GameAudio {
     this.tension = approach(this.tension, target, dt, 0.9, 0.3);
     if (this.tension < 0.002) this.tension = 0;
     this.heartbeat = approach(this.heartbeat, frame.mode === "playing" || frame.mode === "paused" ? heartbeatLevel(frame.health) : 0, dt, 1.5, 0.8);
+    this.hush = approach(this.hush, frame.hush ? 1 : 0, dt, 2.2, 0.6);
+    if (this.hush < 0.002) this.hush = 0;
     const ctx = this.ctx;
     if (!ctx || ctx.state !== "running") return;
     this.mixClock -= dt;
@@ -793,6 +801,7 @@ export class GameAudio {
       tension: this.tension,
       heartbeat: this.heartbeat,
       health: frame.health,
+      hush: this.hush,
       active: levels.music > 0.001 && levels.master > 0.001,
     });
     if (frame.mode === "playing") this.ambientSpots(dt, frame.room, frame.powered);
@@ -981,6 +990,7 @@ export class GameAudio {
       started: this.started,
       voices: this.pool.active,
       musicNotes: this.music?.notes ?? 0,
+      hush: Math.round(this.hush * 1000) / 1000,
       tension: Math.round(this.tension * 1000) / 1000,
       heartbeat: Math.round(this.heartbeat * 1000) / 1000,
       room: this.room,

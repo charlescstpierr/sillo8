@@ -5,6 +5,7 @@ import type { Character } from "@/game/state";
 import { PaperButton, Stamp, Tag } from "./Paper";
 import { NewGameButton } from "./NewGameButton";
 import { endingFor } from "./story";
+import { frenchSpaces } from "./typo";
 import styles from "./sheets.module.css";
 
 export function ConclusionSheet({ engine, choice, touch }: { engine: Engine; choice: Character; touch: boolean }) {
@@ -13,7 +14,7 @@ export function ConclusionSheet({ engine, choice, touch }: { engine: Engine; cho
     <section className={styles.conclusion} aria-label={story.stamp} data-sheet>
       <Tag>CARNET DE SURVIE / SILLO 8</Tag>
       <div><Stamp className={styles.bigStamp}>{story.stamp}</Stamp></div>
-      {story.conclusion.map((text) => <p key={text} className={styles.text} data-ending-line>{text}</p>)}
+      {story.conclusion.map((text) => <p key={text} className={styles.text} data-ending-line>{frenchSpaces(text)}</p>)}
       <p className={styles.muted} style={{ marginTop: 0, marginBottom: 12 }}>
         Votre progression est conservée dans la sauvegarde.
       </p>

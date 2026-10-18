@@ -9,6 +9,8 @@ import type { Examinable, HiddenDetail } from "@/game/investigation/types";
 import { Art } from "./inquiry/art";
 import { PuzzlePanel } from "./inquiry/PuzzlePanel";
 import { useInquiry } from "./inquiry/useInquiry";
+import { useHud } from "./useHud";
+import { frenchSpaces } from "./typo";
 import { NewClue, ThoughtPaper } from "./InquiryLayer";
 import { PaperButton } from "./Paper";
 import styles from "./inquiry.module.css";
@@ -55,6 +57,7 @@ function Closeup({ engine, exam, touch }: { engine: Engine; exam: Examinable; to
   const pinch = useRef(new Map<number, { x: number; y: number }>());
   const pinchStart = useRef<{ distance: number; zoom: number } | null>(null);
   const objectRef = useRef<HTMLDivElement>(null);
+  const notice = useCloseupNotice(engine);
 
   const back = Math.abs(wrap(yaw)) > 90;
   const hasBack = Boolean(exam.closeup.back);
@@ -212,7 +215,7 @@ function Closeup({ engine, exam, touch }: { engine: Engine; exam: Examinable; to
   const orientation = exam.closeup.aspect >= 1 ? "wide" : "tall";
 
   return (
-    <section className={styles.closeup} data-sheet aria-label={`Gros plan : ${exam.name}`} data-loupe={loupe}>
+    <section className={styles.closeup} data-sheet aria-label={`Gros plan : ${exam.name}`} data-loupe={loupe} data-puzzle={exam.puzzle ? INDEX.puzzles.get(exam.puzzle)?.kind ?? "puzzle" : undefined}>
       <header className={styles.closeupHead}>
         <span className={styles.closeupTag}>Gros plan</span>
         <h1 className={styles.closeupTitle}>{exam.name}</h1>
@@ -249,7 +252,7 @@ function Closeup({ engine, exam, touch }: { engine: Engine; exam: Examinable; to
         {!loupe ? <span className={styles.stageHint} aria-hidden>{touch ? "glisser pour tourner · pincer pour zoomer" : "glisser pour tourner · molette pour zoomer"}</span> : null}
       </div>
 
-      <div className={styles.closeupInfo} style={exam.puzzle ? { height: "auto", maxHeight: "none", minHeight: 0 } : undefined}>
+      <div className={styles.closeupInfo}>
         {exam.puzzle ? <PuzzlePanel engine={engine} id={exam.puzzle} touch={touch} /> : null}
         {details.map((d, i) => (revealed[i] ? (
           <p key={i} className={styles.revealed} data-revealed><span className={styles.revealStamp}>Vu</span>{d.text}</p>
@@ -259,6 +262,7 @@ function Closeup({ engine, exam, touch }: { engine: Engine; exam: Examinable; to
       </div>
 
       <div className={styles.tools}>
+        {notice ? <p key={notice.id} className={styles.closeupNotice} role="status" data-testid="closeup-notice">{frenchSpaces(notice.text)}</p> : null}
         <button type="button" className={styles.tool} onClick={() => setZoom((z) => clamp(z - 0.3, 1, 2.4))} aria-label="Dézoomer" disabled={zoom <= 1}>−</button>
         <button type="button" className={styles.tool} onClick={() => setZoom((z) => clamp(z + 0.3, 1, 2.4))} aria-label="Zoomer" disabled={zoom >= 2.4}>+</button>
         {hasBack ? (
@@ -274,6 +278,25 @@ function Closeup({ engine, exam, touch }: { engine: Engine; exam: Examinable; to
       {found ? <NewClue key={found.key} card={found.card} /> : inquiry.toast && !found ? <NewClue key={inquiry.toast.key} card={inquiry.toast.card} /> : null}
     </section>
   );
+}
+
+/**
+ * Avis du moteur arrivé PENDANT le gros plan (disjoncteur qui claque, bruit qui attire les mordus, porte fermée…).
+ * L'avis flottant du jeu (Notice, ui/Hud.tsx) est masqué en gros plan pour ne pas couvrir le titre : on le montre
+ * ici, en petite ligne au-dessus des boutons, 6 s réelles (le temps du jeu est figé pendant le gros plan).
+ * Un avis plus ancien que l'ouverture du gros plan n'est pas repris.
+ */
+function useCloseupNotice(engine: Engine): { text: string; id: number } | null {
+  const hud = useHud(engine.hud);
+  const [openedAt] = useState(() => engine.hud.get().noticeId);
+  const [expired, setExpired] = useState(-1);
+  useEffect(() => {
+    if (hud.noticeId <= openedAt) return;
+    const timer = window.setTimeout(() => setExpired(hud.noticeId), 6000);
+    return () => window.clearTimeout(timer);
+  }, [hud.noticeId, openedAt]);
+  if (!hud.notice || hud.noticeId <= openedAt || expired === hud.noticeId) return null;
+  return { text: hud.notice, id: hud.noticeId };
 }
 
 /**
