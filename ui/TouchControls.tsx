@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Engine } from "@/game/engine";
 import type { Action } from "@/game/input";
 import { useHud } from "./useHud";
+import { useUi } from "./useUi";
 import styles from "./touch.module.css";
 
 const STICK_RADIUS = 56;
@@ -10,6 +11,7 @@ const STICK_RADIUS = 56;
 /** Commandes tactiles : stick gauche, gros boutons à droite. Visée assistée côté moteur. */
 export function TouchControls({ engine }: { engine: Engine }) {
   const hud = useHud(engine.hud);
+  const ui = useUi(engine.ui);
   const [coarse, setCoarse] = useState(false);
   const [stick, setStick] = useState<{ ox: number; oy: number; dx: number; dy: number } | null>(null);
   const pointerId = useRef<number | null>(null);
@@ -22,7 +24,8 @@ export function TouchControls({ engine }: { engine: Engine }) {
     return () => query.removeEventListener("change", update);
   }, []);
 
-  if (!coarse && hud.device !== "touch") return null;
+  // Uniquement en jeu : les fiches ont leurs propres boutons.
+  if ((!coarse && hud.device !== "touch") || ui.mode !== "playing") return null;
   const input = engine.input;
 
   const onStickDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -89,6 +92,7 @@ export function TouchControls({ engine }: { engine: Engine }) {
         >⤓</button>
       </div>
       <button className={styles.pause} onPointerDown={tap("pause")} aria-label="Pause">❚❚</button>
+      <button className={styles.bag} onPointerDown={tap("inventory")} aria-label="Inventaire">Sac</button>
     </div>
   );
 }

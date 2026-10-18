@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SILO 9 — La Descente",
-  description: "Descendez dans le silo, récupérez le noyau et choisissez entre MÈRE et N-7.",
+  title: "SILLO 8 — Étage 1",
+  description: "Le silo est tombé. Les morts marchent encore. Descendez.",
 };
 
 export const viewport: Viewport = {

@@ -115,4 +115,20 @@
   background: var(--paper);
   color: var(--ink);
   font-size: 14px;
+  box-shadow: 0 3px 0 rgba(30, 20, 13, 0.45);
+  touch-action: none;
+}
+
+.bag {
+  composes: pause;
+  top: calc(max(14px, env(safe-area-inset-top)) + 54px);
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 13px;
+  background: var(--mustard);
+}
+
+.pause:active,
+.bag:active {
+  transform: translateY(2px);
 }
