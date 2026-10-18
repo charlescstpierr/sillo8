@@ -177,7 +177,7 @@ Chaque pièce pose une petite question et donne une petite réponse, en moins de
   seul et répare tout ce qu'il touche.
 - **Sa motivation est simple :** trouver un abri, puis savoir qui est encore vivant (« pas tous »).
 - **Pas de famille, pas de lien avec le silo.** Il découvre tout en même temps que le joueur.
-- **Prénom : Lou** (choisi par l'auteur). Les survivants l'appellent « Lou », « le bricoleur » ou « mon garçon ».
+- **Prénom : Lou** (choisi par l'auteur). Les survivants l'appellent « Lou », « l'étranger », « le bricoleur » ou « mon garçon ».
 - **Ses pensées** (§ 12 b) : courtes, pratiques, un peu ironiques. Elles **posent des questions**, elles
   ne donnent jamais la réponse avant le joueur.
 
