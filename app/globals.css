@@ -21,6 +21,10 @@
   --font-title: "Grandstander", "Comic Sans MS", system-ui, sans-serif;
   --font-body: "Patrick Hand", "Comic Sans MS", system-ui, sans-serif;
   --font-stamp: "Special Elite", "Courier New", monospace;
+  /* Encres pour le texte sur papier : versions foncées (contraste ≥ 4,5 : 1 sur le papier). */
+  --rust-ink: #9c4524;
+  --red-ink: #a8341f;
+  --mustard-ink: #7d5a14;
 }
 
 html,
@@ -37,4 +41,26 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+/* ——— Accessibilité (réglages, voir ui/accessibility.ts) ——— */
+
+/* Taille du texte : toute l'interface multiplie ses tailles de police par --text-scale. */
+:root {
+  --text-scale: 1;
+}
+
+/* Police plus lisible : lettres d'imprimerie à la place de l'écriture manuscrite (titres inchangés). */
+:root[data-font="readable"] {
+  --font-body: "Verdana", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-stamp: "Verdana", "Segoe UI", Roboto, system-ui, sans-serif;
+}
+
+/* Réduire les animations : réglage manuel, ou le système (prefers-reduced-motion) quand le réglage est « auto ». */
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
 }

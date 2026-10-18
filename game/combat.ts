@@ -8,6 +8,7 @@ import { angleDifference, yawTowards } from "./aim";
 import { rayDistance, segmentClear, type Box } from "./collision";
 import { CombatFx } from "./render/fx";
 import { INTERACTABLES } from "./level";
+import { COMFORT } from "./comfort";
 
 export interface CombatHost {
   scene: Scene;
@@ -240,7 +241,7 @@ export class Combat {
       const oz = c ? c.z - player.z : fz;
       const far = Math.hypot(ox, oz) > 0.1;
       horde.damage(id, WRENCH.damage, WRENCH.stun);
-      horde.push?.(id, far ? ox : fx, far ? oz : fz, FEEL.wrenchPush, FEEL.wrenchFreeze);
+      horde.push?.(id, far ? ox : fx, far ? oz : fz, FEEL.wrenchPush, FEEL.wrenchFreeze * COMFORT.hitStop);
     }
     this.host.noise(player.x, player.z, WRENCH.noise);
     if (ids.length > 0) {

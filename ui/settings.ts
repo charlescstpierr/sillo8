@@ -3,10 +3,12 @@ import type { Engine } from "@/game/engine";
 import { SERVER_ROUTE } from "@/game/dialogue";
 import type { ArrowMode } from "@/game/tutorial";
 import { DEFAULT_SOUND } from "@/game/mix";
+import { applyA11y, DEFAULT_A11Y, parseA11y, type A11ySettings } from "./accessibility";
 
 export const SETTINGS_KEY = "sillo8-settings";
 
-export interface Settings {
+/** Les champs d'accessibilité (taille du texte, sous-titres, confort…) sont décrits dans ui/accessibility.ts. */
+export interface Settings extends A11ySettings {
   lowQuality: boolean | null;
   endpoint: string;
   model: string;
@@ -20,7 +22,7 @@ export interface Settings {
   vibration: boolean;
 }
 
-export const DEFAULT_SETTINGS: Settings = { lowQuality: null, endpoint: "", model: "", useServer: false, objectiveArrow: "auto", ...DEFAULT_SOUND };
+export const DEFAULT_SETTINGS: Settings = { lowQuality: null, endpoint: "", model: "", useServer: false, objectiveArrow: "auto", ...DEFAULT_SOUND, ...DEFAULT_A11Y };
 
 /** Anciens réglages sans le champ, ou booléen oui/non : repli sur "auto" (false → jamais). */
 export function arrowMode(value: unknown): ArrowMode {
@@ -48,6 +50,7 @@ export function loadSettings(): Settings {
       music: volume(data.music, DEFAULT_SOUND.music),
       sfx: volume(data.sfx, DEFAULT_SOUND.sfx),
       vibration: typeof data.vibration === "boolean" ? data.vibration : DEFAULT_SOUND.vibration,
+      ...parseA11y(data),
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -90,6 +93,7 @@ export function applySound(engine: Engine, settings: Pick<Settings, "master" | "
 
 export function applyStartupSettings(engine: Engine, urlLow: string | null): void {
   const settings = loadSettings();
+  applyA11y(settings);
   engine.tutorial.arrowMode = settings.objectiveArrow;
   applySound(engine, settings);
   if (urlLow === null && settings.lowQuality !== null && settings.lowQuality !== engine.lowQuality) {

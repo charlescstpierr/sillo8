@@ -4,8 +4,10 @@
 // Mignons-inquiétants, jamais gores : bave, langue pendante, coutures, haillons qui flottent, petit « pouf » de poussière à la mort.
 import {
   AdditiveBlending, BoxGeometry, BufferGeometry, CapsuleGeometry, Color, CylinderGeometry, Group, Mesh,
-  MeshBasicMaterial, MeshToonMaterial, Object3D, SphereGeometry, TorusGeometry, type Material,
+  CanvasTexture, MeshBasicMaterial, MeshToonMaterial, Object3D, SphereGeometry, SRGBColorSpace, Sprite, SpriteMaterial,
+  TorusGeometry, type Material,
 } from "three";
+import { COMFORT } from "../comfort";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { addOutline, toon } from "./toon";
@@ -43,6 +45,27 @@ export const ZOMBIE_COLORS = {
 /** Couleurs des yeux : ambre en patrouille, rouge en chasse, cyan sous l'ARC-3, braise éteinte endormi. */
 export const EYE = { calm: "#ffa83b", chase: "#ff3418", stun: "#77ffff", sleep: "#6b4a2a" } as const;
 export type EyeState = keyof typeof EYE;
+/**
+ * Couleurs adaptées (daltonisme) : jaune en patrouille, magenta en chasse, blanc sous l'ARC-3 — distinctes par la
+ * teinte ET la luminosité. Chaque état a aussi une forme (marque au-dessus de la tête, étincelles) et une animation.
+ */
+export const EYE_SAFE: Record<EyeState, string> = { calm: "#ffe14a", chase: "#ff3fc8", stun: "#f4fbff", sleep: EYE.sleep };
+
+/** Marque au-dessus de la tête : « ! » dans un triangle en chasse, « ? » dans une bulle en alerte, « z » endormi. */
+export type MarkKind = "chase" | "alert" | "sleep" | "none";
+
+/** Couleurs des yeux selon le réglage « couleurs adaptées ». */
+export function eyeColor(state: EyeState, safe = COMFORT.safeColors): string {
+  return (safe ? EYE_SAFE : EYE)[state];
+}
+
+/** Quelle marque afficher (logique pure, testée). */
+export function markFor(a: Pick<ZombieAnimation, "eye" | "alert" | "stunned" | "dormant" | "dead">): MarkKind {
+  if (a.dead >= 0 || a.stunned) return "none";
+  if (a.dormant) return "sleep";
+  if (a.eye === "chase") return "chase";
+  return a.alert ? "alert" : "none";
+}
 
 /** Ressort amorti de la tête (dodelinement). */
 interface Wobble {
@@ -85,6 +108,11 @@ export interface ZombieRig {
   /** Détails masqués en qualité réduite. */
   extras: Object3D[];
   seed: number;
+  /** Globes des yeux (clignement, grossissement en chasse). */
+  eyes: Mesh[];
+  /** Marque d'état au-dessus de la tête (absente sans navigateur). */
+  mark: Sprite | null;
+  markKind: MarkKind;
 }
 
 export interface ZombieAnimation {
@@ -93,6 +121,8 @@ export interface ZombieAnimation {
   /** Phase de la foulée (radians). */
   stride: number;
   eye: EyeState;
+  /** Il enquête ou cherche (bruit entendu) : marque « ? ». */
+  alert?: boolean;
   /** 1 → 0 pendant la fente d'attaque. */
   attack: number;
   /** Secondes restantes du flash d'impact (0.18 → 0). */
@@ -345,18 +375,111 @@ function buildPuffs(root: Group): { puffs: Mesh[]; dust: MeshBasicMaterial } {
   return { puffs, dust };
 }
 
-type Shell = Omit<ZombieRig, "outlines" | "casters" | "puffs" | "dust" | "seed" | "wobble">;
+type Shell = Omit<ZombieRig, "outlines" | "casters" | "puffs" | "dust" | "seed" | "wobble" | "eyes" | "mark" | "markKind">;
 
 function finish(shell: Shell): ZombieRig {
   const { puffs, dust } = buildPuffs(shell.root);
-  const rig: ZombieRig = { ...shell, outlines: [], casters: [], puffs, dust, seed: (seeds++ * 0.618) % 1, wobble: { x: 0, vx: 0, z: 0, vz: 0, hit: 0 } };
+  const rig: ZombieRig = {
+    ...shell, outlines: [], casters: [], puffs, dust, seed: (seeds++ * 0.618) % 1, wobble: { x: 0, vx: 0, z: 0, vz: 0, hit: 0 },
+    eyes: [], mark: null, markKind: "none",
+  };
   addOutline(rig.root, 0.022);
   rig.root.traverse((child) => {
     if (!(child instanceof Mesh)) return;
+    if (child.material === rig.eye) rig.eyes.push(child);
     if (child.userData.isOutline) rig.outlines.push(child);
     else if (child.castShadow) rig.casters.push(child);
   });
+  rig.mark = buildMark(rig.kind);
+  if (rig.mark) rig.root.add(rig.mark);
   return rig;
+}
+
+// ——— Marque d'état (une forme, en plus de la couleur des yeux) ———
+
+const MARK_HEIGHT: Record<ZombieKind, number> = { walker: 2.55, crawler: 1.5 };
+let markMaterials: Partial<Record<Exclude<MarkKind, "none">, SpriteMaterial>> | null = null;
+let markSafe = false;
+
+/** Dessine une marque façon autocollant de papier : contour d'encre, fond crème, signe au centre. */
+function markTexture(kind: Exclude<MarkKind, "none">, safe: boolean): CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 128;
+  const g = canvas.getContext("2d")!;
+  g.lineJoin = "round";
+  g.lineWidth = 9;
+  g.strokeStyle = "#2a1d12";
+  g.fillStyle = "#fff6e2";
+  g.beginPath();
+  if (kind === "chase") {
+    // Triangle d'alerte.
+    g.moveTo(64, 10);
+    g.lineTo(120, 112);
+    g.lineTo(8, 112);
+    g.closePath();
+  } else if (kind === "alert") {
+    // Bulle ronde avec une petite queue.
+    g.arc(64, 58, 46, 0.6 * Math.PI, 0.4 * Math.PI);
+    g.lineTo(54, 122);
+    g.closePath();
+  } else {
+    // Nuage de sommeil (trois bosses).
+    g.arc(42, 72, 30, Math.PI * 0.5, Math.PI * 1.5);
+    g.arc(70, 44, 32, Math.PI, Math.PI * 1.9);
+    g.arc(92, 76, 28, Math.PI * 1.4, Math.PI * 0.5);
+    g.closePath();
+  }
+  g.fill();
+  g.stroke();
+  const glyph = kind === "chase" ? "!" : kind === "alert" ? "?" : "z";
+  g.fillStyle = kind === "chase" ? eyeColor("chase", safe) : "#2a1d12";
+  g.strokeStyle = "#2a1d12";
+  g.lineWidth = 5;
+  g.font = `bold ${kind === "chase" ? 70 : 74}px "Grandstander", "Comic Sans MS", sans-serif`;
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  const y = kind === "chase" ? 78 : kind === "alert" ? 62 : 70;
+  if (kind === "chase") g.strokeText(glyph, 64, y);
+  g.fillText(glyph, 64, y);
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+
+function markMaterial(kind: Exclude<MarkKind, "none">): SpriteMaterial | null {
+  if (typeof document === "undefined") return null;
+  if (!markMaterials || markSafe !== COMFORT.safeColors) {
+    for (const m of Object.values(markMaterials ?? {})) { m.map?.dispose(); m.dispose(); }
+    markMaterials = {};
+    markSafe = COMFORT.safeColors;
+  }
+  return (markMaterials[kind] ??= new SpriteMaterial({ map: markTexture(kind, markSafe), depthWrite: false, transparent: true }));
+}
+
+function buildMark(kind: ZombieKind): Sprite | null {
+  const material = markMaterial("chase");
+  if (!material) return null;
+  const sprite = new Sprite(material);
+  sprite.position.y = MARK_HEIGHT[kind];
+  sprite.scale.setScalar(0.5);
+  sprite.renderOrder = 3;
+  sprite.visible = false;
+  sprite.userData.noOutline = true;
+  return sprite;
+}
+
+/** Montre la bonne marque ; elle flotte doucement (sauf « réduire les animations »). */
+function animateMark(rig: ZombieRig, kind: MarkKind, t: number): void {
+  rig.markKind = kind;
+  const mark = rig.mark;
+  if (!mark) return;
+  mark.visible = kind !== "none";
+  if (kind === "none") return;
+  const material = markMaterial(kind);
+  if (material && mark.material !== material) mark.material = material;
+  const bob = COMFORT.motion ? Math.sin(t * (kind === "chase" ? 7 : 2.4) + rig.seed * 6) * 0.05 : 0;
+  mark.position.y = MARK_HEIGHT[rig.kind] + bob;
+  mark.scale.setScalar(kind === "sleep" ? 0.38 : kind === "chase" ? 0.55 : 0.48);
 }
 
 /** Pièce rapiécée cousue : carré de tissu et quatre points de couture. */
@@ -584,18 +707,27 @@ export function animateZombie(rig: ZombieRig, a: ZombieAnimation, dt: number): v
   const hit = Math.max(0, Math.min(1, a.hit / 0.18));
   // Yeux : la lueur s'éteint doucement après la mort
   const dying = a.dead >= 0;
-  const eyeColor = a.stunned ? EYE.stun : a.dormant || dying ? EYE.sleep : EYE[a.eye];
-  rig.eye.color.set(eyeColor);
-  rig.halo.color.set(eyeColor);
-  rig.halo.opacity = dying || a.dormant ? 0 : a.eye === "chase" ? 0.3 + 0.1 * Math.sin(t * 9) : a.stunned ? 0.36 : 0.24;
+  const state: EyeState = a.stunned ? "stun" : a.dormant || dying ? "sleep" : a.eye;
+  const color = eyeColor(state);
+  rig.eye.color.set(color);
+  rig.halo.color.set(color);
+  const pulse = COMFORT.motion ? Math.sin(t * 9) : 0;
+  rig.halo.opacity = dying || a.dormant ? 0 : a.eye === "chase" ? 0.3 + 0.1 * pulse : a.stunned ? 0.36 : 0.24;
+  // Forme des yeux selon l'état (pas seulement la couleur) : ronds et écarquillés en chasse, plissés endormis ou
+  // étourdis, un clignement lent en patrouille ; et la marque au-dessus de la tête.
+  const blink = COMFORT.motion && state === "calm" && ((t * 0.27 + rig.seed) % 1) > 0.965 ? 0.15 : 1;
+  const eyeY = state === "sleep" ? 0.2 : state === "chase" ? 1.25 : state === "stun" ? 0.55 : blink;
+  const eyeXY = state === "chase" ? 1.2 : 1;
+  for (const ball of rig.eyes) ball.scale.set(eyeXY, eyeY, 0.6);
+  animateMark(rig, markFor(a), t);
 
-  // Teinte : flash blanc à l'impact, crépitement cyan de l'ARC-3
+  // Teinte : flash blanc à l'impact, crépitement cyan de l'ARC-3 (adoucis par « réduire les animations »)
   let tint = 0;
   let tintColor = HIT_TINT;
-  if (hit > 0) tint = hit * 0.9;
+  if (hit > 0) tint = hit * 0.9 * COMFORT.flash;
   if (a.stunned && hit <= 0.3) {
     tintColor = STUN_TINT;
-    tint = Math.max(tint, 0.25 + 0.35 * Math.max(0, Math.sin(t * 47) * Math.sin(t * 31)));
+    tint = Math.max(tint, 0.25 + 0.35 * COMFORT.flicker * Math.max(0, Math.sin(t * 47) * Math.sin(t * 31)));
   }
   for (const m of rig.tint) {
     m.emissive.copy(tintColor);
