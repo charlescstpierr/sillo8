@@ -299,6 +299,13 @@ export class Engine {
     this.setMode("conclusion", "floor2");
   }
 
+  /** Choix de fin : réservé aux étages suivants (l'histoire de SILLO 8 reste à écrire). */
+  chooseEnding(choice: Character): boolean {
+    void choice;
+    this.notify("Ce choix n'est pas encore disponible.");
+    return false;
+  }
+
   useMedkit(): boolean {
     const ok = this.state.heal();
     this.notify(ok ? "Santé restaurée." : "Aucune trousse utilisable.");

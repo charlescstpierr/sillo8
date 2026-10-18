@@ -47,4 +47,15 @@ export const ENDINGS: Record<Character, EndingSheetData> = {
   },
 };
 
+/** Fin de l'étage 1 : l'accès à l'étage 2 est ouvert. */
+ENDINGS.floor2 = {
+  choice: "",
+  description: "",
+  stamp: "ÉTAGE 1 TERMINÉ",
+  conclusion: [
+    "La clé glisse dans le lecteur. L'escalier de service s'ouvre sur le noir.",
+    "Quelque part plus bas, le signal radio répond encore. L'étage 2 vous attend… bientôt.",
+  ],
+};
+
 export const ENDING_ORDER: Character[] = ["mother", "n7"];

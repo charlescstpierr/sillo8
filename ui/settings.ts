@@ -1,8 +1,8 @@
-// Réglages persistés (localStorage « silo9-settings ») et leur application au moteur.
+// Réglages persistés (localStorage « sillo8-settings ») et leur application au moteur.
 import type { Engine } from "@/game/engine";
 import { SERVER_ROUTE } from "@/game/dialogue";
 
-export const SETTINGS_KEY = "silo9-settings";
+export const SETTINGS_KEY = "sillo8-settings";
 
 export interface Settings {
   lowQuality: boolean | null;

@@ -82,7 +82,7 @@ export function InventorySheet({ engine, touch }: { engine: Engine; touch: boole
         <PaperButton variant="ghost" className={styles.back} hotkey={touch ? undefined : "Tab"} onClick={() => engine.resume()}>Retour au terrain</PaperButton>
       </div>
       <p className={styles.muted}>
-        L&apos;atelier et la recharge gratuite se trouvent dans l&apos;ascenseur.
+        La borne de recharge gratuite est au poste de sécurité. L&apos;atelier fabrique et améliore avec des pièces.
         Amélioration de batterie : 3 composants.
       </p>
     </section>

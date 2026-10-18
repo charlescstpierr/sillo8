@@ -34,17 +34,17 @@ export function EndingSheet({ engine, touch }: { engine: Engine; touch: boolean 
 }
 
 export function ConclusionSheet({ engine, choice, touch }: { engine: Engine; choice: Character; touch: boolean }) {
-  const story = ENDINGS[choice];
+  const story = ENDINGS[choice] ?? ENDINGS.floor2;
   return (
     <section className={styles.conclusion} aria-label={story.stamp} data-sheet>
       <Tag>MISSION ACCOMPLIE / SILLO 8</Tag>
       <div><Stamp className={styles.bigStamp}>{story.stamp}</Stamp></div>
       {story.conclusion.map((text) => <p key={text} className={styles.text}>{text}</p>)}
       <p className={styles.muted} style={{ marginTop: 0, marginBottom: 12 }}>
-        Les conséquences sont visibles en reprenant l&apos;exploration. Votre choix est conservé dans la sauvegarde.
+        Votre progression est conservée dans la sauvegarde.
       </p>
       <div className={styles.buttons}>
-        <PaperButton variant="primary" arrow autoFocus={!touch} onClick={() => engine.resume()}>Observer les conséquences</PaperButton>
+        <PaperButton variant="primary" arrow autoFocus={!touch} onClick={() => engine.resume()}>Continuer d&apos;explorer</PaperButton>
         <PaperButton variant="olive" onClick={() => engine.newGame()}>Recommencer une descente</PaperButton>
         <PaperButton variant="ghost" onClick={() => engine.setMode("menu")}>Menu principal</PaperButton>
       </div>
