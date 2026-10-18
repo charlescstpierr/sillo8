@@ -467,3 +467,175 @@ export function dirtGroundTexture(): Texture {
     }
   });
 }
+
+// ——— Aile ouest (dortoirs, entrepôt, cafétéria, génératrice) ———
+
+/** Couverture tricotée : rayures et mailles en V. `a` fond, `b` rayures. */
+export function westKnitTexture(a: string, b: string): Texture {
+  return make(`west-knit:${a}:${b}`, 128, 128, (g, w, h) => {
+    g.fillStyle = a;
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = b;
+    for (let y = 0; y < h; y += 32) g.fillRect(0, y + 18, w, 10);
+    g.strokeStyle = "rgba(30,20,13,0.22)";
+    g.lineWidth = 2;
+    for (let y = 2; y < h; y += 8) {
+      for (let x = 0; x < w; x += 8) { g.beginPath(); g.moveTo(x, y); g.lineTo(x + 4, y + 5); g.lineTo(x + 8, y); g.stroke(); }
+    }
+  });
+}
+
+/** Fresque des survivants peinte au mur : soleil, silhouettes main dans la main, pousse. */
+export function westMuralTexture(): Texture {
+  return make("west-mural", 512, 256, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    g.lineCap = "round";
+    g.lineJoin = "round";
+    // Colline et soleil
+    g.fillStyle = "rgba(107,117,80,0.92)";
+    g.beginPath(); g.moveTo(0, h); g.quadraticCurveTo(w * 0.5, h * 0.55, w, h); g.fill();
+    g.fillStyle = "#d8a43a";
+    g.beginPath(); g.arc(w * 0.82, h * 0.3, 34, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = "#d8a43a";
+    g.lineWidth = 7;
+    for (let a = 0; a < 10; a++) { g.beginPath(); g.moveTo(w * 0.82 + Math.cos(a * 0.63) * 44, h * 0.3 + Math.sin(a * 0.63) * 44); g.lineTo(w * 0.82 + Math.cos(a * 0.63) * 58, h * 0.3 + Math.sin(a * 0.63) * 58); g.stroke(); }
+    // Survivants : têtes rondes, bonnets, mains liées
+    const coats = ["#d8a43a", "#c85a4a", "#6b7550", "#3f8796", "#d8a43a"];
+    const hats = ["#556045", "#6a4528", "#c85a4a", "#556045", "#e9dcc0"];
+    for (let i = 0; i < 5; i++) {
+      const x = 70 + i * 66;
+      const y = 150 + (i % 2) * 6 - (i === 2 ? 4 : 0);
+      g.fillStyle = coats[i];
+      g.beginPath(); g.ellipse(x, y + 30, 20, 30, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "#e8b48e";
+      g.beginPath(); g.arc(x, y - 12, 18, 0, Math.PI * 2); g.fill();
+      g.fillStyle = hats[i];
+      g.beginPath(); g.arc(x, y - 16, 18, Math.PI, 0); g.fill();
+      g.fillStyle = "#1e140d";
+      g.beginPath(); g.arc(x - 6, y - 10, 2.5, 0, Math.PI * 2); g.arc(x + 6, y - 10, 2.5, 0, Math.PI * 2); g.fill();
+      if (i < 4) {
+        g.strokeStyle = "#e8b48e";
+        g.lineWidth = 6;
+        g.beginPath(); g.moveTo(x + 16, y + 20); g.quadraticCurveTo(x + 33, y + 30, x + 50, y + 20); g.stroke();
+      }
+    }
+    // Pousse
+    g.strokeStyle = "#8cc152";
+    g.lineWidth = 6;
+    g.beginPath(); g.moveTo(w * 0.9, h - 20); g.lineTo(w * 0.9, h - 70); g.stroke();
+    g.fillStyle = "#8cc152";
+    g.beginPath(); g.ellipse(w * 0.9 - 14, h - 72, 14, 7, -0.5, 0, Math.PI * 2); g.ellipse(w * 0.9 + 14, h - 80, 14, 7, 0.5, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#e9dcc0";
+    g.font = "44px 'Patrick Hand', cursive";
+    g.textAlign = "left";
+    g.fillText("ON TIENT BON !", 24, 52);
+    g.font = "22px 'Patrick Hand', cursive";
+    g.fillText("— les gens du 8", 60, 84);
+  }, false);
+}
+
+/** Tableau de liège : photos, notes, carte et fil rouge entre les punaises. */
+export function westBoardTexture(): Texture {
+  return make("west-board", 384, 256, (g, w, h) => {
+    const r = rng(81);
+    g.fillStyle = "#6a4528";
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "#b98a55";
+    g.fillRect(12, 12, w - 24, h - 24);
+    g.fillStyle = "rgba(90,60,30,0.35)";
+    for (let k = 0; k < 400; k++) g.fillRect(12 + r() * (w - 24), 12 + r() * (h - 24), 2, 2);
+    const pins: [number, number][] = [];
+    const cards: [number, number, number, number, string][] = [
+      [40, 40, 70, 54, "#e9dcc0"], [150, 30, 90, 70, "#f4ecd6"], [280, 46, 64, 80, "#e9dcc0"],
+      [60, 140, 80, 64, "#f4ecd6"], [180, 140, 70, 80, "#d8c7a0"], [290, 160, 60, 50, "#f4ecd6"],
+    ];
+    for (const [x, y, cw, ch, color] of cards) {
+      g.save();
+      g.translate(x + cw / 2, y + ch / 2);
+      g.rotate((r() - 0.5) * 0.25);
+      g.fillStyle = color;
+      g.fillRect(-cw / 2, -ch / 2, cw, ch);
+      g.strokeStyle = "rgba(60,50,40,0.55)";
+      g.lineWidth = 2;
+      for (let yy = -ch / 2 + 12; yy < ch / 2 - 6; yy += 9) { g.beginPath(); g.moveTo(-cw / 2 + 8, yy); g.lineTo(cw / 2 - 8 - r() * 14, yy); g.stroke(); }
+      g.restore();
+      pins.push([x + cw / 2, y + 6]);
+    }
+    // Carte avec une croix
+    g.strokeStyle = "#3f8796";
+    g.lineWidth = 3;
+    g.strokeRect(160, 42, 70, 46);
+    g.strokeStyle = "#c83a2a";
+    g.lineWidth = 4;
+    g.beginPath(); g.moveTo(205, 55); g.lineTo(217, 67); g.moveTo(217, 55); g.lineTo(205, 67); g.stroke();
+    // Fil rouge
+    g.strokeStyle = "#d8322a";
+    g.lineWidth = 3;
+    for (const [a, b] of [[0, 1], [1, 2], [1, 4], [3, 4], [4, 5], [0, 3], [2, 5]]) {
+      g.beginPath(); g.moveTo(pins[a][0], pins[a][1]); g.lineTo(pins[b][0], pins[b][1]); g.stroke();
+    }
+    for (const [x, y] of pins) { g.fillStyle = "#d8322a"; g.beginPath(); g.arc(x, y, 6, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = "#1e140d";
+    g.font = "26px 'Patrick Hand', cursive";
+    g.fillText("ÉTAGE 2 ?", 196, 236);
+  }, false);
+}
+
+/** Plan du silo dessiné à la main, épinglé au mur. */
+export function westMapTexture(): Texture {
+  return make("west-map", 256, 200, (g, w, h) => {
+    g.fillStyle = "#e9dcc0";
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = "#3f6f86";
+    g.lineWidth = 3;
+    g.beginPath(); g.arc(w / 2, h / 2, 34, 0, Math.PI * 2); g.stroke();
+    g.strokeRect(20, 30, 70, 50); g.strokeRect(20, 110, 70, 60); g.strokeRect(166, 30, 70, 50); g.strokeRect(166, 110, 70, 60);
+    g.strokeStyle = "#c83a2a";
+    g.setLineDash([8, 6]);
+    g.beginPath(); g.moveTo(w / 2, h - 6); g.lineTo(w / 2, h / 2 + 34); g.moveTo(w / 2 - 34, h / 2); g.lineTo(90, 55); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = "#1e140d";
+    g.font = "20px 'Special Elite', monospace";
+    g.fillText("SILLO 8", 92, 22);
+  }, false);
+}
+
+/** Farine renversée au sol. */
+export function westFlourTexture(): Texture {
+  return make("west-flour", 128, 128, (g, w, h) => {
+    const r = rng(23);
+    for (let k = 0; k < 26; k++) {
+      g.fillStyle = `rgba(246,240,224,${0.35 + r() * 0.5})`;
+      g.beginPath(); g.arc(w / 2 + (r() - 0.5) * 70, h / 2 + (r() - 0.5) * 60, 8 + r() * 20, 0, Math.PI * 2); g.fill();
+    }
+  }, false);
+}
+
+/** Rayures en arc au sol : un pan de mur qui a pivoté plusieurs fois (mur creux). */
+export function westScratchTexture(): Texture {
+  return make("west-scratch", 256, 256, (g, w, h) => {
+    const r = rng(57);
+    g.clearRect(0, 0, w, h);
+    g.lineCap = "round";
+    for (let k = 0; k < 7; k++) {
+      g.strokeStyle = k % 2 ? "rgba(250,244,226,0.55)" : "rgba(40,30,22,0.45)";
+      g.lineWidth = 2 + r() * 2;
+      const radius = 150 + k * 12 + r() * 6;
+      g.beginPath();
+      g.arc(0, h / 2, radius, -0.75 + r() * 0.1, 0.75 - r() * 0.1);
+      g.stroke();
+    }
+  }, false);
+}
+
+/** Halo lumineux doux (flaques de lumière au sol, voyants). */
+export function westGlowTexture(): Texture {
+  return make("west-glow", 128, 128, (g, w, h) => {
+    const grad = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+    grad.addColorStop(0, "rgba(255,255,255,0.9)");
+    grad.addColorStop(0.4, "rgba(255,255,255,0.35)");
+    grad.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, w, h);
+  }, false);
+}
