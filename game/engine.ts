@@ -1,8 +1,7 @@
 // Boucle de jeu three.js, hors de React. L'interface lit `hud` et `ui`, et positionne l'infobulle via `tooltipEl`.
 // Modes, partie, armes du bricoleur et interactions (la progression pure est dans progress.ts).
 import {
-  Clock, Color, DirectionalLight, Fog, HemisphereLight, NeutralToneMapping, PCFSoftShadowMap,
-  PerspectiveCamera, Scene, SRGBColorSpace, Vector3, WebGLRenderer, type Mesh,
+  Clock, NeutralToneMapping, PCFShadowMap, PerspectiveCamera, Scene, SRGBColorSpace, Vector3, WebGLRenderer, type Mesh,
 } from "three";
 import { CAMERA, CameraRig } from "./camera";
 import { AIM_HEIGHT, assistTarget, groundPoint, yawTowards } from "./aim";
@@ -23,6 +22,7 @@ import { animateOperator, buildOperator, type OperatorRig } from "./render/opera
 import { PALETTE } from "./render/palette";
 import { blobTexture } from "./render/textures";
 import { decal } from "./render/props";
+import { Atmosphere } from "./render/atmosphere";
 
 export interface EngineOptions {
   lowQuality?: boolean;
@@ -72,7 +72,8 @@ export class Engine {
   /** Temps de jeu de la dernière sauvegarde automatique (pour le petit tampon « Sauvegardé »). */
   private savedAt = -10;
   private progressKey = "";
-  private sun: DirectionalLight;
+  /** Lumières, brouillard et vignette selon la zone (nuit dehors, pièces teintées dedans). */
+  readonly atmosphere: Atmosphere;
   private shadowBlob: Mesh;
   private readonly tmp = new Vector3();
   private readonly aimTmp = new Vector3();
@@ -88,23 +89,13 @@ export class Engine {
     this.renderer.toneMapping = NeutralToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = PCFSoftShadowMap;
+    // PCF filtré (5 prises tournées) : ombres douces ; PCFSoftShadowMap n'existe plus dans three r18x.
+    this.renderer.shadowMap.type = PCFShadowMap;
     this.renderer.setClearColor(PALETTE.sky);
 
-    this.scene.background = new Color(PALETTE.sky);
-    this.scene.fog = new Fog(PALETTE.fog, 22, 48);
     this.camera = new PerspectiveCamera(CAMERA.fov, 16 / 9, 0.5, 120);
     this.rig = new CameraRig(this.camera);
-
-    this.scene.add(new HemisphereLight("#ffe9c8", "#3d4a3c", 0.95));
-    this.sun = new DirectionalLight("#ffd7a3", 1.25);
-    this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048);
-    Object.assign(this.sun.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15, near: 1, far: 40 });
-    this.sun.shadow.bias = -0.0008;
-    this.sun.shadow.normalBias = 0.03;
-    this.sun.shadow.radius = 4;
-    this.scene.add(this.sun, this.sun.target);
+    this.atmosphere = new Atmosphere(this.scene, this.renderer);
 
     this.world = buildWorld(this.scene);
     const [px, , pz] = this.state.playerPosition;
@@ -208,7 +199,7 @@ export class Engine {
   setLowQuality(low: boolean): void {
     this.lowQuality = low;
     this.renderer.shadowMap.enabled = !low;
-    this.sun.castShadow = !low;
+    this.atmosphere.setLowQuality(low);
     this.world.setLowQuality(low);
     this.horde.setLowQuality(low);
     this.combat.setLowQuality(low);
@@ -321,6 +312,7 @@ export class Engine {
     this.horde.sync(this.state);
     this.refreshWorld();
     this.rig.snap(new Vector3(x, 0, z));
+    this.atmosphere.snap();
   }
 
   openPause(): void {
@@ -589,12 +581,11 @@ export class Engine {
 
   private render(dt: number): void {
     this.rig.update(dt, this.tmp.set(this.player.x, 0, this.player.z), this.aimPoint);
-    const fog = this.scene.fog as Fog;
-    fog.near = this.rig.distance + 3;
-    fog.far = this.rig.distance + 30;
-    // La lumière d'ensemble suit le joueur pour garder des ombres nettes autour de lui.
-    this.sun.position.set(this.rig.focus.x - 7, 16, this.rig.focus.z - 9);
-    this.sun.target.position.copy(this.rig.focus);
+    // Ambiance de la pièce du joueur ; la lune suit le point visé pour garder des ombres nettes autour de lui.
+    this.atmosphere.update({
+      dt, x: this.player.x, z: this.player.z, focus: this.rig.focus, distance: this.rig.distance,
+      aspect: this.camera.aspect, state: this.state, headlamp: this.operator.headlamp,
+    });
     this.renderer.render(this.scene, this.camera);
     this.placeTooltip();
     this.fpsFrames += 1;

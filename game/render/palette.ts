@@ -34,6 +34,7 @@ export const PALETTE = {
   backpack: "#6e7d45",
   boot: "#3b2c22",
   gun: "#39424a",
-  fog: "#2a3330",
-  sky: "#1b2321",
+  // Vide autour du silo et brouillard : nuit (les ambiances de pièce sont dans atmosphere.ts).
+  fog: "#0f161d",
+  sky: "#10161b",
 } as const;
