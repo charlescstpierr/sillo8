@@ -254,15 +254,33 @@ test("objectifs pliables : téléphone en portrait", async ({ browser }) => {
   // Le compteur suit la progression.
   await page.evaluate(() => (window as any).__silo.state.exploreEntrance());
   await expect(page.locator('section[aria-label="Objectifs"] button')).toContainText("1/5");
-  // En portrait, la carte compacte (vie, lampe) ne chevauche ni le stick ni les boutons tactiles.
-  const mini = await page.locator("section[aria-hidden]").filter({ hasText: "CLÉ À MOLETTE" }).boundingBox({ timeout: 10_000 });
-  expect(mini).not.toBeNull();
+  // En portrait, la vie et la lampe tiennent dans un rail vertical replié au bord gauche,
+  // qui ne chevauche ni le stick ni les boutons tactiles.
+  await page.evaluate(() => window.localStorage.removeItem("sillo8-vitals-open"));
+  await boot(page);
+  await page.evaluate(() => (window as any).__silo.newGame());
+  const rail = page.locator('section[aria-label="Vie et lampe"]');
+  const railToggle = rail.locator("button").first();
+  await expect(railToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(rail).not.toContainText("CLÉ À MOLETTE");
+  const box = await rail.boundingBox({ timeout: 10_000 });
+  expect(box).not.toBeNull();
+  expect(box!.width, "rail étroit").toBeLessThan(60);
   for (const name of ["Frapper", "Éblouir", "Changer d'arme", "Interagir", "S'accroupir"]) {
     const button = await page.getByRole("button", { name, exact: true }).boundingBox({ timeout: 10_000 });
     expect(button, name).not.toBeNull();
-    const apart = mini!.y + mini!.height <= button!.y || button!.y + button!.height <= mini!.y || mini!.x + mini!.width <= button!.x || button!.x + button!.width <= mini!.x;
-    expect(apart, `la carte compacte chevauche « ${name} »`).toBe(true);
+    const apart = box!.y + box!.height <= button!.y || button!.y + button!.height <= box!.y || box!.x + box!.width <= button!.x || button!.x + button!.width <= box!.x;
+    expect(apart, `le rail chevauche « ${name} »`).toBe(true);
   }
+  await shot(page, "vitals-portrait");
+  // Un toucher ouvre le détail (chiffres, arme, compteurs), un autre le range.
+  await railToggle.tap();
+  await expect(railToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(rail).toContainText("CLÉ À MOLETTE");
+  await shot(page, "vitals-ouvert-portrait");
+  await railToggle.tap();
+  await expect(railToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(rail).not.toContainText("CLÉ À MOLETTE");
   expect(errors).toEqual([]);
   await context.close();
 });

@@ -604,3 +604,145 @@
 @media (prefers-reduced-motion: reduce) {
   .autosave { animation: none; }
 }
+
+/* ——— Téléphone : barre d'état verticale rétractable ——— */
+.rail {
+  display: none;
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 186px);
+  left: max(14px, env(safe-area-inset-left));
+  pointer-events: auto;
+}
+
+.railToggle {
+  composes: card;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 44px;
+  padding: 7px 0 5px;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.railToggle:focus-visible {
+  outline: 2px solid var(--rust);
+  outline-offset: 2px;
+}
+
+.railGauges {
+  display: flex;
+  gap: 5px;
+}
+
+.railGauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.railIcon {
+  width: 13px;
+  height: 13px;
+}
+
+.vgauge {
+  position: relative;
+  width: 9px;
+  height: 62px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: rgba(58, 42, 28, 0.12);
+  overflow: hidden;
+}
+
+.vgaugeFill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #e0674a;
+  transition: height 0.25s ease;
+}
+
+.vgauge[data-tone="lamp"] .vgaugeFill {
+  background: #d8a43a;
+}
+
+.vgauge[data-low="true"] .vgaugeFill {
+  background: var(--rust);
+}
+
+.railWeapon {
+  width: 20px;
+  height: 20px;
+}
+
+.railAmmo {
+  margin-top: -4px;
+  font-family: var(--font-title);
+  font-size: 11px;
+}
+
+.railChevron {
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.rail[data-danger] .railToggle {
+  animation: railHurt 0.9s ease-in-out infinite;
+}
+
+@keyframes railHurt {
+  50% { box-shadow: 0 0 0 3px rgba(216, 69, 43, 0.65), 0 3px 0 rgba(30, 20, 13, 0.35); }
+}
+
+.railPanel {
+  composes: card;
+  position: absolute;
+  top: 0;
+  left: 52px;
+  width: 188px;
+  padding: 6px 9px 7px;
+  font-size: 13px;
+  animation: railOpen 0.16s ease-out;
+}
+
+@keyframes railOpen {
+  from { opacity: 0; transform: translateX(-6px); }
+}
+
+.railNumbers {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 3px;
+  font-family: var(--font-title);
+}
+
+.railWeaponName {
+  margin: 0 0 4px;
+  font-family: var(--font-title);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail[data-danger] .railToggle, .railPanel { animation: none; }
+}
+
+/* Téléphone en portrait : la barre remplace la carte et la version compacte. */
+@media (max-width: 600px) and (orientation: portrait) {
+  .mini { display: none; }
+  .rail { display: block; }
+}
+
+/* Téléphone en paysage : à droite de la colonne pause / sac / carnet, en haut. */
+@media (max-height: 480px) {
+  .mini { display: none; }
+  .rail { display: block; top: max(10px, env(safe-area-inset-top)); left: calc(max(14px, env(safe-area-inset-left)) + 62px); }
+  .vgauge { height: 48px; }
+}

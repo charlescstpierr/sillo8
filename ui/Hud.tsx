@@ -19,6 +19,67 @@ function Gauge({ value, max, tone }: { value: number; max: number; tone: "health
 }
 
 const OBJECTIVES_KEY = "sillo8-objectives-open";
+const VITALS_KEY = "sillo8-vitals-open";
+
+/** Jauge verticale fine : se remplit du bas vers le haut. */
+function VGauge({ value, max, tone }: { value: number; max: number; tone: "health" | "lamp" }) {
+  const ratio = Math.max(0, Math.min(1, value / max));
+  return (
+    <div className={styles.vgauge} data-tone={tone} data-low={ratio < 0.25}>
+      <div className={styles.vgaugeFill} style={{ height: `${ratio * 100}%` }} />
+    </div>
+  );
+}
+
+/**
+ * Barre d'état du téléphone, collée au bord gauche. Repliée : deux jauges verticales (vie, lampe) et l'arme.
+ * Un toucher la déplie (arme, clous, sacoche) ; le choix est mémorisé.
+ */
+function VitalsRail({ hud, nailgun, counters, danger }: {
+  hud: ReturnType<typeof useHud>;
+  nailgun: boolean;
+  counters: [IconName, number, string][];
+  danger: string | null;
+}) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    try { setOpen(window.localStorage.getItem(VITALS_KEY) === "1"); } catch { /* stockage indisponible */ }
+  }, []);
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    try { window.localStorage.setItem(VITALS_KEY, next ? "1" : "0"); } catch { /* stockage indisponible */ }
+  };
+  const summary = `Vie ${hud.health}, lampe ${hud.energy} sur ${hud.maxEnergy}`;
+  return (
+    <section className={styles.rail} aria-label="Vie et lampe" data-open={open} data-danger={danger ?? undefined}>
+      <button type="button" className={styles.railToggle} onClick={toggle} aria-expanded={open} aria-controls="etat-details" aria-label={`${summary}. ${open ? "Replier" : "Déplier"} l'état`}>
+        <span className={styles.railGauges}>
+          <span className={styles.railGauge}><Icon name="heart" className={styles.railIcon} /><VGauge value={hud.health} max={100} tone="health" /></span>
+          <span className={styles.railGauge}><Icon name="cell" className={styles.railIcon} /><VGauge value={hud.energy} max={hud.maxEnergy} tone="lamp" /></span>
+        </span>
+        <Icon name={nailgun ? "nailgun" : "wrench"} className={styles.railWeapon} />
+        {nailgun ? <b className={styles.railAmmo}>{hud.ammo}</b> : null}
+        <span className={styles.railChevron} aria-hidden>{open ? "◂" : "▸"}</span>
+      </button>
+      {open ? (
+        <div id="etat-details" className={styles.railPanel}>
+          <p className={styles.railNumbers}><span>Vie <b>{hud.health}</b></span><span>Lampe <b>{hud.energy}</b></span></p>
+          <p className={styles.railWeaponName}>
+            {nailgun
+              ? <>LANCE-CLOUS <b>{hud.ammo}</b>/{NAIL_CAPACITY} · réserve {hud.reserve}{hud.reloading ? " …" : ""}</>
+              : <>CLÉ À MOLETTE</>}
+          </p>
+          <ul className={styles.miniCounts}>
+            {counters.map(([icon, value, label]) => (
+              <li key={icon} title={label} data-empty={value <= 0}><Icon name={icon} />{value}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </section>
+  );
+}
 
 /** Panneau d'objectifs pliable : le titre le replie ou le déplie ; replié, il ne montre que la prochaine étape. */
 function Objectives({ hud, touch }: { hud: ReturnType<typeof useHud>; touch: boolean }) {
@@ -158,22 +219,8 @@ export function Hud({ engine }: { engine: Engine }) {
         </ul>
       </section>
 
-      {/* Version compacte pour les écrans bas (téléphone en paysage) */}
-      <section className={styles.mini} aria-hidden>
-        <div className={styles.miniRow}><Icon name="heart" className={styles.miniIcon} /><Gauge value={hud.health} max={100} tone="health" /><b>{hud.health}</b></div>
-        <div className={styles.miniRow}><Icon name="cell" className={styles.miniIcon} /><Gauge value={hud.energy} max={hud.maxEnergy} tone="lamp" /><b>{hud.energy}</b></div>
-        <div className={styles.miniWeapon}>
-          <Icon name={nailgun ? "nailgun" : "wrench"} className={styles.miniIcon} />
-          {nailgun
-            ? <i>LANCE-CLOUS <b>{hud.ammo}</b>/{NAIL_CAPACITY} · {hud.reserve}{hud.reloading ? " …" : ""}</i>
-            : <i>CLÉ À MOLETTE</i>}
-        </div>
-        <ul className={styles.miniCounts}>
-          {counters.map(([icon, value, label]) => (
-            <li key={icon} title={label} data-empty={value <= 0}><Icon name={icon} />{value}</li>
-          ))}
-        </ul>
-      </section>
+      {/* Téléphone : barre verticale rétractable au bord gauche (vie, lampe, arme) */}
+      <VitalsRail hud={hud} nailgun={nailgun} counters={counters} danger={danger} />
 
       <div ref={(el) => { engine.tooltipEl = el; }} className={styles.tooltip} style={{ opacity: 0 }}>
         {hud.prompt ? (
