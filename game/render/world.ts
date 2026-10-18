@@ -177,6 +177,9 @@ function outdoorEdge(root: Group, x0: number, z0: number, x1: number, z1: number
     const x = x0 + (x1 - x0) * t + (r() - 0.5) * 0.5;
     const z = z0 + (z1 - z0) * t + (r() - 0.5) * 0.5;
     const size = 0.6 + r() * 0.8;
+    // Pas de rocher devant une porte ni contre une façade de bâtiment.
+    if (DOORS.some((d) => !d.open && Math.hypot(d.x - x, d.z - z) < d.width / 2 + 2.2)) continue;
+    if (z0 === z1 && z0 === 22 && x > -11 && x < 12) continue;
     const rock = mesh(new SphereGeometry(1, 7, 5), toon(r() > 0.5 ? "#8b8574" : "#7a7465"), x, size * 0.45, z);
     rock.scale.set(size, size * (0.7 + r() * 0.5), size * (0.8 + r() * 0.4));
     rock.rotation.y = r() * 3;
