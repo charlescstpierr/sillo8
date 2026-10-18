@@ -81,8 +81,8 @@ test("ordi : première bulle, disparition après l'action, flèche réglable", a
     ["Objectifs", page.locator('section[aria-label="Objectifs"]')],
     ["Rappel des commandes", page.locator("p[aria-label*='Clic droit']")],
   ]);
-  // Jamais sur l'héroïne (au centre de l'écran) : bulle dans le bas de l'écran.
-  expect(box.y, "bulle sous l'héroïne").toBeGreaterThan(720 * 0.62);
+  // Jamais sur le bricoleur (au centre de l'écran) : bulle dans le bas de l'écran.
+  expect(box.y, "bulle sous le bricoleur").toBeGreaterThan(720 * 0.62);
   await shot(page, "tuto-ordi");
 
   // Se déplacer fait disparaître la bulle, et l'étape est mémorisée.

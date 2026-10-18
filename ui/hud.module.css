@@ -748,7 +748,7 @@
 }
 
 /* ——— Tutoriel : petite bulle de papier en bas au centre, au-dessus des commandes ———
-   Le haut de l'héroïne reste libre (future bulle de pensée). */
+   Le haut du bricoleur reste libre (future bulle de pensée). */
 .tutorial {
   composes: card;
   position: absolute;
@@ -816,7 +816,7 @@
   .tutorial { animation: none; }
 }
 
-/* Téléphone en portrait : au-dessus du stick et des boutons, sous l'héroïne. */
+/* Téléphone en portrait : au-dessus du stick et des boutons, sous le bricoleur. */
 @media (max-width: 600px) and (orientation: portrait) {
   .tutorial {
     bottom: calc(max(14px, env(safe-area-inset-bottom)) + 230px);

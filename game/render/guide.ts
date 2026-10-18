@@ -1,10 +1,10 @@
-// Flèche d'objectif : petit chevron toon posé au sol, qui tourne autour de l'héroïne vers le prochain
+// Flèche d'objectif : petit chevron toon posé au sol, qui tourne autour du bricoleur vers le prochain
 // point de passage (porte ou cible). Discret : apparaît en grandissant, respire doucement, disparaît près du but.
 import { ExtrudeGeometry, Group, Mesh, Shape } from "three";
 import { addOutline, toon } from "./toon";
 import { PALETTE } from "./palette";
 
-/** Distance du chevron au centre de l'héroïne (m). */
+/** Distance du chevron au centre du bricoleur (m). */
 const ORBIT = 1.75;
 /** Taille du chevron (0,44 m × 1,3). */
 const SIZE = 1.3;

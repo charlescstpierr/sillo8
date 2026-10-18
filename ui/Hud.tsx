@@ -144,7 +144,7 @@ function Objectives({ hud, touch }: { hud: ReturnType<typeof useHud>; touch: boo
 
 /**
  * Bulle du tutoriel (ou astuce si l'objectif n'avance plus) : petite, en bas au centre, au-dessus des
- * commandes, pour laisser libre le haut de l'héroïne. Sur téléphone, la pointe se tourne vers le bouton.
+ * commandes, pour laisser libre le haut du bricoleur. Sur téléphone, la pointe se tourne vers le bouton.
  */
 function TutorialBubble({ hud }: { hud: ReturnType<typeof useHud> }) {
   const bubble = hud.tutorial;
