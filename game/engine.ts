@@ -588,6 +588,8 @@ export class Engine {
   }
 
   private render(dt: number): void {
+    // Ressenti du combat (game/combat.ts) : tremblement et à-coups de la caméra.
+    this.combat.applyCamera(this.rig);
     this.rig.update(dt, this.tmp.set(this.player.x, 0, this.player.z), this.aimPoint);
     const fog = this.scene.fog as Fog;
     fog.near = this.rig.distance + 3;

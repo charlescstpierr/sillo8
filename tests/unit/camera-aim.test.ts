@@ -97,3 +97,56 @@ describe("visée", () => {
     expect(assistTarget(0, 0, Math.PI / 2, [{ id: "a", x: 0, z: 5 }], 11, 30)).toBeNull();
   });
 });
+
+describe("ressenti de la caméra", () => {
+  /** Décalage de la caméra par rapport à sa place sans effet. */
+  const offset = (r: CameraRig, camera: PerspectiveCamera) => camera.position.clone().sub(r.focus).sub(cameraOffset(r.distance));
+
+  it("tremble puis revient exactement en place, de façon déterministe", () => {
+    const a = rig();
+    const b = rig();
+    a.r.addShake(0.3, 0.25);
+    b.r.addShake(0.3, 0.25);
+    let peak = 0;
+    for (let i = 0; i < 6; i++) {
+      a.r.update(1 / 60, new Vector3(), null);
+      b.r.update(1 / 60, new Vector3(), null);
+      peak = Math.max(peak, offset(a.r, a.camera).length());
+    }
+    expect(peak).toBeGreaterThan(0.02);
+    expect(peak).toBeLessThanOrEqual(0.3 * 1.5);
+    expect(a.camera.position.distanceTo(b.camera.position)).toBe(0);
+    for (let i = 0; i < 30; i++) a.r.update(1 / 60, new Vector3(), null);
+    expect(offset(a.r, a.camera).length()).toBeLessThan(1e-9);
+    // Le point visé bouge avec la caméra : l'image glisse sans pivoter, le joueur reste visible.
+    a.r.addShake(0.3, 0.25);
+    a.r.update(1 / 60, new Vector3(), null);
+    const projected = new Vector3().project(a.camera);
+    expect(Math.abs(projected.x)).toBeLessThan(0.2);
+  });
+
+  it("un tremblement faible n'écrase pas un fort en cours", () => {
+    const { r, camera } = rig();
+    r.addShake(0.4, 0.3);
+    r.addShake(0.05, 1);
+    for (let i = 0; i < 40; i++) r.update(1 / 60, new Vector3(), null);
+    expect(offset(r, camera).length()).toBeLessThan(1e-9);
+  });
+
+  it("donne un à-coup dans la direction demandée, qui revient tout seul", () => {
+    const { r, camera } = rig();
+    r.kick(1, 0, 0.2);
+    r.update(1 / 60, new Vector3(), null);
+    const kicked = offset(r, camera);
+    expect(kicked.x).toBeGreaterThan(0.1);
+    expect(Math.abs(kicked.z)).toBeLessThan(1e-9);
+    for (let i = 0; i < 60; i++) r.update(1 / 60, new Vector3(), null);
+    expect(offset(r, camera).length()).toBeLessThan(0.001);
+    // Plafonné, et remis à zéro par snap().
+    r.kick(0, -1, 50);
+    r.update(0, new Vector3(), null);
+    expect(offset(r, camera).length()).toBeCloseTo(CAMERA.kickMax, 5);
+    r.snap(new Vector3());
+    expect(offset(r, camera).length()).toBeLessThan(1e-9);
+  });
+});

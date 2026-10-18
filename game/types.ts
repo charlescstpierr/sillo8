@@ -34,6 +34,13 @@ export interface Horde {
   raycast(x: number, z: number, dx: number, dz: number, maxDistance: number): RayHit | null;
   /** Dégâts + étourdissement (clé, lampe). Marque le zombie vaincu dans l'état à 0 PV. */
   damage(id: string, amount: number, stun: number): void;
+  /**
+   * Recul (facultatif) : pousse le zombie de `distance` m dans la direction (dx, dz) normalisée, sans traverser
+   * les murs, après un arrêt sur image (« hit-stop ») de `freeze` s pendant lequel il est figé.
+   */
+  push?(id: string, dx: number, dz: number, distance: number, freeze?: number): void;
+  /** Hauteur (m) du sommet de la tête, pour les effets au-dessus du zombie (facultatif). */
+  headHeight?(id: string): number;
   /** Retire les zombies déjà vaincus (chargement de sauvegarde). */
   sync(state: SiloState): void;
   setLowQuality(low: boolean): void;

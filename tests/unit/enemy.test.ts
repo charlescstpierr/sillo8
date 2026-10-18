@@ -266,3 +266,53 @@ describe("zombies", () => {
     expect(horde.get("walker_storage")!.rig!.root.visible).toBe(false);
   });
 });
+
+describe("recul et arrêt sur image", () => {
+  /** Zombie étourdi (immobile) au milieu de l'entrepôt, loin des murs. */
+  function still(extra: Box[] = []) {
+    const s = setup(FAR, undefined, extra);
+    const w = s.horde.get("walker_storage")!;
+    w.x = -21.5;
+    w.z = 0;
+    s.horde.damage("walker_storage", 0, 5);
+    return { s, w };
+  }
+
+  it("fige le zombie pendant l'arrêt sur image, puis le repousse de la distance demandée", () => {
+    const { s, w } = still();
+    s.horde.push!("walker_storage", 1, 0, 0.8, 0.05);
+    expect(w.freeze).toBeCloseTo(0.05);
+    run(s, 0.04, 0.02);
+    expect(w.x).toBe(-21.5);
+    run(s, 0.6, 0.02);
+    expect(w.x).toBeCloseTo(-21.5 + 0.8, 2);
+    expect(w.z).toBeCloseTo(0, 5);
+    expect([w.pushX, w.pushZ]).toEqual([0, 0]);
+  });
+
+  it("parcourt la même distance à 30 et 60 images par seconde", () => {
+    const a = still();
+    const b = still();
+    a.s.horde.push!("walker_storage", 0, 1, 0.6);
+    b.s.horde.push!("walker_storage", 0, 1, 0.6);
+    run(a.s, 0.6, 1 / 30);
+    run(b.s, 0.6, 1 / 60);
+    expect(a.w.z).toBeCloseTo(0.6, 2);
+    expect(b.w.z).toBeCloseTo(0.6, 2);
+  });
+
+  it("ne traverse pas un mur", () => {
+    const { s, w } = still([{ minX: -21, maxX: -20.8, minZ: -2, maxZ: 2 }]);
+    s.horde.push!("walker_storage", 1, 0, 1, 0);
+    run(s, 0.6, 1 / 60);
+    expect(w.x).toBeLessThanOrEqual(-21 - ZOMBIE.walker.radius + 1e-6);
+    expect(w.x).toBeGreaterThan(-21.5);
+  });
+
+  it("borne l'arrêt sur image et donne la hauteur de tête par type", () => {
+    const { s, w } = still();
+    s.horde.push!("walker_storage", 1, 0, 0.1, 5);
+    expect(w.freeze).toBeLessThanOrEqual(0.2);
+    expect(s.horde.headHeight!("crawler_cafe")).toBeLessThan(s.horde.headHeight!("walker_storage"));
+  });
+});
