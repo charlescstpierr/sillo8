@@ -218,3 +218,69 @@ test("téléphone paysage : menu, jeu, sac, note, carnet, pause", async ({ brows
   expect(errors).toEqual([]);
   await context.close();
 });
+
+/** Nombre d'étapes affichées dans le panneau d'objectifs. */
+const visibleSteps = (page: Page) => page.locator('section[aria-label="Objectifs"] li').count();
+
+test("objectifs pliables : téléphone en portrait", async ({ browser }) => {
+  test.setTimeout(300_000);
+  const context = await browser.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+  const errors = await boot(page);
+  await page.evaluate(() => window.localStorage.removeItem("sillo8-objectives-open"));
+  await page.evaluate(() => (window as any).__silo.newGame());
+  await expect.poll(() => mode(page)).toBe("playing");
+  const toggle = page.locator('section[aria-label="Objectifs"] button');
+  // Replié par défaut sur téléphone : seulement la prochaine étape et le compteur.
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(toggle).toContainText("0/5");
+  expect(await visibleSteps(page)).toBe(0);
+  await expect(page.locator('section[aria-label="Objectifs"]')).toContainText("Explorer l'entrée");
+  await shot(page, "objectifs-plies-portrait");
+  // Un toucher déplie les 5 étapes, un autre replie.
+  await toggle.tap();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  expect(await visibleSteps(page)).toBe(5);
+  await shot(page, "objectifs-deplies-portrait");
+  await toggle.tap();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  // Le choix est mémorisé : déplié, il reste déplié après rechargement.
+  await toggle.tap();
+  expect(await page.evaluate(() => window.localStorage.getItem("sillo8-objectives-open"))).toBe("1");
+  // Nouveau chargement de la page (même stockage), avec le même réglage de rendu que boot().
+  errors.push(...(await boot(page)));
+  await page.evaluate(() => (window as any).__silo.newGame());
+  await expect(page.locator('section[aria-label="Objectifs"] button')).toHaveAttribute("aria-expanded", "true");
+  // Le compteur suit la progression.
+  await page.evaluate(() => (window as any).__silo.state.exploreEntrance());
+  await expect(page.locator('section[aria-label="Objectifs"] button')).toContainText("1/5");
+  // En portrait, la carte compacte (vie, lampe) ne chevauche ni le stick ni les boutons tactiles.
+  const mini = await page.locator("section[aria-hidden]").filter({ hasText: "CLÉ À MOLETTE" }).boundingBox({ timeout: 10_000 });
+  expect(mini).not.toBeNull();
+  for (const name of ["Frapper", "Éblouir", "Changer d'arme", "Interagir", "S'accroupir"]) {
+    const button = await page.getByRole("button", { name, exact: true }).boundingBox({ timeout: 10_000 });
+    expect(button, name).not.toBeNull();
+    const apart = mini!.y + mini!.height <= button!.y || button!.y + button!.height <= mini!.y || mini!.x + mini!.width <= button!.x || button!.x + button!.width <= mini!.x;
+    expect(apart, `la carte compacte chevauche « ${name} »`).toBe(true);
+  }
+  expect(errors).toEqual([]);
+  await context.close();
+});
+
+test("objectifs pliables : ordi au clic", async ({ page }) => {
+  test.setTimeout(300_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  const errors = await boot(page);
+  await page.evaluate(() => window.localStorage.removeItem("sillo8-objectives-open"));
+  await page.evaluate(() => (window as any).__silo.newGame());
+  const toggle = page.locator('section[aria-label="Objectifs"] button');
+  // Déplié par défaut sur ordi.
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  expect(await visibleSteps(page)).toBe(5);
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect(await visibleSteps(page)).toBe(0);
+  // Le clic sur le panneau ne doit pas tirer : le chargeur reste plein.
+  expect(await page.evaluate(() => (window as any).__silo.state.ammo)).toBe(16);
+  expect(errors).toEqual([]);
+});
