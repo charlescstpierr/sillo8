@@ -39,7 +39,7 @@ il est actif par défaut sur les écrans tactiles, `?low=0` le désactive.
 | **Clé à molette** | Corps à corps silencieux, touche tous les zombies devant soi. |
 | **Lance-clous** | Tir rapide, 16 clous par bande. La presse à clous de l'atelier transforme 1 ferraille en 16 clous. |
 | **Lampe** | Éblouit les zombies dans un cône (ils se figent). Consomme la charge : piles de rechange, borne de recharge au poste de sécurité, amélioration à l'atelier. |
-| **Carnet** | Les notes de survivants lues, et l'objectif en cours. |
+| **Carnet** | Les notes de survivants lues, l'objectif en cours, et le plan de l'étage (onglet PLAN) : pièces visitées, portes verrouillées, notes lues, objectif marqué d'une croix rouge. |
 
 Soins : bandages (+30), trousses (+60), conserves (+15). Les zombies entendent les coups de
 lance-clous et voient mieux qui se tient debout : s'accroupir aide à passer.
@@ -56,6 +56,7 @@ lance-clous et voient mieux qui se tient debout : s'accroupir aide à passer.
 | R | X | R | Recharger le lance-clous |
 | E | A | ✋ | Interagir, lire une note |
 | J (ou Q / A) | Y | CARNET | Carnet |
+| M | — | CARNET, onglet PLAN | Plan de l'étage (glisser pour déplacer, pincer / molette / + − pour zoomer) |
 | Tab | Select | SAC | Sac |
 | Maj | L3 | Stick poussé à fond | Courir |
 | Ctrl ou C | B | ⤓ | S'accroupir |
@@ -77,7 +78,8 @@ et n'affichent que quelques images par capture.
 
 ```
 app/                 pages Next.js, route optionnelle /api/dialogue
-game/                logique en TypeScript pur : état, objectifs (progress.ts), plan, collisions,
+game/                logique en TypeScript pur : état, objectifs (progress.ts), plan (level.ts), plan du carnet
+                     (plan.ts : pièces visitées, brouillard), collisions,
                      caméra, visée, entrées, combat, zombies, notes
 game/render/         rendu three.js : matériaux toon, héroïne, zombies, effets, monde
 game/render/sectors/ décor de chaque zone (extérieur, centre, aile ouest, aile est)

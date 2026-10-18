@@ -114,13 +114,15 @@ export function interactWith(def: InteractableDef, s: SiloState, fx: ProgressEff
   }
 }
 
-/** Objectifs déclenchés en se déplaçant (entrée, hub). Retourne les messages à afficher. */
+/** Objectifs déclenchés en se déplaçant (entrée, hub), et pièces visitées pour le plan. Retourne les messages à afficher. */
 export function checkTriggers(s: SiloState, x: number, z: number): string[] {
   const messages: string[] = [];
+  const room = roomAt(x, z);
+  if (room) s.visitRoom(room.id);
   if (!s.has("entrance_explored") && Math.hypot(x - ENTRANCE_TRIGGER.x, z - ENTRANCE_TRIGGER.z) < ENTRANCE_TRIGGER.radius && s.exploreEntrance()) {
     messages.push("La porte de sécurité est morte. Plus de courant. La génératrice doit être à l'ouest.");
   }
-  if (!s.has("hub_reached") && roomAt(x, z)?.id === "hub" && s.reachHub()) {
+  if (!s.has("hub_reached") && room?.id === "hub" && s.reachHub()) {
     messages.push("HUB CENTRAL. Toutes les ailes partent d'ici. La console radio est en salle de contrôle.");
   }
   return messages;

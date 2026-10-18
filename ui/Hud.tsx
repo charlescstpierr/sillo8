@@ -144,7 +144,7 @@ function Objectives({ hud, touch }: { hud: ReturnType<typeof useHud>; touch: boo
 
 const HINT: [string, string][] = [
   ["Clic", "frapper/tirer"], ["Clic droit", "éblouir"], ["1/2", "arme"], ["R", "recharger"],
-  ["E", "interagir"], ["J", "carnet"], ["Tab", "sac"],
+  ["E", "interagir"], ["J", "carnet"], ["M", "plan"], ["Tab", "sac"],
 ];
 
 export function Hud({ engine }: { engine: Engine }) {
