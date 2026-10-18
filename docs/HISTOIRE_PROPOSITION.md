@@ -1,769 +1,1120 @@
-# SILLO 8 — Proposition d'histoire et d'enquête (étage 1)
+# SILLO 8 — Proposition d'histoire et d'enquête
 
 > Document de travail, à valider avant toute intégration. Rien n'est encore dans le jeu.
-> Tout est pensé pour les pièces **existantes** de la carte « SILLO 8 ÉTAGE 1 » et garde les
-> 5 objectifs actuels. **L'enquête et le mystère sont le cœur du jeu** ; les zombies (ici « les
-> endormis ») sont une menace d'ambiance, peu nombreux, liés à l'histoire, et on peut les éviter.
+> Le jeu aura **4 étages** ; seul l'étage 1 est détaillé ici, les étages 2 à 4 sont esquissés.
+> Cette version part **uniquement** de ce qui existe déjà : les notes de `game/notes.ts` (inchangées,
+> mot pour mot), la carte de l'étage 1, le héros de la fiche personnage, les 5 objectifs, le signal
+> radio qui répond d'en bas. Les mordus sont de **vrais zombies**. L'enquête porte sur **ce qui s'est
+> passé** dans le silo, construite comme un roman d'Agatha Christie, et suit les principes de
+> `docs/RECHERCHE_ENQUETE.md` (checklist en annexe).
 
 **Sommaire**
-0. Choisir le grand secret · 1. Résumé · 2. Chronologie · 3. Personnages · 4. Les endormis (5) ·
-5. Les couches du mystère · 6. Déroulé pièce par pièce · 7. Immersion · 8. Examiner : les quatre
-formes · 9. Tous les documents · 10. Énigmes · 11. Survivants · 12. Tableau d'enquête et
-déductions · 13. Fin de l'étage 1 · 14. Intégration technique
+0. Ce qui est repris, ce qui est ajouté · 1. Résumé · 2. L'arc sur 4 étages · 3. Principes de
+l'enquête · 4. La première minute et le rythme des découvertes · 5. Personnages · 6. La vérité de
+l'étage 1 · 7. Les mordus · 8. Survie : pourquoi tout manque · 9. Couches, fausses pistes,
+contradictions · 10. Déroulé pièce par pièce · 11. Immersion · 12. Examiner : les quatre formes ·
+13. Documents · 14. Énigmes · 15. Survivants · 16. Tableau d'enquête · 17. Aide en trois paliers ·
+18. Fair play · 19. La révélation qui recontextualise · 20. Indices dormants · 21. Fin de l'étage 1 ·
+22. Intégration technique · 23. Résumé à lire à voix haute · Annexe : checklist
 
 ---
 
-## 0. D'abord, choisir le « grand secret »
+## 0. Ce qui est repris tel quel, ce qui est ajouté
 
-### Variante A — « Les Endormis de la Lune-pâle » (recommandée)
+### Repris tel quel du jeu (rien n'est modifié ni contredit)
 
-Les « zombies » ne sont pas morts : ils **dorment debout**. La serre cultivait la Lune-pâle, un
-champignon sorti de la réserve de semences d'en bas, qui nourrissait tout le silo. La nuit, il
-souffle une poussière fine qui endort les gens et les fait marcher dans leurs vieilles habitudes.
-L'intendante l'a su, l'a caché, puis a fait descendre les gens en bonne santé à l'étage 2 en
-laissant les malades (et un gêneur) enfermés en haut.
+**Le lieu et le ton**
+- SILLO 8, abri souterrain à étages ; l'étage 1 et ses pièces exactes : entrée (extérieur), zone extérieure, sécurité, hub central, couloir nord, accès étage 2, couloir ouest, dortoirs, pièce cachée, entrepôt, cafétéria, génératrice, couloir est, salle de contrôle, infirmerie, atelier, serre.
+- Le monde dehors, post-apocalyptique : épaves, rochers, grillages.
+- L'accroche du jeu : « Le silo est tombé. Les morts marchent encore. Descendez. »
+- Les **mordus** : de vrais morts qui marchent, qui craignent la lumière vive et entendent le bruit.
 
-*Pourquoi la recommander :* elle explique les règles déjà dans le jeu (la lampe les fige, ils
-entendent le bruit, la serre fournit de la ferraille), elle reste cartoon et jamais gore (on ne
-tue personne, on « rendort »), elle a un vrai coupable humain, et elle laisse une grande question
-pour l'étage 2 : la souche d'origine est en bas. Remède… ou source ?
+**Le héros** : le bricoleur de la fiche personnage, tel quel (bonnet olive, veste moutarde, sacoche
+en cuir, clé à molette, lance-clous, lampe, carnet).
 
-### Variante B — « La Tisane d'hiver »
+**Les 5 objectifs**, sans changement : explorer l'entrée ; alimenter la génératrice avec 3 ferrailles ;
+accéder au hub central ; réparer la communication (module radio à l'atelier, puis console) ; obtenir
+la clé de l'étage 2 (note de Lila → mur creux des dortoirs → pièce cachée → escalier).
 
-Pour passer les hivers de famine, la coopérative a testé une « tisane d'hiver » qui fait dormir
-des semaines pour moins manger. Le protocole a mal tourné : les dormeurs se réveillent à moitié et
-errent. L'intendante n'est pas une menteuse mais une gardienne dépassée qui veille sur les dormeurs
-en bas. Plus mélancolique, sans vrai coupable, moins de tension.
+**Les ressources existantes** : piles et charge de lampe, borne de recharge du poste de sécurité,
+conserves, bandages, trousses, ferraille, clous.
 
-> Toute la suite est écrite pour la **variante A**. La variante B garderait la même structure
-> (pièces, survivants, énigmes, tableau), en remplaçant la serre par une infirmerie-laboratoire et
-> la « Lune-pâle » par la « tisane d'hiver ».
+**Les 7 notes existantes, mot pour mot, aux mêmes endroits**
+- `note_entrance` — Consigne de garde, **Sgt. Bérard**, poste d'entrée.
+- `note_generator` — Journal de maintenance, **Équipe technique**, page arrachée.
+- `note_cafeteria` — Menu du jour, **Cuisine** (pêches en conserve ; on pique les piles dans l'entrepôt).
+- `note_infirmary` — Rapport médical n° 12, **Dr Okafor** (les mordus supportent mal la lumière vive).
+- `note_control` — Relève radio, **Opératrice de nuit** (l'émetteur a grillé pendant l'orage).
+- `note_storage` — Liste de Lila, **Lila** (la clé est au fond des dortoirs, le mur sonne creux).
+- `note_secret` — Dernier mot, **Lila** (« Les autres sont descendus. Prends la clé, et ne fais pas confiance au silence. »).
+
+**Les messages du jeu**, mot pour mot :
+- « La génératrice tousse… puis tourne. »
+- « Communication rétablie. Une voix grésille… quelque part plus bas. »
+- « Le mur creux cède sous l'épaule. Une pièce cachée ! »
+- La fin : « La clé glisse dans le lecteur. L'escalier de service s'ouvre sur le noir. Quelque part plus bas, le signal radio répond encore. L'étage 2 vous attend… bientôt. »
+
+### Ce qui est ajouté
+
+**Des secrets et des liens** pour les personnages existants (§ 5) :
+- **Bérard** a fait entrer un homme mordu, et en a laissé un autre dehors.
+- **Okafor** a soigné ce mordu en secret ; son rapport n° 12 vient de là.
+- **Cuisine** a cadenassé les dernières piles.
+- **L'opératrice de nuit** était la femme du mordu. C'est elle qui a ouvert sa porte.
+- **Lila**, aide de l'infirmerie, portait les piles ; elle est restée en haut pour ceux qu'on avait oubliés.
+
+**Un seul personnage vraiment nouveau, indispensable : Marceau**, chef de l'équipe technique (l'équipe
+existe déjà dans les notes). C'est le premier mordu de l'étage 1. On ne le rencontre qu'en mordu.
+
+**Trois figurants sans nom**, pris dans les groupes que les notes citent déjà : un guetteur de la garde
+de Bérard, un commis de la cuisine, un infirmier d'Okafor. Ce sont trois des cinq mordus, reconnus à
+leur badge de fonction.
+
+**Le reste :**
+- Un prénom pour le héros (proposé, à choisir).
+- De nouveaux documents, objets et traces (§ 12, § 13).
+- Trois énigmes, deux survivants (Cuisine et l'opératrice de nuit), le tableau d'enquête.
+- Deux petits espaces aménagés **à l'intérieur** des pièces existantes : « la chambre 1 » (infirmerie) et « le local technique » (salle de contrôle).
+- L'arc sur 4 étages (§ 2) et 5 indices dormants (§ 20).
 
 ---
 
 ## 1. Résumé en 5 lignes
 
-1. Lou, bricoleuse du hameau voisin, descend à SILLO 8 : la radio du silo s'est tue, et sa petite sœur Lila et leur grand-père Firmin vivent dedans.
-2. Elle trouve un étage 1 éteint où errent quelques silhouettes qui marmonnent : les « mordus ».
-3. En examinant objets, traces invisibles et témoignages, elle comprend qu'ils ne sont pas morts mais endormis par la poussière d'un champignon cultivé dans la serre.
-4. L'intendante Corbière le savait : elle a coupé la radio, renvoyé l'aide du dehors et laissé les malades en haut avant de descendre.
-5. Lila a caché le double de la clé de l'étage 2 pour qu'on vienne les chercher… et en bas, deux voix se contredisent à la radio.
+1. Un jeune bricoleur venu du dehors entre dans SILLO 8. Sur la grande porte, quelqu'un a écrit à la craie : « ILS SONT DESCENDUS. PAS TOUS. »
+2. L'affiche officielle accuse des mordus entrés par la porte de service pendant l'orage. Les traces disent autre chose : le premier mordu est sorti de l'infirmerie.
+3. Marceau, le chef technique, avait été mordu en expédition. Bérard l'a fait entrer, Okafor l'a gardé sous des lampes, Lila portait les piles, Cuisine les a enfermées.
+4. La nuit de l'orage, quelqu'un a ouvert sa porte. Le joueur écarte les suspects un par un et démasque celle qui l'a guidé depuis le début : l'opératrice de nuit, sa femme.
+5. La radio réparée capte la voix d'Okafor (« ne descendez pas ») et un signal tapé à la main, venu de **plus bas que l'étage 2** : « VIENS ».
 
 ---
 
-## 2. Ce qui s'est passé dans SILLO 8 (chronologie)
+## 2. L'arc sur 4 étages
 
-**Le nom.** « SILLO » vient de *silo* et de *sillon* : c'est le 8ᵉ grenier enterré de la
-Coopérative des Sillons. Il garde des semences (la réserve d'origine est tout en bas) et abrite une
-trentaine de personnes depuis « les mauvaises années » (sécheresses, tempêtes).
+**La grande question des 4 étages :** *Pourquoi SILLO 8 est-il tombé, vraiment… et qu'y a-t-il au fond ?*
+Chaque étage résout **une affaire locale** et révèle **une couche** du grand mystère, puis se termine sur
+une réponse qui crée une nouvelle question.
 
-| Quand | Ce qui s'est passé | Ce qu'on en trouve à l'étage 1 |
-|---|---|---|
-| **Il y a 3 ans** | Inauguration, on ferme la grande porte. Lila (8 ans) veut garder sa lampe allumée sur la photo. | Photo de l'inauguration (entrée). |
-| **J−120** | Edmée Rousseau, botaniste, sort de la réserve d'en bas un vieux lot, le « 8-0 ». Il pousse dans le noir et nourrit tout le monde : la **Lune-pâle**. On la plante en secret, avant les tomates de l'inauguration officielle. | Carnet de culture, photo de la « vraie première récolte », étiquette sur Edmée (serre). |
-| **J−60** | Premières toux. Des gens marchent la nuit, les yeux ouverts. On dit « les mordus » par peur ; personne n'a été mordu. | Rapport médical n° 12, dictaphone d'Okafor (infirmerie). |
-| **J−45** | Edmée écrit à l'intendante : les spores passent dans la ventilation des dortoirs, il faut tout brûler. Corbière classe le rapport. | Brouillon de rapport (bureau de la serre), journal de l'intendance (salle de contrôle). |
-| **J−30** | Le convoi du hameau (chauffeur : Anselme) apporte 40 piles et de la farine. Corbière refuse : « Quarantaine. » Anselme attend dehors, près de la verrière de la serre… puis disparaît. | Bordereau, cabine vide, traces révélées à la lampe (zone extérieure). |
-| **J−20** | Lila remarque que la lumière empêche Papi Firmin de se lever la nuit. Elle fabrique 8 veilleuses à l'atelier avec Rémi et « emprunte » des piles à l'entrepôt. | Cahier de Lila, bon de fabrication, veilleuse n° 8 sur Firmin. |
-| **J−10** | Corbière dévisse le module de l'émetteur radio, change la fréquence de l'étage 2, et dicte à Josette la version officielle : « grillé pendant l'orage ». | Relève radio, sachet de vis, bracelet de Rémi. |
-| **J−7 (mardi)** | Gaspard, le magasinier, est accusé du vol des piles et enfermé dans la chambre froide. Bastien, le cuisinier, lui glisse des pêches par le soupirail. | Calendrier, inventaire, bon de cuisine sur Bastien. |
-| **J−3, 22 h** | **La Nuit de la Descente.** Corbière fait descendre les gens sains. Sa « Liste T » (T pour toux) reste en haut. Gaspard est rayé en rouge. Okafor descend soigner ; Josette refuse de laisser ses malades. | Registre de garde, tableau des résidents, Liste T originale. |
-| **J−3, 22 h 40** | Bérard note « tous descendus, dans l'ordre ». Puis, d'une autre encre : « Pas tous. Pardon. » Il reste de garde en haut et finit par s'endormir près de la génératrice. | Registre, trousseau de Bérard. |
-| **J−3, 23 h 52** | Lila remonte en pyjama, prend le double de la clé sur le trousseau de Bérard endormi, le cache derrière le mur creux des dortoirs, laisse des messages invisibles pour sa sœur, et redescend. | Caméra 3, notes et feutre magique de Lila, messages révélés à la lampe. |
-| **J−2** | La génératrice tombe en panne. Plus de lumière : les endormis errent. | Journal de maintenance. |
-| **Jour 0** | Lou arrive. La porte de service est entrouverte (Josette sort la nuit chercher café et piles). | Thermos tiède, silhouette au loin. |
-
----
-
-## 3. Personnages
-
-### L'héroïne : **Lou** (proposition)
-
-- 17 ans, bricoleuse du Hameau des Trois-Chênes. Bonnet olive tricoté par sa grand-mère (le même
-  tricot que l'écharpe de Papi Firmin), veste moutarde, sacoche en cuir, clé à molette.
-- Elle vient parce que la radio du silo ne répond plus à l'appel du dimanche, qu'Anselme n'est pas
-  revenu du convoi… et que sa petite sœur **Lila** et son grand-père **Firmin** sont dedans.
-- **Pourquoi un prénom :** les survivants doivent l'appeler, Lila peut lui laisser des mots
-  (« Pour Lou »), les bulles de pensée gagnent une voix, et l'enjeu devient personnel sans grand
-  discours. « Lou » est court, doux et lisible sur téléphone.
-- **Si vous préférez l'anonymat :** remplacer « Lou » par « ma grande » chez Lila et par « petite »
-  chez les survivants. Tout le reste fonctionne pareil.
-- **Sa voix intérieure** (bulles de pensée) : pratique, un peu ironique, tendre. Elle pense en
-  bricoleuse : vis, fils, poussière, traces.
-
-### Les survivants vivants
-
-| Qui | Où | Caractère | Rôle dans l'enquête |
-|---|---|---|---|
-| **Gaspard Mollet**, 52 ans, magasinier | Chambre froide de la **cafétéria** (enfermé de l'extérieur) | Bougon, cœur tendre, cheville foulée | Faux coupable (vol des piles). Son témoignage contredit le registre officiel. |
-| **Josette Varenne**, 67 ans, opératrice radio de nuit | Box d'isolement vitré de l'**infirmerie** | Malicieuse, courageuse, tousse, lutte contre le sommeil | C'est elle qui rôde la nuit (signes de vie). Elle avoue que l'« orage » est un mensonge dicté. |
-
-### Les disparus (descendus à l'étage 2, ou introuvables)
-
-- **Mme Corbière**, l'intendante. Jamais vue à l'étage 1 : sa voix, ses papiers, son terminal. Pas un monstre : quelqu'un qui a choisi « la récolte d'abord » et s'est enfoncée dans ses mensonges.
-- **Dr Okafor**, le médecin. Descendu soigner les gens d'en bas ; a laissé ses enregistrements.
-- **Lila**, 11 ans, sœur de Lou. Inventive, têtue, elle soude « mieux que Rémi ». Présente partout en creux : veilleuses, dessins, messages invisibles.
-- **Anselme**, chauffeur du convoi. Sa cabine est vide ; des traces révélées à la lampe vont vers la serre… et s'arrêtent. **Question ouverte.**
-
----
-
-## 4. Les endormis : 5 anciens habitants, chacun porte un indice
-
-Au lieu de 10 zombies anonymes, **5 endormis**. Chacun est un résident identifiable, qui répète sa
-routine d'avant, et **porte sur lui un objet qui est un indice**.
-
-**Comment ça marche :**
-- Ils suivent une ronde lente et prévisible ; on peut les **éviter** (s'accroupir, passer derrière, attendre).
-- La lampe les fige ; une **veilleuse posée** (débloquée par une déduction, § 12) les rendort durablement.
-- Quand un endormi est figé, rendormi ou assommé, `E` = **Examiner** : on voit son objet en gros plan, le carnet note son nom.
-- La clé à molette les **assomme** : ils s'asseyent, bulle « Zzz », ronflent, et ne se relèvent pas de l'étage. Pas de corps, pas de sang.
-- Une morsure ne « contamine » pas. Ils bousculent et griffent (perte de vie, comme aujourd'hui).
-
-| Endormi | Qui c'était | Où il erre | Ce qu'il marmonne | L'indice qu'il porte |
+| Étage | Lieu et « métier » | L'affaire de l'étage | Ce qu'il révèle du grand mystère | La question qui pousse à descendre |
 |---|---|---|---|---|
-| **Sgt Bérard** | Chef de la garde, a obéi puis regretté | **Génératrice** (ronde entre le moteur et la porte de service) | « …tous descendus… dans l'ordre… » | **Trousseau** à la ceinture : un crochet vide étiqueté « DOUBLE ÉTAGE 2 ». |
-| **Bastien** | Cuisinier, bon vivant | **Cafétéria** (rampe sous les tables, cherche à manger) | « …encore des pêches… un plateau de plus… » | **Bon de cuisine** dans la poche du tablier : « Mardi : un plateau de moins. Gaspard, chambre froide. Je lui passe des pêches par le soupirail. » |
-| **Edmée Rousseau** | Botaniste, a fait pousser la Lune-pâle | **Serre** (arrose des bacs vides) | « …pas la nuit… surtout pas la nuit… » | **Étiquette de semis** épinglée au tablier : « LOT 8-0 » / au dos « LUNE-PÂLE — 1ʳᵉ plantation, avant les tomates ». |
-| **Papi Firmin** | Grand-père de Lou et Lila | **Dortoirs** (fait le tour du lit de Lila) | « …Lila, au lit… la veilleuse… » | **Écharpe olive** (même tricot que le bonnet de Lou) et, serrée dans sa main, la **veilleuse n° 8** gravée « L ★ — pour Papi ». |
-| **Rémi** | Technicien radio et atelier | **Salle de contrôle** (va et vient devant la console) | « …allô… allô… quelqu'un… » | **Bracelet** de ruban adhésif au poignet, chiffres à moitié effacés (à la loupe : « 8.08 — fréq. bas »). |
+| **1. Ceux d'en haut** *(détaillé ici)* | Quartiers de vie : dortoirs, cuisine, infirmerie, radio, serre | Qui a ouvert la chambre 1 la nuit de l'orage ? | Le premier mordu de l'étage venait **de l'intérieur**, et les chefs ont menti pour le cacher. Mais certains indices disent que **les mordus étaient déjà connus du silo bien avant**. | Qui tape « VIENS », plus bas que l'étage 2, et où est Lila ? |
+| **2. Les réserves** *(esquisse)* | Stocks, hôpital de fortune, le refuge du groupe d'Okafor | Le groupe descendu s'est divisé. Pourquoi Okafor dit-elle « ne descendez pas » ? | Okafor a scellé l'accès à l'étage 3 sous ses pieds : le signal vient de là, et des mordus aussi. Lila est passée par les conduits d'aération. | Qui vit à l'étage 3, derrière une porte soudée bien avant l'épidémie ? |
+| **3. Les machines** *(esquisse)* | Air, eau, pompes, la salle des fondateurs | Le secteur muré : qui l'a muré, et quand ? | Une **première épidémie**, à la fondation, étouffée par les fondateurs. La personne de dos sur la photo de l'inauguration (étage 1) est identifiée. | Qu'ont-ils enfermé au fond ? |
+| **4. Le fond** *(esquisse)* | Archives, la plus vieille partie du silo | L'origine | **SILLO 8 n'a pas été construit pour protéger des mordus, mais pour les garder.** La règle n° 1 (« aucun mordu ne franchit la porte ») voulait d'abord dire : *aucun ne sort*. Les verrous de la grande porte, côté dehors, prennent leur sens. | Fin du jeu : que fait-on de la vérité, et de ceux qui sont encore en bas ? |
 
-**Changement par rapport au jeu actuel :** on garde `walker_gen` (Bérard), `crawler_cafe`
-(Bastien), `walker_serre` (Edmée), `walker_dorms` (Firmin), `walker_control` (Rémi). On retire
-`walker_ext`, `crawler_ext`, `walker_storage`, `crawler_hub`, `crawler_workshop`. **L'extérieur, le
-hub, l'entrepôt, l'infirmerie et l'atelier deviennent des lieux sans endormi** : la tension vient
-du silence, des bruits et des événements étranges (§ 8 d).
+**Règle d'or pour l'étage 1** : le joueur repart **satisfait** (il a résolu l'affaire de la chambre 1,
+il sait qui a menti et pourquoi) **et intrigué** (il ne sait ni d'où viennent vraiment les mordus, ni
+qui l'appelle d'en bas, ni où est Lila). Rien de ce que l'étage 1 révèle ne sera contredit plus bas :
+seulement élargi.
 
 ---
 
-## 5. Les couches du mystère (et les fausses pistes)
+## 3. Comment l'enquête est construite
 
-| Couche | Ce que le joueur croit d'abord | Ce qu'il découvre | Fausse piste démontée par |
+- **Une question forte dès la première minute.** « ILS SONT DESCENDUS. PAS TOUS. » Qui est resté ? (§ 4)
+- **Puis une question qu'on ne connaissait pas.** Une fois la chambre 1 découverte : *qui l'a ouverte ?*
+  Le joueur la découvre en même temps que le héros.
+- **Chaque personnage a un secret**, presque toujours un petit secret vrai qui explique pourquoi il
+  a l'air coupable (§ 5). Un seul a ouvert la porte.
+- **La coupable est présente dès la première pièce**, sans paraître suspecte : c'est sa voix, douce et
+  inquiète, que le héros entend en premier à la radio de la guérite.
+- **Des indices en pleine vue** : la lampe verte, le mot « Nuit » dans sa signature canon, le
+  « silence » de la note de Lila.
+- **Le joueur affirme, le jeu vérifie** : il relie des contradictions et complète des phrases à trous
+  avec des mots gagnés en explorant (§ 16). Une erreur ne punit jamais.
+- **Le savoir ouvre les portes** : un cadenas qui s'ouvre avec un mot lu sur le menu, une armoire
+  qu'on pousse parce qu'on a compris, un mot de passe qui est un nom.
+- **Les mordus servent l'enquête** : cinq seulement, chacun porte un indice et refait une habitude.
+  On peut les éviter. Aucun passage clé n'exige de les vaincre.
+- **La survie sert la tension** (§ 8) : la rareté des piles est le cœur du drame, et le joueur la vit.
+
+---
+
+## 4. La première minute et le rythme des découvertes
+
+### La première minute
+
+1. **L'image.** Le héros arrive sur le chemin de terre (point de départ actuel). Devant lui, la grande
+   porte de sécurité, morte. Dessus, à la craie, en grosses lettres d'enfant : **« ILS SONT DESCENDUS.
+   PAS TOUS. »** La caméra s'attarde une seconde dessus.
+2. **La voix.** En approchant de la guérite, une radio grésille. Une voix de femme, douce, fatiguée :
+   « …ici l'opératrice de nuit… c'est l'heure de la relève… il y a quelqu'un ? » Puis la pile de la
+   radio meurt. Plus rien.
+3. **La pensée du héros** : « Pas tous. Alors quelqu'un est encore là-dedans. »
+4. **Le détail qui ne paiera que bien plus tard** (indice dormant) : les gros verrous de la porte sont
+   **du côté dehors**. Pensée : « Drôle de porte. On dirait qu'elle ferme de l'extérieur. »
+
+En une minute, le joueur a une question (qui est resté ?), une voix à retrouver, et un détail
+étrange qu'il ne comprendra qu'à l'étage 4.
+
+### Une micro-révélation par pièce
+
+Chaque pièce pose une petite question et donne une petite réponse, en moins de 5 minutes.
+
+| Pièce | La question qu'elle pose | La petite réponse qu'elle donne |
+|---|---|---|
+| Entrée | Qui est resté ? Qui parle à la radio ? | Une opératrice de nuit est vivante quelque part. |
+| Zone extérieure | Pourquoi une lanterne d'enfant si loin de la porte ? | Quelqu'un (Lila) est sorti chercher des pièces. Un garde mordu porte une feuille d'expédition. |
+| Génératrice | Pourquoi ce mordu ne fait-il aucun bruit ? | Il porte un bracelet d'infirmerie : « Chambre 1 ». Il était soigné avant de mourir. |
+| Sécurité | Que notait Bérard ? | Il a menti sur une expédition (énigme 3). |
+| Hub | Comment est-ce arrivé ? | Version officielle : « par la porte de service ». Le joueur a une affirmation à vérifier. |
+| Cafétéria | Qui frappe dans la chambre froide ? | Un vivant : Cuisine. Il accuse Lila d'avoir volé les piles. |
+| Entrepôt | Pourquoi un cadenas sur des piles ? | Les piles étaient comptées ; le cuisinier en a refusé une, le soir de l'orage. |
+| Infirmerie | Qu'y a-t-il derrière l'armoire ? | La chambre 1 : on y gardait un mordu sous des lampes. |
+| Atelier | Qui était Marceau ? | Le meilleur ami de Bérard. Une photo signée « N. ». |
+| Salle de contrôle | Pourquoi l'opératrice ne répondait-elle plus ? | Sa pile était morte… et son verrou était fermé de l'intérieur. |
+| Dortoirs | Qui a vu quelque chose ? | Lila : une lampe **verte**, à 2 h 05. |
+| Pièce cachée | Où est la clé ? | La clé, et l'étiquette d'Okafor : « Pour Lila — ferme derrière toi. » |
+
+---
+
+## 5. Personnages
+
+### Le héros : le bricoleur de la fiche
+
+- Un jeune homme, tel que sur la fiche : bonnet olive, veste moutarde, gants et bottes, sacoche en cuir.
+- **Venu du dehors.** On ne sait presque rien de lui, et il n'en dit pas plus. Il a l'habitude d'être
+  seul et répare tout ce qu'il touche.
+- **Sa motivation est simple :** trouver un abri, puis savoir qui est encore vivant (« pas tous »).
+- **Pas de famille, pas de lien avec le silo.** Il découvre tout en même temps que le joueur.
+- **Prénom (à choisir, sans trancher) :** **Lou** (mixte) ; **Noé** ; **Malo** ; **Tom**. On peut aussi
+  le laisser sans nom : les survivants l'appellent « le bricoleur » ou « mon garçon ».
+- **Ses pensées** (§ 12 b) : courtes, pratiques, un peu ironiques. Elles **posent des questions**, elles
+  ne donnent jamais la réponse avant le joueur.
+
+### Les cinq suspects et leur secret
+
+La question de l'étage : **qui a ouvert la chambre 1, la nuit de l'orage ?**
+
+| Personnage (canon) | Ce que disent les notes du jeu | Son secret (vrai) | Pourquoi on le soupçonne | Ce qui l'innocente (ou l'accuse) |
+|---|---|---|---|---|
+| **Sgt Bérard**, poste d'entrée | Consigne de garde : « ne restez pas dehors à la nuit tombée ». | Au retour d'une expédition, il a laissé le guetteur mordu **dehors** (règle n° 1)… et fait **entrer Marceau**, son ami, mordu lui aussi. Il a arraché la page qui le trahissait et co-écrit la fausse version officielle. | Il est à l'origine de tout ; il voulait peut-être libérer son ami. | Journal du poste : à 2 h 00 et 2 h 15, il est **à l'entrée**, à l'autre bout du silo. |
+| **Dr Okafor**, infirmerie | Rapport n° 12 : les mordus craignent la lumière vive. | Elle a gardé Marceau dans la chambre 1, sous deux lampes, et l'a étudié en secret (rapports 1 à 11). Le n° 12 vient de lui. Elle a décidé de le « sortir à l'aube », puis a fait descendre tout le monde et condamné l'étage. | C'est sa chambre, son patient. | Note de l'infirmier : « Dr O. dort enfin. » Et elle écrit « *elle* lui parle » : elle parle de quelqu'un d'autre. |
+| **Cuisine**, cafétéria | « On les compte, maintenant. » | Il a cadenassé les piles et en a refusé une à Lila le soir de l'orage. Sans piles, les lampes de la chambre 1 ont faibli. Il s'en veut. | Rancune contre la « voleuse », clés de tout, mensonge par omission. | Feuille de comptage : à 2 h 10, il vérifie son cadenas **à l'entrepôt**, dans l'aile ouest. |
+| **Lila**, aide de l'infirmerie | Elle a caché la clé ; « ne fais pas confiance au silence ». | Elle « piquait » les piles, pour Okafor. Elle a vu passer quelqu'un. Elle est restée pour ceux qu'on avait oubliés. | L'infirmier écrit : « ça doit être la petite avec les piles ». | Sa liste : « ma lampe aussi est morte ». La personne qui passe a une lampe **allumée**, et **verte**. |
+| **L'opératrice de nuit**, salle de contrôle | Relève radio : « l'émetteur a grillé pendant l'orage ». | **La femme de Marceau.** Il l'appelait « ma Nuit ». À 1 h 50, elle entend à la radio interne : « À l'aube, on le sort. » À 2 h 05, elle quitte son poste avec sa lampe verte pour lui dire adieu. L'orage a coupé le courant : la porte électrique de la chambre 1 s'ouvre d'une poussée. Elle pose sa lampe près de lui ; il reste calme… jusqu'à ce que la pile meure. Elle s'enfuit, s'enferme, et ne dit plus rien. | Personne : c'est la voix gentille de la première minute, et elle aide le héros. | Lampe verte, alliance, signature, trou dans son cahier, verrou fermé de l'intérieur (§ 16). |
+
+**Son mobile** : l'amour et la peur, pas la méchanceté. Elle voulait un adieu, pas une catastrophe. Elle
+se tait par honte. C'est ce qui rend la révélation triste plutôt que choquante.
+
+### Les autres
+
+- **Marceau** (le seul personnage nouveau), chef de l'équipe technique. Mordu à l'avant-bras pendant
+  l'expédition ; il a dit « c'est la tôle ». C'est le premier mordu de l'étage, et le seul qui ne
+  grogne pas : **le Silencieux**.
+- **Lila, aujourd'hui :** elle est sortie chercher les pièces de la génératrice, avant la nuit, et
+  n'est pas revenue. Sa lanterne est aux épaves. **Elle n'est pas morte à l'écran** : son sort est la
+  question qui relie les étages 1 et 2.
+
+### Les deux survivants vivants
+
+| Qui | Où | Comment on le rencontre |
+|---|---|---|
+| **Cuisine** (« Tout le monde m'appelle Cuisine, alors… ») | Barricadé dans la chambre froide de la **cafétéria** | Il frappe quand on approche. Il n'ouvre qu'après une question : « Les mordus, ça parle pas. Dis-moi un truc que seul un vivant dirait. » |
+| **L'opératrice de nuit** (« Mon nom ? Ça fait longtemps que plus personne ne l'utilise. ») | Enfermée dans le **local technique** de la salle de contrôle | Entendue dès la première minute ; muette ensuite (pile morte). Elle reparle quand on rallume le circuit CONTRÔLE (énigme 2). |
+
+---
+
+## 6. La vérité de l'étage 1 (dans l'ordre)
+
+Le joueur ne lit jamais ce tableau tel quel : il le reconstitue.
+
+| Quand | Ce qui s'est passé | Où le joueur l'apprend |
+|---|---|---|
+| **Avant** | SILLO 8 abrite une trentaine de personnes. Règle n° 1 du silo : aucun mordu ne franchit la porte. *(Son vrai sens ne viendra qu'à l'étage 4.)* | Affiche de la règle n° 1 (entrée), consigne de Bérard. |
+| **J−12** | Le régulateur de la génératrice fatigue ; la ferraille manque. Expédition aux épaves : Bérard, Marceau, un guetteur. Retour à la nuit tombée, attaque. Le guetteur est mordu : Bérard le laisse dehors. Marceau aussi est mordu ; Bérard le fait entrer et note « RAS ». | Feuille d'expédition (sur le guetteur), journal de maintenance, page arrachée. |
+| **J−11** | Okafor installe Marceau dans la chambre 1 (officiellement « condamnée, humidité »), sous deux lampes : la lumière le calme. Elle écrit les rapports 1 à 11. Le commis pose les plateaux devant la porte. | Plan de l'infirmerie, ticket de plateau, dossier de la chambre 1. |
+| **J−10 à J−1** | Les lampes mangent 4 piles par nuit. Lila les prend à l'entrepôt. Cuisine remarque le vol (« on les compte, maintenant »). Le silo se vide de piles. | Menu du jour (canon), liste de Lila n° 2, feuille de comptage. |
+| **Nuit de l'orage, 1 h 50** | Sur le canal 2 de la radio interne, Okafor dit à Bérard : « À l'aube, on le sort. Règle n° 1. » L'opératrice, à la console, entend tout. | Journal du poste (terminal de Bérard). |
+| **Le soir même** | Cuisine cadenasse l'armoire à piles et refuse une pile à Lila. | Feuille de comptage, liste de Lila n° 2. |
+| **2 h 00** | La foudre : l'émetteur grille (canon), la génératrice saute. La serrure électrique de la chambre 1 se libère. | Relève radio (canon), cahier de relève, serrure de la chambre 1. |
+| **2 h 05** | Une lampe verte passe dans le couloir est. L'opératrice a quitté son poste (rien dans son cahier entre 2 h 00 et 2 h 20). Elle entre dans la chambre 1. | Liste de Lila n° 3, cahier de relève, éclat de verre vert, empreintes UV. |
+| **2 h 10** | L'infirmier voit « quelqu'un avec une lampe » et croit que c'est Lila. Okafor dort. Cuisine est à l'entrepôt. Bérard est à l'entrée. | Mot de l'infirmier, feuille de comptage, journal du poste. |
+| **2 h 14** | La pile de la lampe verte meurt. Dans le noir, Marceau se lève sans un bruit. L'infirmier est le premier mordu. L'opératrice s'enfuit et s'enferme dans le local technique. | Montre de l'infirmier arrêtée à 2 h 14, traînées UV. |
+| **Le lendemain** | Okafor et Bérard affichent : « des mordus sont entrés par la porte de service pendant l'orage ». Le commis est mordu. Okafor organise la descente et condamne l'étage 1. Bérard couvre la retraite dans le couloir nord et y est mordu. | Avis officiel (hub), brouillon (tiroir d'Okafor), Bérard devant l'escalier. |
+| **La descente** | Okafor confie la clé de l'étage 2 à Lila : « ferme derrière toi ». Lila ne descend pas : Cuisine et l'opératrice sont restés. Elle cache la clé, écrit ses notes, frappe à la porte de la radio (pas de réponse, mais du vert sous la porte), et écrit à la craie sur la grande porte : « ILS SONT DESCENDUS. PAS TOUS. » | Notes de Lila (canon), liste n° 3, message à la craie. |
+| **Après** | Lila sort chercher les 3 ferrailles pour rallumer l'étage. Elle n'est pas revenue. | Liste de Lila n° 4, lanterne près des épaves. |
+| **Jour 0** | Le bricoleur arrive. Il finit, sans le savoir, ce que Lila avait commencé. | — |
+
+**Ce que l'étage 1 ne dit pas** (volontairement) : pourquoi Okafor connaissait déjà si bien les mordus ;
+pourquoi les verrous de la grande porte sont dehors ; qui est la personne de dos sur la photo ; où est
+Lila ; qui tape le signal (§ 20).
+
+---
+
+## 7. Les mordus : cinq anciens habitants, chacun porte un indice
+
+**Les règles, fixées et montrées avant de servir :**
+1. Ce sont de vrais morts qui marchent. Ils ne se soignent pas, ne reviennent pas.
+2. **La lumière vive les fige** (rapport n° 12, canon) — montré dès la génératrice.
+3. **Le bruit les attire** (coups de lance-clous, leviers ratés) — montré à la zone extérieure.
+4. **Ils refont une habitude de leur vie** — montré au premier mordu croisé (le guetteur qui regarde la route).
+5. **La morsure contamine.** Un mordu mord ; un mordu ne sort pas d'une tombe.
+
+**Comment on joue avec eux :** peu nombreux, lents, prévisibles. On peut les éviter (s'accroupir,
+attendre la fin d'une ronde, contourner). Un mordu figé par la lampe peut être **examiné** (`E`) le
+temps de lire ce qu'il porte. Les abattre coûte des clous et du bruit, ce qui en attire d'autres. Un
+mordu abattu tombe et ne se relève pas (pas de sang, style jouet) ; l'objet qu'il portait reste au sol.
+**Aucun passage clé n'exige de vaincre un mordu.**
+
+| Mordu | Qui c'était | Où il erre | Son habitude | L'indice qu'il porte |
+|---|---|---|---|---|
+| **Le guetteur** | Garde laissé dehors après l'expédition | **Zone extérieure**, autour des épaves | Il se poste face à la route et « guette », puis repart. | **Feuille d'expédition** pliée dans son brassard « GARDE ». |
+| **Marceau, le Silencieux** | Chef de l'équipe technique | **Génératrice** | Il tapote le moteur, comme pour le régler. **Aucun son** : la musique se coupe quand il approche. | **Bracelet** « CHAMBRE 1 — DR O. » et **alliance** gravée « M. — à ma Nuit ». |
+| **Le commis** | Aide de Cuisine | **Cafétéria** | Il porte un plateau vide jusqu'à la chambre froide, le pose, frappe deux fois, repart. | **Ticket de plateau** « Chambre 1 — frapper deux fois, ne pas entrer. Dr O. » |
+| **L'infirmier** | Infirmier de garde la nuit de l'orage | **Infirmerie** | Il fait le tour des lits, s'arrête devant l'armoire. | **Montre arrêtée à 2 h 14** et un **mot** dans sa blouse. |
+| **Sgt Bérard** | Chef de la garde ; a couvert la descente | **Couloir nord**, devant l'accès étage 2 | Il garde encore la porte, va et vient. | **La page arrachée**, dans la poche de poitrine, avec son sifflet. |
+
+**Changement dans le plan :** on garde `walker_ext` (guetteur), `walker_gen` (Marceau), `crawler_cafe`
+(commis) ; `walker_control` devient l'infirmier (déplacé à l'infirmerie) ; `walker_dorms` devient Bérard
+(déplacé dans le couloir nord). On retire les cinq autres. **Les pièces où l'on lit longtemps
+(dortoirs, hub, entrepôt, atelier, salle de contrôle, pièce cachée) n'ont pas de mordu.**
+
+---
+
+## 8. Survie : pourquoi tout manque (et ce que ça raconte)
+
+Pas de nouveau système : on garde les ressources existantes et la borne de recharge. Mais **chaque
+manque a une raison dans l'histoire**, et la rareté vécue par le joueur lui fait comprendre les mobiles.
+
+| Ressource | Pourquoi elle manque | Ce que le joueur trouve | Ce qu'on lui demande |
 |---|---|---|---|
-| 1. L'attaque | Une horde de morts a pris le silo. | Les « mordus » sont des voisins, chacun avec un nom. | Gros plans des objets qu'ils portent, photos. |
-| 2. La contagion | On devient zombie en se faisant mordre. | Personne n'a été mordu : ils **dorment debout**, la lumière les rendort. | Dictaphone d'Okafor, cahier de Lila, veilleuse n° 8. |
-| 3. La source | Un mal venu du dehors (le convoi ? Anselme ?). | La poussière vient de la **serre**, par la ventilation, la nuit. | Traînées révélées à la lampe, carnet d'Edmée, verrière cassée *de l'intérieur*. |
-| 4. Le coupable | Gaspard le voleur de piles ; l'orage qui a grillé la radio. | Lila prenait les piles ; **Corbière** a coupé la radio, renvoyé le convoi et laissé les malades. | Bon de fabrication, sachet de vis, aveu de Josette, journal de l'intendance. |
-| 5. La descente | « Tout le monde est descendu dans l'ordre. » | Des gens ont été laissés exprès ; Lila est remontée en cachette. **Reste ouvert :** qui parle à la radio, en bas ? | Caméra 3, trousseau de Bérard, Liste T originale. |
+| **Piles** (lampe) | Les lampes de la chambre 1 en ont mangé 4 par nuit pendant 10 nuits. Le silo s'est vidé. Le reste est sous cadenas. | Très peu : quelques piles isolées, 3 dans l'armoire de Cuisine (énigme 1), 2 dans sa réserve. | L'opératrice demande **1 pile** pour sa lampe. |
+| **Charge de la lampe** | — | La borne du poste de sécurité recharge (point sûr). | **Choix permanent** : dépenser la charge pour **figer** un mordu, ou pour **révéler** des traces à la lampe UV. Se protéger ou voir. |
+| **Conserves** | Le groupe descendu a emporté le reste. Il ne reste que des pêches (canon). | Quelques boîtes de pêches. | — |
+| **Bandages / trousses** | Okafor a descendu le stock de l'infirmerie. | L'armoire à pharmacie est vide, sauf un bandage. | Cuisine demande **1 bandage** (il s'est coupé en barricadant sa porte). |
+| **Ferraille** | C'est elle qui manquait au régulateur : la cause de l'expédition, donc de la morsure de Marceau. | Les 3 pièces de la génératrice, dont une posée par Lila près de sa lanterne. | La génératrice (objectif 2), le module radio (objectif 4). |
 
-**Contradictions à remarquer :**
-- Registre de Bérard (« tous descendus à 22 h 40 ») ↔ caméra 3 (Lila aux dortoirs à 23 h 52) ↔ Gaspard (« On m'a oublié. Et elle est descendue la *première*. ») ↔ ligne effacée du registre, révélée à la lampe.
-- Relève radio de Josette (« grillé pendant l'orage ») ↔ sachet de vis intactes ↔ Josette elle-même (« Il n'y a pas eu d'orage, cette nuit-là. »).
-- Plaque de la serre (« Premier semis : tomates cerises ») ↔ photo et étiquette d'Edmée (« vraie première plantation »).
-- Croix **pâles** du tableau (toux) ↔ croix **rouge** de Gaspard (punition).
+**Les deux dilemmes « ressource contre information » :**
+- **Une pile pour l'opératrice** : la donner, c'est moins de lumière pour soi ; en échange, elle parle,
+  et sa radio deviendra la voix de la fin d'étage.
+- **Un bandage pour Cuisine** : en échange, la clé de sa réserve et son témoignage.
+
+**Ce que le joueur comprend en jouant :** quand il compte lui-même ses piles, il comprend pourquoi
+Cuisine a mis un cadenas, et pourquoi une seule pile qui meurt a pu tout faire basculer.
+
+**Règles de dosage :** jamais de pénurie pendant la lecture ou au tableau ; assez de ressources pour
+finir l'étage en jouant prudemment, un petit surplus pour qui observe bien ; la rareté montera d'un
+étage à l'autre.
 
 ---
 
-## 6. Déroulé pièce par pièce (carte de l'étage 1)
+## 9. Les couches, les fausses pistes, les contradictions
 
-Suit l'ordre des objectifs. ⭐ = optionnel, mais nécessaire à la vérité complète.
+**Trois couches à l'étage 1, chacune fermée avant d'ouvrir la suivante :**
 
-| Pièce | Objectif | Ce qu'on y fait | Endormi |
+| Couche | Question | Réponse donnée à l'étage 1 |
+|---|---|---|
+| 1. Entrée → génératrice → hub | *Qui est resté ? Comment les mordus sont-ils entrés ?* | Deux vivants sont restés. Les mordus ne sont **pas** entrés par la porte de service : le premier venait de l'infirmerie. |
+| 2. Cafétéria, entrepôt, infirmerie, atelier | *Qui était dans la chambre 1, et qui l'a caché ?* | Marceau, mordu en expédition, caché par Bérard et Okafor ; Lila portait les piles. |
+| 3. Salle de contrôle, dortoirs, pièce cachée | *Qui a ouvert la chambre 1 ?* | L'opératrice de nuit. |
+
+Puis **une seule grande question ouverte** : qui tape « VIENS », plus bas que l'étage 2 ?
+
+**Trois fausses pistes, chacune expliquée par un vrai petit secret :**
+
+| Fausse piste | Le vrai petit secret qui l'explique | L'indice qui l'écarte |
+|---|---|---|
+| **La porte de service** (version officielle) | Bérard et Okafor protégeaient leur secret. | Aucune trace UV au seuil ; brouillon de l'avis de la main d'Okafor. |
+| **Lila, voleuse de piles** (l'infirmier la croit coupable) | Elle volait pour les lampes d'Okafor. | « Ma lampe aussi est morte. » |
+| **Cuisine** (rancune, cadenas) | Il a refusé une pile et s'en veut. | Sa feuille de comptage : à 2 h 10 il est à l'entrepôt. |
+
+**Contradictions à repérer (le geste de base du tableau) :**
+- Avis officiel (« porte de service ») ↔ seuil de la porte de service à la lampe UV (rien).
+- Feuille d'expédition (« Marceau : RAS ») ↔ empreinte de la page arrachée (« avant-bras bandé »).
+- Plan de l'infirmerie (« chambre 1 condamnée ») ↔ ticket de plateau (« chambre 1 : frapper deux fois »).
+- Mot de l'infirmier (« ça doit être la petite ») ↔ liste de Lila (« ma lampe aussi est morte »).
+- L'opératrice dit qu'elle était « coincée » ↔ le loquet manuel est fermé **de l'intérieur**.
+
+---
+
+## 10. Déroulé pièce par pièce
+
+Suit l'ordre des objectifs. ⭐ = facultatif pour finir l'étage, mais utile à l'enquête.
+
+| Pièce | Objectif | Ce qu'on y trouve | Mordu |
 |---|---|---|---|
-| **Entrée (extérieur)** | 1. Explorer l'entrée | Note de Bérard. ⭐ Photo de l'inauguration. Traces de pas. Radio de la guérite qui parle seule. | — |
-| **Zone extérieure** | 2. Ferrailles | Épaves du convoi, cabine vide d'Anselme. ⭐ Bordereau. ⭐ Verrière cassée de l'intérieur. | — |
-| **Génératrice** | 2. Relancer la génératrice | Journal de maintenance. ⭐ Thermos tiède. ⭐ **Énigme 2** (leviers), une fois le courant revenu. | Bérard (trousseau) |
-| **Sécurité** | 3. Passer au hub | Borne de recharge. ⭐ **Filtre violet** (mode révélateur de la lampe). ⭐ Registre, moitié de consigne, écran caméra 3. | — |
-| **Hub central** | 3. Atteint | Refuge. ⭐ Tableau des résidents. ⭐ Lapin en tissu de Lila (feutre magique). Flèches cachées. | — |
-| **Cafétéria** | — | Menu du jour. ⭐ Calendrier. **Gaspard** dans la chambre froide. ⭐ **Énigme 1** (cadenas). | Bastien (bon de cuisine) |
-| **Entrepôt** | 5. Indice | **Note de Lila (mur creux).** ⭐ Inventaire. ⭐ Carton de piles signé d'une étoile. ⭐ Casier de Gaspard. | — |
-| **Infirmerie** | — | Rapport n° 12. ⭐ Dictaphone, tiroir d'Okafor. **Josette** dans le box (après l'énigme 2). | — |
-| **Atelier** | 4. Module radio | Établi, presse, banc. ⭐ Bon de fabrication. ⭐ Coin de Lila. Recette de veilleuse (débloquée). | — |
-| **Salle de contrôle** | 4. Console radio | Relève radio. ⭐ Sachet de vis. ⭐ **Énigme 3** (terminal). ⭐ Tiroir de Corbière. ⭐ Fréquence du bas. | Rémi (bracelet) |
-| **Serre** (dès le début) | — | ⭐ Plaque, carnet d'Edmée, photo de la première récolte. ⭐ Volet de ventilation, bureau d'Edmée (débloqués). | Edmée (étiquette) |
-| **Dortoirs** | 5. Mur creux | ⭐ Cahier de Lila, photo de famille, 8 veilleuses. Mur creux. Messages invisibles. | Firmin (écharpe, veilleuse) |
-| **Pièce cachée** | 5. Clé d'accès | Clé. Dernier mot de Lila. ⭐ Dessin « Pour descendre ». Ciel étoilé invisible. | — |
-| **Accès étage 2** | Fin | Escalier. ⭐ Frapper 3 + 2 (débloqué). | — |
+| **Entrée (extérieur)** | 1 | Craie « ILS SONT DESCENDUS. PAS TOUS. », voix de l'opératrice (première minute). Consigne de Bérard (canon). ⭐ Affiche de la règle n° 1, verrous côté dehors, photo de l'inauguration à la guérite. | — |
+| **Zone extérieure** | 2 | Ferrailles dans les épaves. ⭐ Lanterne de Lila et une ferraille posée à côté. | Le guetteur |
+| **Génératrice** | 2 | Journal de maintenance (canon). ⭐ **Énigme 2** une fois le courant revenu. ⭐ Moitié de consigne. | Marceau, le Silencieux |
+| **Sécurité** | 3 | Borne de recharge : **point sûr**. ⭐ **Énigme 3** (terminal de Bérard). ⭐ Autre moitié de consigne. | — |
+| **Hub central** | 3 | ⭐ Avis officiel. Valises abandonnées en file vers le nord. | — |
+| **Couloir nord / Accès étage 2** | fin | Porte de l'étage 2, verrouillée. | Bérard |
+| **Cafétéria** | — | Menu du jour (canon). ⭐ Post-it de Cuisine. **Survivant : Cuisine.** | Le commis |
+| **Entrepôt** | 5 | **Liste de Lila (canon).** ⭐ **Énigme 1** : armoire à piles. | — |
+| **Dortoirs** | 5 | Mur creux (canon). ⭐ Liste de Lila n° 3. | — |
+| **Pièce cachée** | 5 | Clé, dernier mot de Lila (canon). ⭐ Dessin de Lila. | — |
+| **Infirmerie** | — | Rapport n° 12 (canon). ⭐ Plan, lampe UV, tiroir d'Okafor, liste de Lila n° 2. ⭐ **Chambre 1**, derrière l'armoire. | L'infirmier |
+| **Atelier** | 4 | Établi (module radio). ⭐ Casier de Marceau. | — |
+| **Salle de contrôle** | 4 | Console, relève radio (canon). ⭐ Cahier de relève. **Survivante : l'opératrice.** | — |
+| **Serre** | 2 | Ferraille. ⭐ Liste de Lila n° 4. | — |
 
 ---
 
-## 7. Immersion : ce que le décor doit raconter
+## 11. Immersion : une scène muette par pièce
 
-Principe : **chaque pièce raconte une scène sans texte**, et au moins un détail montre que la vie
-s'est arrêtée *il y a peu*. Pas de sang, pas de cadavres : des objets laissés en plan, de la
-poussière pâle, des lumières qui hésitent. (Les événements scriptés sont détaillés au § 8 d.)
+Chaque pièce raconte une scène **sans texte**, lisible en vue de dessus, qui pose une question.
 
-| Pièce | Décor qui raconte | Lumière | Son |
+| Pièce | Scène muette | La question qu'elle pose | Lumière / son |
 |---|---|---|---|
-| **Entrée** | Banderole délavée « SILLO 8 — Coopérative des Sillons ». Marelle à la craie jusqu'à 8. Vélo d'enfant couché. Sacs de sable. | Lanterne de guérite qui grésille. | Vent, grillage qui tinte, souffle de la radio de la guérite. |
-| **Zone extérieure** | Camion du convoi, portières ouvertes, caisses de piles **encore scellées**. Couverture et gamelle d'Anselme dans la cabine, comme s'il allait revenir. Éclats de verre de la serre **dehors**. | Fin d'après-midi dorée, longues ombres. | Corbeaux, tôle qui grince. |
-| **Génératrice** | Képi sur un crochet (Bérard porte un bonnet de nuit !), chaise retournée, traits à la craie « D C I » à moitié effacés. Thermos et tasse au rouge à lèvres. | Noir, puis néons qui s'allument **en vague** dans tout le silo. | Moteur qui tousse puis ronronne. |
-| **Sécurité** | Barrière levée, registre ouvert, stylo tombé. Deux encres sur la même page. Filtre violet dans un tiroir « LAISSEZ-PASSER ». | Écrans à neige blanche. | Bip de la borne. |
-| **Hub central** | Grand tableau des résidents. Flèches à la craie « PAR ICI » vers le nord. Valises abandonnées en file. Lapin en tissu. | Puits de lumière où tombe une poussière pâle, comme de la neige. | La ventilation « respire ». |
-| **Cafétéria** | 30 couverts mis, **6 assiettes retournées** (les places de la Liste T). Pyramide de pêches. Porte de chambre froide givrée, plateau vide posé devant le soupirail. | Lumière froide de la vitrine réfrigérée. | Couverts qui tintent quand Bastien passe sous les tables. |
-| **Entrepôt** | Étagères comptées à la craie, tableau « PILES » plein de bâtons barrés. Carton de piles vide. | Ampoule nue qui se balance. | Goutte-à-goutte, cartons qui craquent. |
-| **Dortoirs** | Lits faits au carré, valises prêtes **jamais emportées**. Lit de Lila entouré de 8 veilleuses éteintes. Dessins (lune, champignons, une grande sœur au bonnet). Poussière au sol devant le mur du fond. | Pénombre ; une seule veilleuse clignote. | Fredonnement de Papi Firmin. |
-| **Infirmerie** | Lits aux couvertures pliées, fiches numérotées. Box d'isolement : buée sur la vitre, « JE SUIS LÀ » écrit au doigt **à l'envers** (de l'intérieur). | Néon qui clignote au-dessus du box. | Toux étouffée derrière la vitre. |
-| **Atelier** | Établi de Lila à hauteur d'enfant, veilleuses ratées. Outils rangés « à la Lou » (c'est elle qui a appris à Lila). | Lampe d'établi chaude : **pièce refuge**. | Radio d'atelier qui joue un air d'accordéon très bas. |
-| **Salle de contrôle** | Carte du silo punaisée ; console ouverte. Fauteuil de Corbière tourné **vers la porte de l'étage 2**. Post-it sur le terminal. | Voyants rouges, puis un vert. | Grésillement ; Rémi murmure « allô ». |
-| **Serre** | Bacs de tomates morts **au soleil**, bacs de Lune-pâle bien vivants **à l'ombre**. Plaque neuve vissée par-dessus une ancienne. | Taches vert-pâle phosphorescentes dans les coins sombres. | Arrosage qui crachote, ventilateurs. |
-| **Pièce cachée** | Cabane en couverture, biscuits, dessins, boîte à chaussures. | La dernière veilleuse, encore allumée. | Silence total. |
-| **Accès étage 2** | Grille au sol, marches dans le noir, verrous scellés **du côté du bas**. | Noir qui monte. | Air froid. |
+| **Entrée** | Craie sur la porte. Gros verrous côté dehors. Une marelle d'enfant qui s'arrête à la case 4. | Qui est resté ? Pourquoi verrouiller de dehors ? | Lanterne de guérite qui grésille ; vent. |
+| **Zone extérieure** | Une lanterne d'enfant posée sur une épave, à côté d'une ferraille bien rangée. Des pas qui vont vers les épaves, aucun qui revient. | Qui est sorti, et pourquoi pas rentré ? | Corbeaux, tôle qui grince. |
+| **Génératrice** | Une chaise et une gamelle à côté du moteur ; une silhouette qui le tapote en silence. | Pourquoi celui-là ne fait-il aucun bruit ? | Noir, puis vague d'allumage des néons. |
+| **Sécurité** | Registre ouvert, stylo tombé, borne qui clignote. | Que s'est-il passé à 2 h 15 ? | Bip régulier de la borne : le seul son rassurant. |
+| **Hub** | Valises en file vers le nord, une sur le côté, ouverte. L'avis officiel bien droit au milieu. | Pourquoi sont-ils partis si vite ? | Ventilation qui « respire ». |
+| **Cafétéria** | Un plateau vide posé devant la chambre froide, et un autre, et un autre : une pile de plateaux. | Qui apporte des plateaux à une porte fermée ? | Couverts qui tintent. |
+| **Entrepôt** | Une armoire cadenassée ; à côté, un panier à piles vide, retourné. | Pourquoi enfermer des piles ? | Ampoule nue qui se balance. |
+| **Dortoirs** | Des lits faits au carré ; un seul défait, avec un petit oreiller de travers (celui de Lila). | Qui dormait là, et a fui en pleine nuit ? | Silence total, même la ventilation s'arrête. |
+| **Infirmerie** | Des raclures au sol devant une armoire ; deux lampes neuves visibles au-dessus, par une fente. | Pourquoi cette armoire a-t-elle tant bougé ? | Néon qui clignote. |
+| **Chambre 1** | Un lit, deux lampes au plafond, une lampe de chevet vide, un plateau propre. | Qui vivait ici en cachette ? | Silence. |
+| **Atelier** | Un casier aux outils rangés au millimètre, un nom à demi arraché. | Qui était si soigneux ? | Lampe d'établi chaude : pièce refuge. |
+| **Salle de contrôle** | Fauteuil de l'opératrice repoussé, comme si elle s'était levée d'un bond ; une tasse pleine ; une lueur verte sous une porte. | Pourquoi est-elle partie en plein service ? | Grésillement de la console. |
+| **Serre** | Une seule rangée de plants bien arrosée, le reste à l'abandon ; un petit arrosoir d'enfant. | Qui s'occupait encore de ça ? | Arrosage qui crachote. |
+| **Pièce cachée** | Une cabane en couverture, des dessins, une boîte à chaussures. | Pourquoi une cachette ici ? | La dernière veilleuse de Lila. |
+| **Accès étage 2** | Des marques de chariot qui descendent, aucune qui remonte. | Pourquoi personne n'est remonté ? | Air froid qui monte. |
 
 ---
 
-## 8. Examiner : les quatre formes
+## 12. Examiner : les quatre formes
 
 ### (a) Gros plan sur un objet qu'on tourne, avec un détail caché
 
-`E` sur l'objet → il s'affiche en grand au centre de l'écran ; on le **tourne** (glisser au doigt
-ou stick droit) et on **zoome** (loupe). Un détail caché se révèle en le tournant ; il devient une
-carte du tableau d'enquête.
+`E` → l'objet s'affiche en grand ; on le **tourne** (glisser, stick droit) et on **zoome** (loupe). Le
+détail caché devient une carte du tableau. Tout objet examinable a un **contour** quand on est à portée.
 
-| # | Pièce | Objet | Ce qu'on voit d'abord | Le détail caché (en tournant / à la loupe) |
+| # | Pièce | Objet | Au premier regard | Le détail caché |
 |---|---|---|---|---|
-| a1 | Entrée | Photo de l'inauguration | Trente personnes, une fillette avec une lampe. | Verso : mot de Firmin (§ 9). |
-| a2 | Génératrice | Thermos | Thermos cabossé, encore tiède. | Sous le fond, une étiquette : « J.V. — infirmerie, box 2 ». |
-| a3 | Génératrice | Trousseau de Bérard *(sur l'endormi)* | Sept clés, un sifflet. | Un crochet **vide**, étiquette « DOUBLE ÉTAGE 2 ». |
-| a4 | Hub | Lapin en tissu | Doudou râpé, étiquette « Lila ». | Dans la couture du dos : un **feutre magique** (encre invisible, visible à la lampe violette). |
-| a5 | Cafétéria | Bon de cuisine *(sur Bastien)* | Un papier gras. | Au dos : « Mardi : un plateau de moins. Gaspard, chambre froide. Je lui passe des pêches par le soupirail. » |
-| a6 | Cafétéria | Boîte de pêches | Étiquette « Pêches au sirop ». | Sous l'étiquette, au crayon : « Soupe du soir : une louche de Lune-pâle. Ordre de C. Pas sur le menu. — B. » |
-| a7 | Dortoirs | Veilleuse n° 8 *(dans la main de Firmin)* | Petite lampe bricolée, éteinte. | Dessous, gravé : « L ★ — n° 8 — pour Papi ». Le compartiment à pile est vide. |
-| a8 | Dortoirs | Photo de famille | Lila, Firmin, Lou qui grimace. | Verso : mot de Lila (§ 9). |
-| a9 | Infirmerie | Dictaphone d'Okafor | Un dictaphone à cassette. | Étiquette de cassette : « Pistes 1-2. Piste 3 : chez Josette. » |
-| a10 | Salle de contrôle | Sachet de vis | Un sachet plastique. | Quatre vis **propres**, pas une trace de brûlé ; étiquette « C. ». |
-| a11 | Salle de contrôle | Bracelet de Rémi *(sur l'endormi)* | Ruban adhésif, chiffres effacés. | À la loupe : « 8.08 — fréq. bas ». |
-| a12 | Serre | Plaque officielle | « Premier semis officiel : tomates cerises. » | En la tournant : quatre anciens trous, et sous le rebord, gravé « LUNE-P… ». |
-| a13 | Serre | Étiquette de semis *(sur Edmée)* | « LOT 8-0 ». | Au dos : « LUNE-PÂLE — 1ʳᵉ plantation, avant les tomates ». |
-| a14 | Pièce cachée | Clé d'accès | Une carte-clé. | Gravé au dos : « DOUBLE — POSTE DE GARDE ». Une étoile dessinée au feutre. |
+| a1 | Entrée | Photo de l'inauguration (guérite) | Trente personnes souriantes devant la porte neuve. | Au dos : « Jour de la porte. » Au premier plan, quelqu'un de **dos**, en blouse, tient une valise marquée d'un triangle. *(Dormant : étage 3.)* |
+| a2 | Génératrice | Journal de maintenance (canon) | La note de l'équipe technique, page arrachée. | À la loupe, sur la page suivante : l'empreinte en creux du texte arraché. |
+| a3 | Génératrice | Alliance de Marceau *(mordu figé)* | Un anneau terni. | À l'intérieur : « M. — à ma Nuit ». |
+| a4 | Génératrice | Bracelet de Marceau | Bracelet d'hôpital. | « CHAMBRE 1 — DR O. — PATIENT n° 1 ». |
+| a5 | Extérieur | Lanterne de Lila | Lanterne cabossée, verre **blanc**. | Gravé au crayon sur le socle : « Lila ». Réservoir vide. |
+| a6 | Infirmerie | Montre de l'infirmier *(mordu figé)* | Montre bracelet. | Arrêtée à **2 h 14**, verre fendu. |
+| a7 | Chambre 1 | Lampe de chevet | Douille vide. | Un **éclat de verre vert** coincé dans la douille. Les lampes de l'infirmerie sont blanches. |
+| a8 | Chambre 1 | Serrure de la porte | Serrure électrique. | Sans courant, elle s'ouvre d'une poussée. Pas de clé, pas de code. |
+| a9 | Atelier | Photo des inséparables (casier de Marceau) | Bérard et Marceau, bras dessus bras dessous. | Au dos : « Mes deux inséparables. — N. » |
+| a10 | Contrôle | Lampe de l'opératrice | Lampe de poche à filtre **vert** (« pour ne pas éblouir les écrans »). | Le filtre est ébréché : il manque un éclat. |
+| a11 | Contrôle | Loquet du local technique | Un verrou électrique. | Le loquet manuel est tourné **de l'intérieur**. |
+| a12 | Couloir nord | Page arrachée *(sur Bérard)* | Une feuille pliée. | Le texte entier, et en bas : « Ne rien dire. — B. » |
+| a13 | Pièce cachée | Clé d'accès | Carte-clé. | Étiquette : « Pour Lila — ferme derrière toi. — Dr O. » |
+| a14 | Pièce cachée | Dessin de Lila | Le silo dessiné en coupe. | **Quatre** étages ; une croix sur le dernier ; une flèche « ICI ÇA TAPE » au troisième. *(Dormant : étages 3 et 4.)* |
 
-### (b) Pensées de Lou, en bulle
+### (b) Pensées du héros, en bulle
 
-Une petite bulle au-dessus de sa tête, 2 à 4 secondes, quand elle **remarque** quelque chose
-(en passant près d'un détail, ou après un gros plan). Certaines pensées ajoutent un indice au carnet.
+Une bulle au-dessus de sa tête, 2 à 4 secondes, quand il **remarque** quelque chose. Les pensées
+posent des questions ; elles ne concluent jamais à la place du joueur.
 
 | Pièce | Déclencheur | Pensée |
 |---|---|---|
-| Entrée | Arrivée | « La banderole a pâli. Trois ans… Lila, j'arrive. » |
-| Entrée | Traces de pas | « Des pas qui entrent. Une seule paire qui ressort. Toute petite. » |
-| Entrée | Marelle | « Elle va jusqu'à 8. Lila trichait toujours sur le 8. » |
-| Extérieur | Cabine vide d'Anselme | « Sa gamelle est encore pleine. Anselme ne laisse jamais une gamelle pleine. » |
-| Extérieur | Caisses scellées | « Quarante piles. Et ils les ont refusées ? » |
-| Extérieur | Verrière | « Le verre est dehors. On l'a cassée de l'intérieur. » |
-| Génératrice | Thermos (a2) | « Encore tiède. Quelqu'un de vivant est passé il y a moins d'une heure. » |
-| Génératrice | Bérard en bonnet de nuit | « Un sergent en bonnet de nuit. Il dort. Il dort *vraiment*. » |
-| Génératrice | Trousseau (a3) | « Un crochet vide. Quelqu'un a pris le double. » |
-| Sécurité | Registre, deux encres | « Même page, deux stylos. Il a écrit la fin plus tard. » |
-| Hub | Valises en file | « Ils sont partis vite. Ou on les a pressés. » |
-| Hub | Croix rouge sur Gaspard | « Toutes les croix sont pâles. Sauf celle-là. » |
-| Hub | Lapin (a4) | « Le feutre magique ! On jouait aux messages secrets, l'été dernier… » |
-| Cafétéria | Couverts | « Six assiettes retournées. Six places qui n'attendent plus personne. » |
-| Cafétéria | Coups dans la chambre froide | « Un endormi ne frappe pas en rythme. » |
-| Entrepôt | Tableau des piles | « Quelqu'un compte les piles. Quelqu'un d'autre les fait disparaître. » |
-| Infirmerie | Vitre du box | « “JE SUIS LÀ”… écrit à l'envers. De l'intérieur. » |
-| Atelier | Coin de Lila | « Un établi à sa taille. Elle a continué à bricoler sans moi. » |
-| Atelier | Outils | « Rangés comme je lui ai appris. Les pinces à gauche, toujours. » |
-| Contrôle | Sachet de vis (a10) | « Un orage, ça ne range pas les vis dans un sachet. » |
-| Contrôle | Fauteuil tourné | « Elle surveillait la porte du bas. Pas la console. » |
-| Serre | Bacs | « Les tomates sont mortes au soleil. Ce qui pousse dans l'ombre se porte très bien. » |
-| Serre | Plaque (a12) | « Une plaque neuve sur des vieux trous. On a voulu réécrire quelque chose. » |
-| Dortoirs | Firmin + écharpe | « Cette écharpe… c'est le tricot de Mamie. Papi ? » |
-| Dortoirs | Veilleuses | « Huit veilleuses autour de son lit. Elle le protégeait. » |
-| Pièce cachée | Cabane | « Sa cabane. Ses biscuits. Elle a toujours eu une cachette, partout. » |
-| Accès étage 2 | Grille | « Ça souffle d'en bas. Ça sent la terre… et le champignon. » |
+| Entrée | Craie sur la porte | « Pas tous. Alors quelqu'un est encore là-dedans. » |
+| Entrée | Voix à la radio, puis silence | « Elle a dit “la relève”. À qui parle-t-elle ? » |
+| Entrée | Verrous | « Drôle de porte. On dirait qu'elle ferme de l'extérieur. » |
+| Entrée | Affiche de la règle n° 1 | « Aucun mordu ne franchit la porte. Et pourtant… » |
+| Extérieur | Lanterne + ferraille | « Une lanterne de gamin et une pièce bien rangée. Quelqu'un faisait le même boulot que moi. » |
+| Extérieur | Le guetteur | « Un brassard de garde. Il gardait la porte… de dehors ? » |
+| Génératrice | Premier passage de Marceau | « Celui-là ne grogne pas. Je ne l'ai pas entendu venir. » |
+| Génératrice | Page arrachée | « Quelqu'un a arraché une page. Mais un crayon, ça appuie. » |
+| Génératrice | Bracelet (a4) | « Un bracelet d'infirmerie. On le soignait. Avant ou après ? » |
+| Sécurité | Terminal | « Le poste de Bérard. Il notait tout. Presque tout ? » |
+| Hub | Avis officiel | « “Par la porte de service.” Ça se vérifie, une porte. » |
+| Cafétéria | Coups dans la chambre froide | « Un mordu ne frappe pas en rythme. » |
+| Cafétéria | Le commis et ses plateaux | « Il pose un plateau, frappe deux fois, repart. Il a fait ça souvent. Pour qui ? » |
+| Entrepôt | Armoire cadenassée | « Un cadenas sur des piles. Ici, la lumière valait de l'or. » |
+| Dortoirs | Lits vides | « “Là où personne ne dort plus.” » |
+| Infirmerie | Raclures au sol | « Cette armoire a bougé. Souvent. » |
+| Infirmerie | Montre (a6) | « 2 h 14. Qu'est-ce qui s'est passé à 2 h 14 ? » |
+| Chambre 1 | Entrée | « Une chambre “condamnée”, avec deux lampes neuves et un plateau propre ? » |
+| Chambre 1 | Éclat vert (a7) | « Du verre vert. D'où vient-il ? » |
+| Atelier | Casier | « Ses outils sont rangés au millimètre. Le genre de type qui ne ment pas. » |
+| Contrôle | Elle tourne son alliance | « Elle tourne sa bague. Encore. » |
+| Contrôle | Loquet (a11) | « Fermé de l'intérieur. Coincée… vraiment ? » |
+| Tableau | Avant l'accusation | **Défi au joueur** : « J'ai tout vu. Qui a ouvert la chambre 1 ? » |
+| Pièce cachée | Clé (a13) | « “Ferme derrière toi.” Elle n'a pas fermé. Elle a attendu. » |
+| Accès étage 2 | Grille | « Des marques qui descendent. Aucune qui remonte. » |
 
-### (c) Mode révélateur : la lampe violette et la loupe
+### (c) Lampe UV et loupe
 
-**Comment on l'obtient :** le **filtre violet** de Bérard (tiroir « LAISSEZ-PASSER », poste de
-sécurité), qui servait à vérifier les tampons invisibles des laissez-passer. Une fois trouvé, un
-appui long sur LAMPE (ou une touche dédiée) passe en mode **révélateur** : faisceau violet, plus
-étroit, qui n'éblouit pas les endormis et consomme doucement la charge. Il révèle deux choses :
-la **poussière de Lune-pâle** (qui luit) et le **feutre magique** de Lila (encre invisible).
-La **loupe** fait partie du gros plan (a) : on zoome sur un détail trop petit ou effacé.
+**La lampe UV d'Okafor**, trouvée dans son bureau (« pour examiner les morsures »), se fixe sur la lampe
+du héros. Un appui long sur LAMPE passe en lumière noire : faisceau violet, **ne fige pas** les mordus,
+consomme la même charge. C'est le dilemme de survie : **figer ou voir**. Elle fait luire **les
+traînées laissées par les mordus** (une bave luisante, style dessin animé) et le **tampon invisible**
+de l'infirmerie. La **loupe** fait partie du gros plan (a).
 
-| # | Pièce | Révélé à la lampe violette / à la loupe | Ce que ça apprend |
+| # | Pièce | Révélé | Ce que ça apprend |
 |---|---|---|---|
-| c1 | Zone extérieure | Traînée de poussière qui luit, de la verrière cassée jusqu'à la cabine d'Anselme… puis de la cabine vers la serre, où elle s'arrête. | Anselme est entré dans la serre. Où est-il ? (question ouverte) |
-| c2 | Sécurité | Sur le registre, sous « tous les résidents », une ligne effacée : « sauf Liste T (ordre de C.) ». | Le registre ment par omission. |
-| c3 | Hub | Au sol, à côté des flèches « PAR ICI » vers le nord, des **petites étoiles** invisibles qui partent vers l'ouest. | Le chemin de Lila, la nuit de la descente. |
-| c4 | Hub | Grilles de ventilation du plafond : traînées pâles qui filent vers l'ouest (dortoirs). | La ventilation transporte la poussière. |
-| c5 | Entrepôt | Sur le carton de piles vide : une étoile et un « L », et « je les rendrai ★ ». | Signature de la « voleuse ». |
-| c6 | Dortoirs | La grille au-dessus des lits **luit fort** ; traînée qui vient de l'est (serre). | Les dortoirs sont au bout du chemin de la poussière. |
-| c7 | Dortoirs | Sur le mur du fond : « ICI ★ POUSSE FORT, LOU ». | Confirme le mur creux (en plus de la note de Lila, sans la remplacer). |
-| c8 | Infirmerie | Sur les fiches des patients, un petit « T » tamponné à l'encre invisible. | La Liste T était décidée à l'infirmerie, en douce. |
-| c9 | Serre | Les bacs de Lune-pâle luisent comme des lanternes ; la bouche de ventilation de la serre est couverte de poussière lumineuse. | Point de départ de la traînée. |
-| c10 | Salle de contrôle | **Loupe** sur le sous-main de Corbière : les lettres en creux d'une liste recopiée. « Firmin — toux. Rémi — toux… Gaspard — exemple. » | Gaspard n'était pas malade : on l'a puni pour l'exemple. |
-| c11 | Pièce cachée | Au plafond, un ciel d'étoiles dessiné au feutre magique, et « LOU ★ 3 + 2 ». | Le signal de Lila (renforce le dessin « Pour descendre »). |
+| c1 | Entrée (porte de service) | **Rien.** Pas une trace de mordu au seuil. | L'avis officiel est faux. |
+| c2 | Infirmerie | Une traînée part de l'armoire (porte de la chambre 1). | Le premier mordu sortait de derrière l'armoire. |
+| c3 | Couloirs → génératrice | La même traînée, sans détour, jusqu'au moteur. | Le Silencieux est retourné à son poste de travail. |
+| c4 | Chambre 1 | Deux empreintes de semelles fines près du lit, **vivantes** (pas de bave). | Quelqu'un de vivant se tenait près de lui. |
+| c5 | Infirmerie | Sous « CONDAMNÉE » sur le plan, au tampon invisible : « PATIENT n° 1 ». | La chambre servait. |
+| c6 | Génératrice | **Loupe** sur le journal (a2). | Le texte de la page arrachée. |
+| c7 | Contrôle | **Loupe** sur le cahier de relève : rien entre 2 h 00 et 2 h 20, alors que les autres nuits ont une ligne toutes les 10 minutes. | Elle n'était pas à son poste. |
+| c8 | Contrôle | Traînées de mordu **devant** le local technique, aucune derrière. | Elle s'est enfermée avant leur arrivée. |
 
 ### (d) Événements étranges, scriptés et légers
 
-Chacun ne se produit **qu'une fois**. Jamais de « jump scare » violent : du bizarre, du doux-inquiétant.
+Chacun n'arrive **qu'une fois**. Du bizarre, jamais de « jump scare » violent. Chacun découle de
+l'histoire.
 
-| # | Pièce | Déclencheur | Ce qui se passe | Pensée de Lou (si besoin) |
+| # | Pièce | Déclencheur | Ce qui se passe | Pensée |
 |---|---|---|---|---|
-| d1 | Entrée | Approche de la guérite | La radio de la guérite grésille : « …ici l'inten… restez à l'intér… » puis plus rien. | « Il y a quelqu'un, là-dedans. Ou il y avait. » |
-| d2 | Entrée | Juste après | La lanterne de la guérite s'allume seule, deux secondes. | — |
-| d3 | Zone extérieure | Près des épaves | Un klaxon étouffé, une fois, dans le camion vide. | « …Faux contact. Sûrement. » |
-| d4 | Génératrice | Relance de la génératrice | Les néons s'allument **en vague** dans tout le silo ; au loin à l'ouest, une boîte à musique joue trois notes. | « Cet air… c'est la berceuse de Lila. » |
-| d5 | Sécurité | Retour du courant | Un écran affiche une seconde la caméra 3 (Lila en pyjama), puis la neige revient. On peut alors l'examiner (photo `photo_cam3`). | « Lila ?! » |
-| d6 | Couloir ouest (vu du hub) | Première entrée au hub | **Une silhouette en peignoir**, une lampe à la main, traverse le bout du couloir ouest et disparaît. (C'est Josette, qui rentre à l'infirmerie par le hub.) | « Il y a quelqu'un. Debout, et avec une lampe. » |
-| d7 | Hub | Première entrée | Une valise glisse de la pile et s'ouvre : du linge d'enfant. | — |
-| d8 | Cafétéria | Approche de la chambre froide | Trois coups **de l'intérieur**, réguliers. | « Un endormi ne frappe pas en rythme. » |
-| d9 | Entrepôt | Après la note de Lila | Une porte claque loin à l'ouest (courant d'air du mur creux). | — |
-| d10 | Dortoirs | Entrée dans les dortoirs | La seule veilleuse qui clignote s'éteint ; Firmin, assis sur le lit de Lila, se lève lentement et marche vers la porte. | « Papi… non. Pas encore. » |
-| d11 | Infirmerie | Entrée | Un gobelet tombe dans le box, la buée s'efface d'un coup de manche. | — |
-| d12 | Salle de contrôle | Radio réparée **et** fréquence trouvée | Le message des deux voix (§ 9, `audio_radio_below`). | « Cette petite voix… » |
-| d13 | Serre | Lou éclaire un bac de Lune-pâle à la lampe normale | Les champignons se referment, comme des endormis. | « Comme eux. La lumière les fait dormir. » |
-| d14 | Pièce cachée | Lou prend la clé | La dernière veilleuse de Lila s'éteint : pile morte. | « Tu l'as fait tenir jusqu'à ce que j'arrive. » |
-| d15 | Accès étage 2 | Lou frappe 3 + 2 (débloqué) | Silence… puis **3 + 2** répondent d'en bas. | « Elle est là. » |
+| d1 | Entrée | Approche de la guérite | La radio grésille : « …ici l'opératrice de nuit… c'est l'heure de la relève… il y a quelqu'un ? » Puis plus rien. | « Elle a dit “la relève”. » |
+| d2 | Génératrice | Premier passage | Marceau traverse le champ **sans un son** ; la musique se coupe. | « Je ne l'ai pas entendu. » |
+| d3 | Génératrice | Relance | Les néons s'allument **en vague** ; une seule lueur reste verte, à l'est. | « Pourquoi du vert ? » |
+| d4 | Sécurité | Retour du courant | Le haut-parleur crache un bout d'enregistrement en boucle : « …canal 2… à l'aube… » | « À l'aube, quoi ? » |
+| d5 | Hub | Première entrée | Une valise glisse et s'ouvre : vêtements, une photo de groupe retournée. | — |
+| d6 | Cafétéria | Approche de la chambre froide | Trois coups **de l'intérieur**, réguliers. | « Un mordu ne frappe pas en rythme. » |
+| d7 | Couloir est | Vu depuis le hub | Une **lueur verte** passe sous la porte de la salle de contrôle, puis s'éteint. | « Quelqu'un est vivant là-bas. Et ne veut pas qu'on le sache ? » |
+| d8 | Entrepôt | Après la note de Lila (canon) | Une porte claque loin à l'ouest (courant d'air du mur creux). | — |
+| d9 | Infirmerie | Entrée | L'armoire grince d'un centimètre (pression d'air). | « …Courant d'air. Sûrement. » |
+| d10 | Contrôle | Radio réparée | Message canon + la voix d'Okafor (§ 13). | — |
+| d11 | Contrôle | Juste après | Des bips **tapés à la main** répondent. L'opératrice les traduit (§ 21). | — |
+| d12 | Accès étage 2 | Clé en main | Des petits coups montent de sous la grille, puis s'arrêtent. | « Ça tape. Plus bas que bas. » |
 
 ---
 
-## 9. Tous les documents : notes, enregistrements, photos
+## 13. Tous les documents
 
-Légende : 📝 note · 🎙️ enregistrement · 📷 photo (recto décrit, verso écrit). « (existant) » = déjà
-dans `game/notes.ts`. Les objets examinés (§ 8) ne sont pas répétés ici.
+Légende : 📝 note · 🎙️ enregistrement · 📷 photo. Les 7 notes **canon** restent mot pour mot. Chaque
+nouveau document fait **5 lignes au plus**.
 
 ### ENTRÉE (EXTÉRIEUR)
 
-**📝 `note_entrance` — Consigne de garde** (existant, inchangé)
+**Craie sur la grande porte** *(décor, carte du tableau)*
+> ILS SONT DESCENDUS. PAS TOUS.
+
+**📝 `note_entrance` — Consigne de garde** *(canon)*
 > La porte de sécurité tire son courant de la génératrice. Si tout tombe, passez par la porte de
 > service, à l'ouest de l'entrée. Ne restez pas dehors à la nuit tombée.
 > — Sgt. Bérard, poste d'entrée
 
-**📷 `photo_inauguration` — Le jour de la porte**
-> *Recto :* une trentaine de personnes devant la grande porte, sous la banderole « SILLO 8 ». Au
-> premier rang, une fillette brandit une lampe allumée ; derrière elle, un grand-père à l'écharpe olive.
-> *Verso :* « Le jour où on a fermé la porte. Lila a voulu garder sa lampe allumée sur la photo.
-> Elle dit que le noir, ça se surveille. — Firmin »
+**📝 `poster_rule` — Affiche, à côté de la porte**
+> RÈGLE N° 1
+> Aucun mordu ne franchit la porte. Pas d'exception.
+> — Les fondateurs
+
+**📷 `photo_inauguration` — Photo de la guérite** *(dormant)*
+> *Recto :* trente personnes devant la porte neuve. Au premier plan, quelqu'un de dos, en blouse,
+> une valise marquée d'un triangle à la main.
+> *Verso :* « Jour de la porte. »
 
 ### ZONE EXTÉRIEURE
 
-**📝 `note_convoy` — Bordereau de livraison**
-> Convoi des Trois-Chênes. Livraison : 40 piles, 12 sacs de farine, du fil de cuivre.
-> Réception : REFUSÉE. Motif : « Quarantaine. Repassez. » (tampon de l'intendance)
-> Au crayon, en dessous : « J'attends ici. Ils changeront d'avis. — Anselme »
+**📝 `note_expedition` — Feuille d'expédition** *(sur le guetteur)*
+> Expédition aux épaves, pièces pour le régulateur. Retour à la nuit tombée.
+> Sgt Bérard : RAS. Marceau (technique) : RAS.
+> Guetteur : mordu. Laissé dehors, règle n° 1. — B.
 
 ### GÉNÉRATRICE
 
-**📝 `note_generator` — Journal de maintenance** (existant, inchangé)
+**📝 `note_generator` — Journal de maintenance** *(canon)*
 > Le régulateur réclame trois pièces. On en a vu traîner dans les épaves, dehors, et dans la
 > serre. Après ça, elle repart au quart de tour. Normalement.
 
+**📝 `note_torn_imprint` — Empreinte de la page arrachée** *(loupe)*
+> …Marceau, retour d'expédition : avant-bras bandé. Tient mal la clé.
+> Il dit que c'est la tôle. On n'a pas de tôle, aux épaves…
+
 **📝 `note_shed_left` — Consigne de délestage (moitié gauche)** *(énigme 2)*
-> APRÈS UN REDÉMARRAGE, remettre les circuits un par un :
-> – Jamais la SERRE en premier : les ventilos tirent trop.
-> – L'INFIRMERIE passe juste après la
-> *(la feuille est déchirée ici)*
+> APRÈS UN REDÉMARRAGE, un circuit à la fois :
+> – Jamais le CONTRÔLE en premier : la console tire trop.
+> – L'INFIRMERIE passe juste après la *(déchiré)*
 
 ### SÉCURITÉ
 
 **📝 `note_shed_right` — Consigne de délestage (moitié droite)** *(énigme 2)*
-> *(déchirée à gauche)*
-> CAFÉTÉRIA.
+> *(déchiré)* CAFÉTÉRIA.
 > – Les DORTOIRS toujours avant la cafétéria : les petits dorment.
-> – La SERRE à la fin. Si on ose.
+> – Le CONTRÔLE en dernier.
 
-**📝 `note_guard_log` — Registre de garde**
-> 22 h 00 : descente ordonnée par l'intendante.
-> 22 h 40 : tous les résidents à l'étage 2, dans l'ordre. Porte du bas scellée. RAS.
-> *(Autre encre, écriture tremblée :)* Pas tous. Pardon.
-> — Sgt. Bérard
+**📝 `note_terminal_postit` — Post-it sur le terminal de Bérard** *(énigme 3)*
+> Mot de passe : le nom de celui que je n'aurais jamais laissé dehors.
 
-**📷 `photo_cam3` — Capture de la caméra 3** *(sur l'écran, au retour du courant)*
-> *Image :* couloir des dortoirs, en noir et blanc. Une petite silhouette en pyjama, une lampe à la
-> main, pousse le mur du fond.
-> *Horodatage :* NUIT DE LA DESCENTE — 23 h 52. CAM 3 — DORTOIRS.
+**📝 `terminal_log` — Journal du poste** *(après l'énigme 3)*
+> J−12. Retour d'expédition. M. entre avec moi. Personne ne saura.
+> Orage. 1 h 50, canal 2, Dr O. : « À l'aube, on le sort. Règle n° 1. » J'ai dit oui.
+> 2 h 00 : RAS. 2 h 15 : alarme infirmerie.
+> Lendemain : version officielle avec le Dr O. : la porte de service.
 
 ### HUB CENTRAL
 
-**📷 `photo_residents` — Tableau des résidents**
-> *Recto :* trente portraits punaisés. Cinq sont barrés d'une croix **pâle** : Firmin, Bastien,
-> Edmée, Rémi, Josette. Un sixième, Gaspard, est barré en **rouge**.
-> *En bas, d'une écriture nette :* « Liste T. Restent en haut jusqu'à nouvel ordre. — C. »
+**📝 `poster_notice` — Avis à tous**
+> AVIS À TOUS. Pendant l'orage, des mordus sont entrés par la porte de service.
+> Le Dr Okafor et le Sgt Bérard organisent la descente vers l'étage 2.
+> Ne prenez que le nécessaire. Ne remontez pas.
 
 ### CAFÉTÉRIA
 
-**📝 `note_cafeteria` — Menu du jour** (existant, inchangé)
+**📝 `note_cafeteria` — Menu du jour** *(canon)*
 > Pêches en conserve. Encore. Et quelqu'un pique les piles dans l'entrepôt : on les compte,
 > maintenant.
 
-**📝 `note_calendar` — Calendrier de la cuisine** *(énigme 1)*
-> Lundi : pêches. Mardi : pêches. *(griffonné :)* Gaspard → chambre froide, ordre de C.
-> Mercredi : pêches. Jeudi : on descend. Vendredi : *(rien)*.
-> — Bastien
+**📝 `note_cook_postit` — Post-it de Cuisine** *(énigme 1)*
+> Code de l'armoire à piles : ce qu'on mange ENCORE.
+> (Comme ça, même le commis s'en souviendra.)
+
+**📝 `note_tray_ticket` — Ticket de plateau** *(sur le commis)*
+> Plateau — chambre 1. Le poser devant la porte, frapper deux fois.
+> NE PAS ENTRER. — Dr O.
 
 ### ENTREPÔT
 
-**📝 `note_storage` — Liste de Lila** (existant, inchangé : c'est l'indice du mur creux)
+**📝 `note_storage` — Liste de Lila** *(canon ; indice du mur creux)*
 > J'ai caché la clé de l'étage 2 là où personne ne dort plus. Au fond des dortoirs, le mur sonne
 > creux, à côté du dernier lit. Poussez fort.
 
-**📝 `note_inventory` — Inventaire de Gaspard** *(énigme 1)*
-> Étagère du fond, dans l'ordre : pêches · haricots · soupe.
-> Lundi : 9 · 4 · 6 *(barré, « recompté »)*
-> Mardi : 7 · 2 · 5
-> Mercredi : 5 · 1 · 3 — Piles : 0. ENCORE. — G.M.
-
-### DORTOIRS
-
-**📝 `note_lila_notebook` — Cahier de Lila, « Mes observations »**
-> Quand la veilleuse est allumée, Papi Firmin ne se lève pas.
-> Quand elle s'éteint, il marche jusqu'à la porte et il dit des noms de légumes.
-> Conclusion : il faut des piles. Beaucoup. J'en emprunte à l'entrepôt, je les rendrai.
-
-**📷 `photo_family` — Photo sur le lit de Lila**
-> *Recto :* Lila sur les épaules de Papi Firmin, et une grande fille au bonnet olive qui fait la grimace : Lou.
-> *Verso :* « Pour Lou, quand elle viendra me chercher. Le bonnet, c'est Mamie qui l'a tricoté.
-> Pareil que l'écharpe de Papi, comme ça tu le reconnaîtras. »
-
-### ATELIER
-
-**📝 `note_nightlights` — Bon de fabrication**
-> Veilleuses n° 1 à 8, montées par L., 11 ans, sous ma surveillance.
-> Piles : « fournies par L. ». Je n'ai pas posé de questions.
-> Elle soude mieux que moi. — Rémi, technicien
+**📝 `note_battery_count` — Feuille de comptage** *(dans l'armoire, énigme 1)*
+> Lundi : 31. Mardi : 27. Mercredi : 23. Il en manque 4 par nuit.
+> Nuit de l'orage, 2 h 10 : cadenas vérifié. Aucune sortie.
+> La petite est venue en demander une, ce soir. J'ai dit non. — Cuisine
 
 ### INFIRMERIE
 
-**📝 `note_infirmary` — Rapport médical n° 12** (existant, inchangé)
+**📝 `note_infirmary` — Rapport médical n° 12** *(canon)*
 > Les mordus supportent mal la lumière vive : un faisceau en pleine face les fige quelques
 > secondes. Gardez vos lampes chargées. Bandages pour les égratignures, trousses pour le reste.
 
-**🎙️ `audio_okafor_1` — Dictaphone du Dr Okafor, piste 1**
-> « Patient 7. Bastien, cuisinier. Aucune morsure. Aucune.
-> Pourtant il marche la nuit, les yeux ouverts, et il ne me reconnaît pas.
-> Arrêtons de dire “mordus”, s'il vous plaît. Ils dorment debout. »
+**📝 `note_infirmary_map` — Plan de l'infirmerie** *(au mur)*
+> Lits 1 à 6. Pharmacie. Bureau du Dr Okafor.
+> Chambre 1 : CONDAMNÉE (humidité). Ne pas déplacer l'armoire.
 
-**🎙️ `audio_okafor_2` — Dictaphone du Dr Okafor, piste 2** *(dans le tiroir, débloqué par D1)*
-> « Même poussière pâle dans les bronches de tous les patients.
-> Une poussière fine, presque jolie. J'ai vu la même… sur les feuilles, à la serre.
-> Je vais vérifier ce soir. *(Toux.)* Non. Demain. Pas la nuit. »
+**📝 `note_nurse` — Mot de l'infirmier** *(sur l'infirmier mordu)*
+> Dr O. dort enfin. Je garde.
+> 2 h 10 : quelqu'un vient dans le couloir, avec une lampe.
+> Ça doit être la petite, avec les piles.
 
-**🎙️ `audio_okafor_3` — Dictaphone du Dr Okafor, piste 3** *(donnée par Josette)*
-> « Je descends avec eux : en bas aussi, il y en a qui toussent.
-> Josette refuse de laisser ses malades. Têtue comme une mule. Merci, Josette.
-> À qui trouvera ceci : la lumière les garde endormis. Ne leur faites pas de mal. »
+**📝 `note_lila_2` — Liste de Lila n° 2** *(panier vide, bureau d'Okafor)*
+> Pour le Dr O. :
+> 1. Quatre piles par nuit, pour les deux lampes de la chambre 1.
+> 2. Ne rien dire à Cuisine.
+> 3. Ce soir : armoire fermée. Plus rien.
+
+**📝 `note_room1_file` — Dossier de la chambre 1** *(dans la chambre 1)*
+> Rapport n° 1 : patient M., morsure à l'avant-bras. Même forme que dans le vieux dossier du fond. *(dormant)*
+> Rapport n° 7 : sous deux lampes, il reste assis. Il se calme quand *elle* lui parle.
+> Rapport n° 11 : il ne parle plus. Il ne grogne plus. Plus aucun bruit. — Dr O.
+
+**📝 `note_notice_draft` — Brouillon de l'avis** *(tiroir d'Okafor, débloqué par déduction)*
+> AVIS À TOUS. Pendant l'orage, des mordus sont entrés par la porte de service…
+> *(En marge :)* B. — c'est mieux ainsi. Personne ne doit savoir pour M.
+
+### ATELIER
+
+**📷 `photo_inseparables` — Photo du casier de Marceau** *(débloqué par déduction)*
+> *Recto :* Bérard et Marceau, couverts de cambouis, hilares, devant la génératrice.
+> *Verso :* « Mes deux inséparables. — N. »
 
 ### SALLE DE CONTRÔLE
 
-**📝 `note_control` — Relève radio** (existant, inchangé : c'est la version officielle, fausse)
+**📝 `note_control` — Relève radio** *(canon)*
 > L'émetteur a grillé pendant l'orage. Un module de rechange se bricole à l'atelier avec deux
 > pièces, puis il suffit de l'enficher dans la console.
+> — Opératrice de nuit
 
-**📝 `note_postit` — Post-it sur le terminal** *(énigme 3)*
-> Mot de passe : ce qu'on a VRAIMENT planté en premier.
-> Pas ce que dit la plaque.
+**📝 `note_radio_logbook` — Cahier de relève de nuit**
+> 1 h 40 : RAS. 1 h 50 : canal 2 (Dr O. / Sgt B.).
+> 2 h 00 : orage, coupure.
+> 2 h 20 : RAS.
 
-**📝 `terminal_journal` — Journal de l'intendance** *(après l'énigme 3)*
-> **J−45.** Troisième rapport Rousseau. Classé. On ne brûle pas notre seule récolte.
-> **J−10.** Module radio retiré, fréquence du bas changée. Le hameau enverrait des curieux. Version officielle : l'orage.
-> **J−3.** Descente ce soir. La Liste T reste en haut. Lila a pris le double de la clé. Elle ne sait pas ce qu'elle fait. — C.
+### DORTOIRS
 
-**📷 `photo_list_t` — Liste T originale** *(dans le tiroir de Corbière, débloqué par D7)*
-> *Recto :* une feuille dactylographiée, deux colonnes « Nom » et « Motif ».
-> Firmin — toux. Bastien — toux. Edmée — toux. Rémi — toux. Josette — toux.
-> Gaspard — *(au stylo rouge)* « exemple ». Signé : C.
+**📝 `note_lila_3` — Liste de Lila n° 3** *(sous un oreiller)*
+> Nuit de l'orage.
+> 1. Plus de piles. Ma lampe aussi est morte.
+> 2. 2 h 05 : une lampe VERTE passe dans le couloir est. Pas un bruit.
+> 3. Le lendemain : je frappe à la radio. Personne. Mais du vert sous la porte.
+> 4. Quelqu'un sait, et ne dit rien.
 
 ### SERRE
 
-**📝 `note_edmee_log` — Carnet de culture d'Edmée**
-> Lot 8-0, sorti de la réserve d'en bas. Je l'appelle Lune-pâle.
-> Il pousse dans le noir et nourrit trente bouches. Un miracle.
-> La nuit, il souffle une poussière fine. Le jour, sous les lampes : rien. Je surveille.
-
-**📷 `photo_first_harvest` — La première récolte** *(énigme 3)*
-> *Recto :* Edmée et une femme au chignon serré se serrent la main au-dessus d'une caisse de
-> champignons pâles. Sur le mur, pas encore de plaque.
-> *Verso :* « Notre vraie première plantation, avant l'inauguration. LUNE-PÂLE. Chut ! — E. »
-
-**📝 `note_edmee_report` — Brouillon de rapport** *(bureau d'Edmée, débloqué par D6)*
-> Madame l'intendante,
-> les spores de Lune-pâle passent dans la ventilation des dortoirs, la nuit. Il faut tout brûler.
-> Je vous l'ai déjà écrit deux fois. Je vous en supplie. — Edmée Rousseau
+**📝 `note_lila_4` — Liste de Lila n° 4**
+> Pour rallumer l'étage : 3 pièces.
+> 1. Une dans la serre. 2. Deux dans les épaves, dehors.
+> 3. Les poser près de la porte de service. Avant la nuit.
+> Si je reviens pas : la clé est où j'ai dit.
 
 ### PIÈCE CACHÉE
 
-**📝 `note_secret` — Dernier mot** (existant, **retouche légère proposée**)
-> Si tu lis ça, tu as trouvé ma cachette. Les autres sont descendus, moi aussi, je redescends.
-> Prends la clé, Lou. Et ne fais pas confiance au silence.
+**📝 `note_secret` — Dernier mot** *(canon)*
+> Si tu lis ça, tu as trouvé ma cachette. Les autres sont descendus. Prends la clé, et ne fais pas
+> confiance au silence.
 > — Lila
 
-**📝 `note_knock` — Dessin « Pour descendre »**
-> *(Dessin d'un escalier, d'une porte, de deux bonshommes avec des lampes.)*
-> La porte du bas est fermée de l'autre côté. Frappe 3 coups, puis 2.
-> C'est notre signal, à Docteur Okafor et moi. — L.
+### RADIO (après la réparation)
 
-### RADIO (salle de contrôle, après réparation + fréquence)
+**🎙️ `audio_below` — La voix qui grésille** *(après le message canon)*
+> « …ici l'étage 2… Dr Okafor… L'étage 1 est condamné. Ne descendez pas.
+> Lila ? Lila, si tu m'entends… tu n'es jamais arrivée. Pardon. »
 
-**🎙️ `audio_radio_below` — Fréquence 8.08**
-> *Voix posée, adulte :* « Ici l'intendance, étage 2. Le silo est en quarantaine. Restez où vous
-> êtes. Ne descendez pas. Je répète : ne des— »
-> *(Grésillement. Une petite voix, tout près du micro :)* « Lou ? C'est toi ? Prends la clé. Viens. »
-> *(Coupure.)*
+**🎙️ `audio_tapping` — Le signal** *(traduit par l'opératrice)*
+> Des bips tapés à la main : · · · – / · · / · / – · / · · ·
+> **V · I · E · N · S**
 
 ---
 
-## 10. Les énigmes
+## 14. Les énigmes
 
-### Énigme 1 — Le cadenas de la chambre froide (CAFÉTÉRIA)
+Chacune s'ouvre avec **une information**, pas un objet.
 
-- **Problème :** cadenas à **3 molettes** sur la chambre froide. Gaspard est derrière.
-- **Ce que dit Gaspard :** « Elle met toujours comme code le nombre de boîtes qui restaient le jour
-  où elle a fait le coup. Pêches, haricots, soupe, dans l'ordre de l'étagère. Moi, j'ai perdu le
-  compte des jours, ici dedans. »
-- **Indices :** calendrier de la cuisine → enfermé **mardi** (confirmé par le bon de cuisine sur
-  Bastien) ; inventaire de l'entrepôt → mardi = **7 · 2 · 5**.
-- **Solution : 725.**
-- **Pièges :** lundi (946) est barré ; mercredi (513) est la ligne la plus récente, celle que prend
-  le joueur pressé.
-- **Erreur :** Gaspard soupire « Non. Et arrête de faire du bruit, ça les attire. » Bastien se
-  tourne vers le bruit (pas d'autre punition).
-- **Récompense :** Gaspard libre, son témoignage, sa petite quête.
+### Énigme 1 — L'armoire à piles (ENTREPÔT)
 
-### Énigme 2 — L'ordre des leviers de délestage (GÉNÉRATRICE)
+- **Problème :** l'armoire à piles a un cadenas **à lettres** (6 molettes).
+- **Indices en pleine vue :** le post-it de Cuisine (« ce qu'on mange ENCORE ») ; le menu du jour,
+  canon, lu dès le début : « Pêches en conserve. **Encore.** »
+- **Solution : PECHES.**
+- **Erreur :** pensée « Qu'est-ce qu'on mange *encore* et *encore*, ici ? »
+- **Récompense :** 3 piles, une trousse, et la **feuille de comptage** (alibi de Cuisine, et preuve
+  qu'il a refusé une pile à Lila).
 
-- **Problème :** après la relance, un tableau de 4 leviers remet le courant dans **DORTOIRS**,
-  **CAFÉTÉRIA**, **INFIRMERIE**, **SERRE**. Le box d'isolement de l'infirmerie reste fermé tant
-  que les leviers ne sont pas remis dans le bon ordre.
-- **Indices :** moitié gauche de la consigne (génératrice), moitié droite (sécurité), traits à la
-  craie « D C I » à moitié effacés (secours).
-- **Déduction :** dortoirs avant cafétéria ; infirmerie juste après cafétéria ; serre à la fin.
-- **Solution : DORTOIRS → CAFÉTÉRIA → INFIRMERIE.** Le 4ᵉ levier (serre) est **permis** mais
-  relance les ventilateurs : tous les endormis gémissent une fois et pressent le pas. Le laisser
-  baissé : pensée « J'ai laissé la serre éteinte. Edmée aurait voulu ça. »
-- **Erreur :** disjonction, 3 secondes de noir, grand bruit métallique ; Bérard se tourne vers le
-  tableau ; les leviers retombent.
-- **Récompense :** le box d'isolement s'ouvre (Josette) ; lumières de l'infirmerie.
+### Énigme 2 — L'ordre des leviers (GÉNÉRATRICE)
 
-### Énigme 3 — Le mot de passe du terminal de Corbière (SALLE DE CONTRÔLE)
+- **Problème :** après la relance, 4 leviers remettent le courant dans **DORTOIRS**, **CAFÉTÉRIA**,
+  **INFIRMERIE**, **CONTRÔLE**. Le circuit CONTRÔLE alimente l'interphone et la serrure du local technique.
+- **Indices :** une moitié de consigne à la génératrice, l'autre à la sécurité ; en secours, des traits
+  à la craie « D C I C » à moitié effacés.
+- **Solution : DORTOIRS → CAFÉTÉRIA → INFIRMERIE → CONTRÔLE.**
+- **Erreur :** le disjoncteur claque, 3 secondes de noir, un grand bruit : Marceau se tourne vers le
+  tableau, **sans un son**. Les leviers retombent. Pas d'autre punition.
+- **Récompense :** l'interphone du local technique se rallume ; l'opératrice reparle.
 
-- **Problème :** le terminal de l'intendante demande un mot de passe.
-- **Indices :** post-it (« pas ce que dit la plaque ») ; plaque de la serre (leurre « tomates »,
-  anciens trous, « LUNE-P… » gravé dessous) ; photo de la première récolte ; étiquette sur Edmée.
-- **Solution : LUNEPALE** (accepter « lune-pâle », « lune pale », majuscules ou non).
-- **Erreur « TOMATES » :** pensée « Évidemment. C'est ce qu'elle voulait que tout le monde croie. »
-  Autre erreur : « Non. Ce qu'on a planté *vraiment* en premier… »
-- **Récompense :** journal de l'intendance.
+### Énigme 3 — Le terminal de Bérard (SÉCURITÉ)
+
+- **Problème :** le terminal du poste demande un mot de passe.
+- **Indices :** le post-it (« celui que je n'aurais jamais laissé dehors ») ; la feuille d'expédition
+  (le guetteur a été laissé dehors, Marceau est entré) ; la photo des inséparables ou le bracelet.
+- **Solution : MARCEAU.**
+- **Fausses réponses :** « GUETTEUR » → « Non. Celui-là, il l'a laissé dehors. » ; « OKAFOR » →
+  « Elle n'est jamais sortie. Il parle de quelqu'un qu'il aurait dû laisser dehors. »
+- **Récompense :** le journal du poste.
 
 ---
 
-## 11. Les survivants : dialogues et petites quêtes
+## 15. Les survivants : dialogues et petites quêtes
 
-Dialogues **écrits à l'avance** (arbre court). Entre crochets : les choix du joueur.
+Dialogues écrits à l'avance. Entre crochets : les choix du joueur.
 
-### Gaspard Mollet — la chambre froide
+### Cuisine — la chambre froide (CAFÉTÉRIA)
 
-**Avant l'énigme 1 (à travers la porte)**
-> **Gaspard :** Toc toc toc… Y a quelqu'un ? Quelqu'un qui *parle*, je veux dire ?
-> **[Lou] Je suis là. Qui êtes-vous ?**
-> **Gaspard :** Gaspard. Le magasinier. Enfin, l'ex-magasinier, le voleur officiel de piles.
-> J'ai rien volé, moi. Elle m'a bouclé ici mardi. Le cadenas a un code… et je sais comment elle les choisit.
-> *(→ il donne l'indice de l'énigme 1)*
+**À travers la porte**
+> **Cuisine :** Toc toc toc… Si t'es un mordu, t'es très poli. Dis-moi un truc qu'un vivant dirait.
+> **[Bricoleur] J'ai faim, et j'en ai marre des pêches.**
+> **Cuisine :** *(Rire étouffé.)* Ça, c'est un vivant. *(Clic.)* Entre, vite. Ferme derrière toi.
 
-**Après l'ouverture**
-> **Gaspard :** Ah, la lumière… Doucement, ma cheville a pris un coup. Merci, petite. Tu viens d'où ?
-> **[Lou] Des Trois-Chênes. Je cherche ma sœur, Lila.**
-> **Gaspard :** La gamine aux lampes ? Descendue, avec ceux de la bonne liste. Corbière comptait
-> les gens comme mes boîtes de conserve. Et elle est passée la *première*, dans l'escalier. Le
-> sergent a dû noter le contraire, je parie.
-> **[Lou] Pourquoi vous a-t-elle enfermé ?**
-> **Gaspard :** Il fallait un voleur. Les piles disparaissaient, les gens avaient peur la nuit…
-> Un voleur, ça rassure. Trouve qui les a prises, et je te dirai merci deux fois.
-> **[Lou] Bastien vous apportait à manger ?**
-> **Gaspard :** Des pêches, par le soupirail. Toujours des pêches. *(Il sourit malgré lui.)* Brave garçon.
+**Une fois dedans**
+> **Cuisine :** Tout le monde m'appelle Cuisine, alors… Cuisine. T'es pas d'ici, toi.
+> **[Bricoleur] Qu'est-ce qui s'est passé ?**
+> **Cuisine :** L'orage. La porte de service. C'est ce qu'ils ont affiché. Moi, j'étais à l'entrepôt,
+> à compter mes piles, quand ça a crié. Je me suis enfermé ici. Depuis, je compte les pêches.
+> **[Bricoleur] Qui a écrit « pas tous » sur la porte ?**
+> **Cuisine :** La petite Lila, sûrement. Elle est venue taper ici. J'ai pas ouvert. J'avais peur.
+> **[Bricoleur] Qui volait les piles ?**
+> **Cuisine :** Elle aussi. Je l'ai vue. J'ai mis un cadenas, et ce soir-là elle est venue m'en
+> réclamer une. J'ai dit non. *(Il regarde ses mains.)* Une gamine qui vole, ça se punit, non ?
 
-**Petite quête : « Le voleur de piles »**
-1. Lui apporter un bandage ou une trousse (la cheville).
-2. Faire la déduction D3 au tableau, puis revenir lui parler :
+**Petite quête : « Pour qui, les piles ? »**
+1. Lui donner **1 bandage** (dilemme : c'est le seul de l'infirmerie).
+2. Établir au tableau que les piles allaient à la chambre 1, puis revenir :
 
-> **[Lou] C'était Lila. Pour des veilleuses. Pour que Papi Firmin ne marche pas la nuit.**
-> **Gaspard :** *(Long silence.)* …La petite futée. Elle aurait pu demander. Je lui aurais donné
-> tout le carton. *(Il renifle.)* Tiens. La clé du casier du fond, à l'entrepôt. Ma réserve
-> personnelle. Prends ce qu'il te faut, et va la chercher.
+> **[Bricoleur] Elle ne volait pas pour elle. C'était pour les lampes d'Okafor.**
+> **Cuisine :** *(Long silence.)* …Et j'ai fermé l'armoire. Le soir même.
+> **[Bricoleur] Quelqu'un a ouvert la porte. Ce n'est pas vous qui l'avez ouverte.**
+> **Cuisine :** *(Il sort une clé.)* La réserve, derrière les fourneaux. Prends ce qu'il te faut. Et
+> trouve qui a ouvert. J'ai besoin de savoir.
 
-- **Récompense :** clé du casier de l'entrepôt (2 piles, 1 trousse, 1 ferraille) ; à la fin,
-  une lanterne allumée posée devant l'escalier (« pour que tu retrouves le chemin, en remontant »).
-- **S'il n'est pas délivré :** on l'entend frapper à chaque passage. La fin le mentionne (§ 13).
+- **Récompense :** clé de la réserve (2 piles, 1 trousse, 1 boîte de clous).
 
-### Josette Varenne — le box d'isolement
+### L'opératrice de nuit — le local technique (SALLE DE CONTRÔLE)
 
-**Avant l'énigme 2 (à travers la vitre)**
-> **Josette :** *(Elle tapote la vitre.)* Bonsoir ! Enfin… bonjour ? On perd la notion, ici.
-> Le loquet est électrique, ma belle. Il faut remettre le circuit de l'infirmerie, à la
-> génératrice. Et dans l'ordre, sinon tout saute. C'est Bérard qui avait la consigne.
+**Avant l'énigme 2 :** silence total. Une lueur verte qui s'éteint quand on approche (d7).
 
-**Après l'ouverture**
-> **Josette :** Ah ! Une vraie personne, avec des joues ! Excuse-moi, je tousse. Ce n'est rien.
-> **[Lou] C'est vous, la silhouette au peignoir ? Le thermos ?**
-> **Josette :** Coupable. Il me faut mon café, et des piles. Tant que j'ai de la lumière, je ne
-> m'endors pas. Pas comme eux. *(Elle regarde vers la porte.)* Ils ne sont pas méchants, tu sais.
-> Ils sont perdus dans un rêve qui n'est pas le leur.
-> **[Lou] Vous êtes l'opératrice radio. Que s'est-il passé avec l'émetteur ?**
-> **Josette :** *(Elle baisse les yeux.)* L'orage… Il n'y a pas eu d'orage, cette nuit-là. C'est
-> l'intendante qui m'a dicté ce que je devais écrire. J'ai obéi. J'ai honte.
-> **[Lou] Et la fréquence d'en bas ?**
-> **Josette :** Elle l'a changée. Rémi la notait toujours sur son poignet, ce grand distrait.
-> Regarde son bras, si tu oses t'approcher.
+**Après l'énigme 2**
+> **Opératrice :** *(Par l'interphone.)* …Le courant ? Vous êtes celui que j'ai entendu, à la
+> guérite ? *(Clic.)* Je suis restée coincée depuis l'orage. Le courant, la serrure… vous voyez.
+> **[Bricoleur] Qui êtes-vous ?**
+> **Opératrice :** L'opératrice de nuit. Mon nom… ça fait longtemps que plus personne ne l'utilise.
+> *(Elle tourne son alliance.)*
+> **[Bricoleur] La radio peut-elle remarcher ?**
+> **Opératrice :** L'émetteur a grillé pendant l'orage. Je l'ai écrit sur la relève. Un module, à
+> l'atelier. Si vous le réparez, ils nous entendront, en bas. Il faut qu'ils m'entendent.
 
-**Petite quête : « Garder la lumière »**
-1. Lui donner **1 pile** (vraie dépense : un choix).
-2. Lui rapporter **son thermos** (resté à la génératrice).
+**Petite quête : « La voix d'en bas »**
+1. Lui donner **1 pile** (dilemme : « Je ne supporte plus le noir. »).
+2. Réparer la radio (objectif 4) et écouter avec elle.
 
-> **Josette :** Mon thermos ! Tu es un ange avec une clé à molette. Tiens, en échange.
-> *(Elle tend une cassette.)* La dernière piste du docteur. Il me l'a laissée avant de descendre.
-> Et quand tu auras réparé la radio, appelle-moi sur ce combiné : j'écouterai avec toi.
+**Ses répliques-indices (fair play)** :
+- Si on parle du mordu de la génératrice avant d'avoir dit qu'il ne grogne pas :
+  > **Opératrice :** Il ne fait aucun bruit, n'est-ce pas ? *(Elle se reprend.)* C'est ce qu'on dit d'eux.
+- Si on parle de Marceau :
+  > **Opératrice :** Il réparait tout. Il sifflait en travaillant. Il… sifflait, oui.
+- Si on montre l'éclat vert :
+  > **Opératrice :** Du verre. Il y en a partout, depuis l'orage.
 
-- **Récompense :** `audio_okafor_3`. Après le message radio, Josette commente : « La première,
-  c'est Corbière, j'en mettrais ma main au feu. La deuxième… Lou, la deuxième, c'est ta sœur. »
+**Après l'accusation juste (elle confirme ce que le joueur a établi)**
+> **Opératrice :** *(Elle pose sa lampe verte sur la console.)* Il m'appelait « ma Nuit ».
+> J'ai entendu : « À l'aube, on le sort. » Je voulais juste lui dire au revoir.
+> La porte s'est ouverte toute seule. Il était si calme, sous le vert… et la pile est morte.
+> Lila a frappé à ma porte, après. Je n'ai pas répondu. Le silence, c'était moi aussi.
+> **[Bricoleur] Venez avec moi, en bas.**
+> **Opératrice :** Non. Quelqu'un doit rester à la radio, pour dire la vérité à ceux d'en bas. Va, mon garçon.
+
+**Après une accusation fausse :** elle reste aimable. Le joueur peut descendre sans avoir trouvé.
 
 ---
 
-## 12. Le tableau d'enquête et les déductions
+## 16. Le tableau d'enquête
 
-### Le principe
+### Les deux gestes
 
-Un onglet **TABLEAU** dans le carnet : un panneau de liège. Chaque document lu, objet examiné en
-gros plan ou trace révélée devient une **carte punaisée**. Le joueur sélectionne **deux cartes** :
+Un onglet **TABLEAU** dans le carnet. Le jeu remplit les **cartes** tout seul (chaque document, gros
+plan, trace, réplique). Le joueur, lui, assemble. Deux gestes :
 
-- **Bonne liaison :** un fil rouge relie les cartes, une **carte de déduction** apparaît (écrite
-  par Lou), et **quelque chose se débloque** dans le monde (passage, tiroir, objet, dialogue,
-  action). Une déduction peut servir de carte pour la suivante.
-- **Mauvaise liaison :** **aucune punition**. Lou a une pensée qui fait réfléchir (et oriente
-  souvent vers la bonne carte). Les cartes restent disponibles.
+1. **« Ça ne colle pas »** : glisser une carte sur une autre pour signaler une **contradiction**. Si elle
+   est juste : fil rouge, petite déduction, et souvent **quelque chose s'ouvre**.
+2. **Phrases à trous** : les grandes conclusions sont des phrases à compléter avec une **banque de
+   mots**. Un mot n'apparaît dans la banque **qu'après avoir trouvé l'indice** qui le contient. La phrase
+   n'est validée que **toute entière** ; si une ou deux cases sont fausses : « Presque… un détail
+   cloche. » Aucune pénalité.
 
-### La liste complète, dans l'ordre logique
+### Les contradictions (et ce qu'elles débloquent)
 
-L'ordre n'est imposé que par les flèches « nécessite » : le joueur peut faire D1, D2, D3, D4 et D9
-dans l'ordre qu'il veut, selon l'aile qu'il explore d'abord.
+| # | Carte A | ↔ Carte B | → Déduction | → Ce qui s'ouvre |
+|---|---|---|---|---|
+| **X1** | Avis officiel | Seuil de la porte de service (UV) | « Personne n'est entré par la porte de service. » | La traînée de l'infirmerie (c2) devient un repère : l'armoire. |
+| **X2** | Plan de l'infirmerie (« condamnée ») | Ticket de plateau **ou** habitude du commis | « On nourrissait quelqu'un dans une chambre condamnée. » | **L'armoire se pousse** : chambre 1. *(X1 ou X2 suffit.)* |
+| **X3** | Feuille d'expédition (« RAS ») | Empreinte de la page arrachée | « Marceau était blessé au retour. Bérard a menti. » | Le **casier de Marceau** (atelier). |
+| **X4** | Avis officiel | Brouillon de l'avis | « L'avis a été écrit pour cacher “M.” » | La **phrase C2** gagne le mot « mensonge ». |
+| **X5** | Mot de l'infirmier (« la petite ») | Liste de Lila n° 3 (« ma lampe est morte ») | « Ce n'était pas Lila. » | Lila sort de la liste des suspects. |
+| **X6** | Opératrice : « coincée » | Loquet fermé de l'intérieur | « Elle n'était pas coincée. Elle se cachait. » | Nouvelle question à lui poser (« Pourquoi vous cacher ? ») : elle détourne la conversation. |
+| **X7** | Relève radio (canon), signée « Opératrice de nuit » | Alliance « à ma Nuit » **ou** photo « — N. » | « “Ma Nuit”… c'est elle, sa femme. » | Le mot « femme » dans la banque. |
 
-| # | Indice A | + Indice B | → Déduction (carte de Lou) | → Ce que ça débloque | Nécessite |
-|---|---|---|---|---|---|
-| **D1** | Rapport médical n° 12 | Dictaphone, piste 1 | **« Ils dorment debout. »** Personne n'a été mordu : ce sont des malades, pas des morts. | Le **tiroir du bureau d'Okafor** (Lou comprend son étiquette « patients endormis ») : piste 2 + 1 trousse. | — |
-| **D2** | Cahier de Lila | Veilleuse n° 8 (gros plan, sur Firmin) | **« La lumière les rendort. »** Une veilleuse allumée garde un endormi au calme. | **Recette de veilleuse** à l'établi (1 ferraille + 1 pile) : posée près d'un endormi, elle le rendort durablement → on peut passer ou l'examiner tranquillement. | — |
-| **D3** | Menu du jour | Bon de fabrication **ou** carton de piles (lampe violette) | **« Le voleur de piles, c'était Lila. »** Gaspard est innocent. *(Fausse piste levée.)* | Nouvelle réplique pour Gaspard → **clé du casier** de l'entrepôt. | — |
-| **D4** | Relève radio (« l'orage ») | Sachet de vis (gros plan) | **« Ce n'est pas un orage. »** Quelqu'un a retiré le module exprès. *(Fausse piste levée.)* | Réplique d'**aveu de Josette** ; la console affiche « FRÉQUENCE : ? ». | — |
-| **D5** | D4 | Bracelet de Rémi (loupe) | **« La fréquence cachée : 8.08. »** | Une fois la radio réparée (objectif 4), le **réglage de la console** → message des deux voix (d12). | D4 |
-| **D6** | Carnet de culture d'Edmée | Traînées de poussière (lampe violette, hub ou dortoirs) **ou** dictaphone piste 2 | **« La poussière vient de la serre. »** La Lune-pâle souffle, la nuit, par la ventilation. | Le **volet de ventilation de la serre** (Lou sait quoi fermer) : Edmée s'assoit et se rendort ; le **bureau d'Edmée** s'ouvre (brouillon de rapport). | — |
-| **D7** | Brouillon de rapport d'Edmée | Journal de l'intendance (énigme 3) | **« Corbière savait. »** Trois rapports, tous classés. | Le **tiroir de Corbière** : Liste T originale. | D6, énigme 3 |
-| **D8** | Liste T originale | Registre de garde (+ ligne révélée) **ou** témoignage de Gaspard | **« On les a laissés en haut exprès. »** Et Gaspard n'était pas malade : « exemple ». | Pièce de la **révélation finale** ; nouvelle réplique de Gaspard (« Exemple… voilà ce que je valais. ») | D7 |
-| **D9** | Capture caméra 3 | Trousseau de Bérard (crochet vide) | **« Lila est remontée prendre le double. »** À 23 h 52, quand tout le monde était censé être en bas. | Les **étoiles invisibles** du hub deviennent une piste suivie sur la carte (repère « chemin de Lila »). | — |
-| **D10** | D9 | Dessin « Pour descendre » (ou ciel étoilé de la cachette) | **« Elle nous attend en bas. »** | L'action **Frapper 3 + 2** à l'escalier (d15) et la fin « signal ». | D9 |
-| **D11** | 5 endormis examinés | — (se pose seule) | **« Ils ont tous un nom. »** Lou ne dira plus « zombies ». | L'interface remplace « mordus » par « endormis » ; pensée : « Bérard, Bastien, Edmée, Rémi… Papi. Je vais vous réveiller. Je ne sais pas comment, mais je vais le faire. » | — |
+### Les phrases à trous (les conclusions de l'étage)
 
-**Révélation finale** — se débloque quand **D6 + D7 + D8** sont au tableau :
+Chaque conclusion **obligatoire pour résoudre l'affaire** a **au moins trois indices, dans au moins
+deux pièces**. Deux suffisent pour trouver.
 
-> **LA VÉRITÉ SUR SILLO 8**
-> Le silo n'est pas tombé sous une attaque. Sa propre récolte l'a endormi.
-> La Lune-pâle de la serre souffle, la nuit, une poussière qui fait marcher les gens en rêvant.
-> L'intendante Corbière le savait. Pour garder sa récolte, elle a classé les rapports, coupé la
-> radio, renvoyé le convoi… puis elle a laissé en haut ceux qui toussaient, et un homme « pour l'exemple ».
-> Les « zombies » sont nos voisins. Et quelque part en bas dort la souche d'origine : le lot 8-0.
+**C1 — L'origine (couche 1)**
+> Les mordus ne sont pas entrés par **[la porte de service]**. Le premier est sorti de **[la chambre 1]**,
+> à **[l'infirmerie]**.
 
-Un compteur discret « Vérité : x / 11 » dans le carnet. La fin de l'étage change légèrement selon
-qu'on a la révélation et le signal (§ 13).
+- Indices : seuil UV (entrée) · traînée UV (infirmerie) · plan + ticket de plateau (infirmerie, cafétéria) · dossier de la chambre 1.
+- Débloque : le **tiroir d'Okafor** (brouillon de l'avis).
+
+**C2 — Le secret (couche 2)**
+> Le patient était **[Marceau]**, mordu pendant **[l'expédition]**. **[Bérard]** l'a fait entrer,
+> **[Okafor]** l'a gardé sous des lampes, et l'avis officiel est un **[mensonge]**.
+
+- Indices : bracelet (génératrice) · page arrachée (génératrice, couloir nord) · feuille d'expédition (extérieur) · journal du poste (sécurité) · dossier de la chambre 1 · brouillon (infirmerie).
+- Débloque : à la console, le **canal 2** ; la voix d'Okafor en entier après la réparation.
+
+**C3 — Les piles (couche 2)**
+> Les piles volées servaient aux **[lampes]** de la chambre 1. **[Lila]** les portait ; **[Cuisine]**
+> les a enfermées le soir de l'orage.
+
+- Indices : menu du jour (cafétéria) · liste de Lila n° 2 (infirmerie) · feuille de comptage (entrepôt) · témoignage de Cuisine.
+- Débloque : la réplique de Cuisine → **clé de la réserve**.
+
+**C4 — L'accusation (couche 3)** *(précédée du « Défi au joueur »)*
+> La nuit de l'orage, **[l'opératrice de nuit]** a ouvert la chambre 1 vers **[2 h 05]**, avec une lampe
+> **[verte]**. Elle était sa **[femme]**. Elle voulait lui **[dire adieu]**.
+
+- Banque de mots : les 5 suspects, plusieurs heures (1 h 50, 2 h 05, 2 h 14…), plusieurs couleurs, plusieurs liens, plusieurs mobiles (« le libérer », « le soigner », « dire adieu », « se venger »…).
+- Indices de la lampe verte : liste de Lila n° 3 (dortoirs) · éclat vert (chambre 1) · lampe ébréchée (contrôle) · lueurs vertes d3 et d7.
+- Indices de l'heure : liste de Lila n° 3 · cahier de relève (contrôle) · mot de l'infirmier (infirmerie).
+- Indices du lien : alliance (génératrice) · photo « — N. » (atelier) · signature canon (contrôle).
+- Indices du mobile : journal du poste (« à l'aube, on le sort ») · cahier de relève (canal 2 à 1 h 50) · dossier (« il se calme quand *elle* lui parle »).
+- Débloque : la **scène où elle confirme** (§ 15), et la ligne de fin « vérité trouvée ».
 
 ### Les pensées en cas d'erreur
 
-**Erreurs tentantes (réponses précises) :**
+**Erreurs précises :**
 
-| Liaison tentée | Pensée de Lou |
+| Erreur | Pensée du héros |
 |---|---|
-| Bordereau + Rapport n° 12 | « Le convoi aurait apporté la maladie ? Anselme n'est jamais entré. Ça vient de l'intérieur. Regarde plutôt d'où vient le verre cassé. » |
-| Menu du jour + Inventaire de Gaspard | « Un voleur ne note pas “Piles : 0. ENCORE.” Gaspard se faisait voler, lui aussi. » |
-| Plaque de la serre + Post-it | « Trop facile. Le post-it dit justement : *pas* la plaque. » |
-| Relève radio + Rapport n° 12 | « La radio et les endormis… même nuit, mais pas même cause. Une radio, ça se démonte. Où sont les vis ? » |
-| Registre de garde + Photo de l'inauguration | « Trente personnes sur la photo. Mais “tous” ne veut pas dire “tous” pour tout le monde. Il me faut la liste. » |
-| Cahier de Lila + Bon de fabrication | « Oui, c'est Lila qui fabriquait les veilleuses. Mais le vol, c'est Gaspard qui l'a sur le dos. Qu'est-ce qui l'accuse ? » |
-| Trousseau de Bérard + Liste de Lila | « Le double a disparu, et Lila l'a caché. Mais *quand* l'a-t-elle pris ? Bérard dormait déjà ? » |
-| Carnet d'Edmée + Journal de l'intendance | « Edmée savait, Corbière savait… Mais est-ce qu'Edmée l'a *dit* ? Il me faudrait une lettre. » |
-| Bracelet de Rémi + Dessin de Lila | « 8.08, ce n'est pas un signal à frapper. C'est une fréquence. La radio, d'abord. » |
-| Veilleuse n° 8 + Rapport n° 12 | « La lumière les fige, ça je savais. Mais Lila a vu plus : *combien de temps* ça les calme. Son cahier ? » |
+| C4 avec **Lila** | « Sa lampe était morte, elle l'a écrit. Celle qui est passée avait une lampe allumée. » |
+| C4 avec **Cuisine** | « À 2 h 10, il comptait ses piles à l'entrepôt. On ne peut pas être aux deux bouts du silo. » |
+| C4 avec **Bérard** | « Il était à son poste, son journal le dit. Il a menti sur Marceau, pas sur ses heures. » |
+| C4 avec **Okafor** | « Elle dormait. Et elle écrit “*elle* lui parle”. C'est quelqu'un d'autre. » |
+| C4 avec « le libérer » | « Si elle voulait le libérer, pourquoi s'enfermer juste après ? » |
+| C1 avec « la serre » | « Rien ne luit dans la serre. La traînée part de l'infirmerie. » |
+| C2 avec « Okafor l'a fait entrer » | « Elle ne sortait jamais. Qui était à l'expédition ? » |
+| X sur Avis officiel + Rapport n° 12 | « La lumière et la porte de service, ça n'a rien à voir. Regarde le seuil, de près. » |
+| X sur Éclat vert + Lanterne de Lila | « La lanterne de Lila est blanche. Ce vert vient d'ailleurs. » |
 
-**Pensées génériques** (tirées au hasard pour toute autre liaison) :
+**Pensées génériques** (au hasard) :
 - « Non… ces deux-là ne se parlent pas. Pas encore. »
-- « Je force. Papi disait : “Quand ça ne rentre pas, change de vis, pas de tournevis.” »
-- « Il me manque un morceau. Peut-être une pièce que je n'ai pas fouillée. »
-- « Ça ne colle pas… pour l'instant. »
+- « Je force la pièce. Quand ça ne rentre pas, c'est que ce n'est pas la bonne. »
+- « Il me manque un morceau. Peut-être dans une pièce que je n'ai pas fouillée. »
 
-### Questions ouvertes (colonne fixe du tableau, vers l'étage 2)
+### La colonne « Questions sans réponse »
 
-- Qui parle à la radio, en bas : Corbière… ou quelqu'un qui se fait passer pour elle ?
-- Pourquoi la porte du bas est-elle scellée **de l'autre côté** ?
-- Où est passé Anselme ? Sa traînée s'arrête dans la serre.
-- Le lot 8-0 : la réserve d'en bas cache-t-elle le remède… ou un champ entier de Lune-pâle ?
-- Okafor : « en bas aussi, il y en a qui toussent ». Combien ?
-
----
-
-## 13. Fin de l'étage 1 et accroche vers l'étage 2
-
-1. Lou prend la clé dans la cachette ; la dernière veilleuse s'éteint (d14).
-2. Dans le couloir ouest, une porte claque ; les endormis gémissent tous une fois, au loin.
-3. À l'escalier : si Gaspard est libre, sa lanterne est posée sur la première marche.
-4. Si D10 est faite, Lou peut frapper **3 + 2**. Silence… puis **3 + 2** répondent d'en bas (d15).
-5. La clé glisse dans le lecteur. Écran de fin.
-
-**Texte de fin proposé** (remplace l'actuel dans `ui/story.ts`) :
-> **ÉTAGE 1 TERMINÉ**
-> La clé de Lila glisse dans le lecteur. L'escalier s'ouvre sur un noir qui sent la terre et le champignon.
-> *(si révélation)* Tu sais maintenant ce qui dort dans SILLO 8. Reste à savoir qui veille en bas.
-> *(sinon)* Tu ne sais pas encore ce qui s'est passé ici. En bas, quelqu'un, lui, le sait.
-> *(si signal)* Trois coups, puis deux. Quelqu'un t'attend.
-> *(si Gaspard libre)* Derrière toi, une lanterne reste allumée.
-
-**Accroche :** deux voix contradictoires à la radio, une porte scellée par en dessous, une petite
-sœur qui répond au signal, un chauffeur disparu dans la serre, et la souche d'origine qui pousse
-quelque part dans le noir.
+Toujours visible, d'un étage à l'autre (§ 20) :
+- Pourquoi les verrous de la grande porte sont-ils dehors ?
+- Qui est la personne de dos, sur la photo de la porte ?
+- Quel « vieux dossier du fond » Okafor connaissait-elle ?
+- Où est Lila ? Qui tape « VIENS » ?
 
 ---
 
-## 14. Intégration technique (pour le développeur)
+## 17. L'aide en trois paliers (bouton « Réfléchir »)
 
-> Attention : `game/narrative.json` et les identifiants `mother` / `n7` de `game/dialogue.ts` et
-> `ui/story.ts` sont des **restes de SILO 9** (MÈRE, N-7, relais, SCAN ÉCHO, noyau, signal de
-> surface). Ils sont à remplacer intégralement ; cette proposition n'en réutilise rien.
+Proposée après 2-3 minutes sans progrès ou 3 erreurs. Jamais la phrase complète en un clic.
+
+| Conclusion | 1. Orienter | 2. Pointer | 3. Relier |
+|---|---|---|---|
+| C1 | « Je n'ai pas bien regardé la porte de service. » | « Et si je l'éclairais à la lampe UV ? » | « Aucune trace au seuil, mais une traînée à l'infirmerie : d'où part-elle ? » |
+| C2 | « Ce bracelet d'infirmerie… à qui appartenait-il ? » | « La page arrachée de la génératrice, elle parlait de quelqu'un. » | « Bracelet “chambre 1”, avant-bras bandé, feuille “RAS” : le même homme. » |
+| C3 | « Le menu parle de piles volées. Volées pour quoi ? » | « Il y a une liste dans le panier à piles de l'infirmerie. » | « Quatre piles par nuit, deux lampes, une chambre. » |
+| C4 | « Qui avait une lumière allumée, cette nuit-là ? » | « Lila parle d'une couleur. Où ai-je vu cette couleur ? » | « Lampe verte, “ma Nuit”, un trou dans le cahier à 2 h 10. » |
+
+---
+
+## 18. Fair play : où se trouve chaque élément de la solution
+
+Tous ces éléments sont trouvables **avant** l'accusation, la plupart en pleine vue.
+
+| Élément | Où | Visible dès… |
+|---|---|---|
+| Elle existe et elle est douce | Sa voix à la guérite (d1) | **La première minute.** |
+| Quelqu'un « sait et ne dit rien » | Dernier mot de Lila (canon), liste n° 3 | Les dortoirs, la pièce cachée. |
+| Une lumière verte à l'est | d3, d7 | La relance de la génératrice. |
+| Sa lampe est verte, ébréchée | Chaque rencontre, gros plan a10 | La rencontre. |
+| « Nuit » / « ma Nuit » / « N. » | Signature canon de la relève, alliance, photo | La génératrice et la salle de contrôle. |
+| Elle a entendu « à l'aube, on le sort » | Cahier de relève (canal 2 à 1 h 50), journal du poste | Contrôle, sécurité. |
+| Le trou dans sa relève | Cahier (loupe) | Contrôle. |
+| Elle n'était pas coincée | Loquet a11 | L'ouverture du local technique. |
+| Elle connaît le silence du mordu | Sa réplique | La conversation. |
+| Les alibis des autres | Feuille de comptage, journal du poste, mot de l'infirmier, liste de Lila | Entrepôt, sécurité, infirmerie, dortoirs. |
+
+---
+
+## 19. La révélation qui recontextualise l'étage
+
+Une fois l'affaire résolue, chaque note **canon**, sans qu'un mot ait changé, se relit autrement :
+
+- **La voix de la première minute** : « …c'est l'heure de la relève… » C'était la coupable, fidèle à
+  son poste, qui appelait au secours.
+- **Bérard** : « Ne restez pas dehors à la nuit tombée. » L'homme qui a laissé son guetteur dehors à
+  la nuit tombée, et fait entrer son ami.
+- **Équipe technique** : « Elle repart au quart de tour. Normalement. » La page juste avant parlait de Marceau.
+- **Cuisine** : « On les compte, maintenant. » La phrase qui a éteint les lampes.
+- **Dr Okafor** : « Un faisceau en pleine face les fige. » Ce qu'elle savait, elle l'a appris sur Marceau.
+- **Opératrice de nuit** : « Il suffit de l'enficher dans la console. » Elle voulait que la radio
+  marche pour avouer à ceux d'en bas.
+- **Lila** : « Ne fais pas confiance au silence. » Le mordu qui ne grogne pas… et la femme derrière
+  la porte, qui n'a pas répondu.
+- **La craie** : « PAS TOUS. » Lila parlait de Cuisine et de l'opératrice : les deux vivants que le héros a trouvés.
+
+---
+
+## 20. Les indices dormants (planter tôt, payer plus bas)
+
+Ils intriguent à l'étage 1 sans bloquer, et restent dans la colonne « Questions sans réponse ».
+
+| Indice dormant | Où à l'étage 1 | Ce qu'on en pense à l'étage 1 | Où il paie | Ce qu'il voudra dire |
+|---|---|---|---|---|
+| Les **verrous de la grande porte, côté dehors** | Entrée (première minute) | « Drôle de porte. » | Étage 4 | Le silo a été construit pour **garder** quelque chose dedans. |
+| La **règle n° 1** signée « Les fondateurs » | Entrée | Une règle de survie. | Étage 4 | « Aucun mordu ne franchit la porte » voulait dire *aucun ne sort*. |
+| La **personne de dos** en blouse, valise au triangle | Photo de la guérite | Un inconnu. | Étage 3 | Un fondateur, médecin de la première épidémie. |
+| Le **« vieux dossier du fond »** | Rapport n° 1, dossier de la chambre 1 | Okafor avait une référence. | Étages 2 et 3 | Les mordus étaient connus du silo **bien avant** Marceau. |
+| Le **dessin de Lila** : 4 étages, « ICI ÇA TAPE » au 3ᵉ, croix au 4ᵉ | Pièce cachée | Un dessin d'enfant. | Étages 2, 3, 4 | Lila avait entendu le signal **avant tout le monde**. |
+| Le **signal « VIENS »** tapé à la main | Radio (fin d'étage) | Lila ? | Étage 2 (puis 3) | Ce n'est pas Lila : quelqu'un d'enfermé plus bas depuis longtemps. |
+
+**Ce qui ne sera jamais contredit plus bas :** Marceau était le premier mordu **de l'étage 1** ; Bérard
+et Okafor ont menti ; l'opératrice a ouvert la porte. Les étages suivants **élargissent** (il y avait
+eu des mordus avant), ils ne reviennent pas dessus.
+
+---
+
+## 21. Fin de l'étage 1 : une réponse qui crée une question brûlante
+
+1. **La réponse (récompense).** Si l'accusation est faite, le tableau se complète et le héros résume en
+   trois phrases : « Marceau était le premier. Ils ont menti pour le cacher. Et c'est elle qui a ouvert. »
+2. **La radio** (objectif 4, message canon : « Une voix grésille… quelque part plus bas »). La voix
+   d'Okafor : « Ne descendez pas… Lila ? Tu n'es jamais arrivée. Pardon. »
+   → **Lila n'est pas en bas.** Elle n'est pas en haut non plus.
+3. **Le signal.** Puis des bips tapés à la main. L'opératrice tend l'oreille, traduit lettre par
+   lettre : **V… I… E… N… S.** Et elle pâlit : « Ce n'est pas le poste de l'étage 2. Cette fréquence…
+   elle vient de **plus bas**. Il n'y a rien, plus bas. Il ne devrait rien y avoir. »
+4. **La clé** de Lila, dans la cachette (canon : « Le mur creux cède sous l'épaule. Une pièce cachée ! »).
+5. **L'escalier.** Couloir nord : Bérard mordu garde encore la porte ; on le fige ou on le contourne.
+   Des petits coups montent de sous la grille (d12). Le héros ouvre.
+6. **Texte de fin, canon, inchangé :** « La clé glisse dans le lecteur. L'escalier de service s'ouvre
+   sur le noir. Quelque part plus bas, le signal radio répond encore. L'étage 2 vous attend… bientôt. »
+7. **Une ligne en plus, selon l'enquête :**
+   - affaire résolue : « Derrière toi, à la radio, une voix commence enfin à raconter. »
+   - affaire non résolue : « Une question te suit dans l'escalier : qui a ouvert la chambre 1 ? »
+
+**La question brûlante :** *Okafor dit qu'il n'y a personne plus bas. Alors qui appelle « VIENS » ?*
+
+---
+
+## 22. Intégration technique (pour le développeur)
+
+> `game/narrative.json` et les identifiants `mother` / `n7` de `game/dialogue.ts` et `ui/story.ts`
+> sont des **restes de SILO 9** (MÈRE, N-7, relais, SCAN ÉCHO, noyau). Cette proposition n'en
+> réutilise rien ; ils sont à remplacer. `ENDINGS.floor2` reste tel quel, avec une ligne optionnelle.
+> Pas de nouveau système de survie (pas de cycle jour-nuit) : on réutilise les ressources existantes.
 
 **État (`game/state.ts`)**
-- `FACT_IDS` inchangé : les 5 objectifs, `REQUIRES` et la validation de sauvegarde n'en dépendent pas.
-- Nouvelles listes, sauvegardées et validées comme `notes` : `examined` (gros plans et traces
-  révélées), `identified` (endormis), `deductions` (`d1`…`d11`, `truth`), `puzzles`
-  (`cold_room`, `shed`, `terminal`), `unlocked` (tiroirs, volet, recette, fréquence, frapper),
-  `survivors: { gaspard, josette }` (0 enfermé · 1 libre · 2 quête en cours · 3 quête finie),
-  `uvFilter: boolean`, `serreLever: boolean`, `knocked: boolean`. Augmenter la version de sauvegarde.
-- Table des déductions en données (`game/deductions.ts`) : `{ id, a: string[], b: string[], text, unlock, requires }`
-  + table des pensées d'erreur par paire, et pensées génériques.
+- `FACT_IDS` **inchangé** : les 5 objectifs, `REQUIRES` et la sauvegarde actuelle n'en dépendent pas.
+- Nouvelles listes sauvegardées et validées comme `notes` : `examined` (gros plans, traces UV),
+  `words` (banque de mots débloqués), `contradictions` (`x1`…`x7`), `conclusions` (`c1`…`c4`),
+  `puzzles` (`locker`, `shed`, `terminal`), `unlocked` (armoire, tiroir, casier, canal 2, réserve),
+  `survivors` (`cook`, `operator` : 0 fermé · 1 rencontré · 2 quête en cours · 3 quête finie),
+  `uvLamp`, `hints` (paliers d'aide utilisés), `dormant` (questions sans réponse, à garder entre étages).
+  Augmenter la version de sauvegarde.
+- Nouveau `game/investigation.ts` : contradictions `{ a, b, text, unlock }`, phrases à trous
+  `{ id, template, slots, answers, words }`, pensées d'erreur, paliers d'aide.
 
 **Documents et examens**
-- `game/notes.ts` : champ `kind: "note" | "audio" | "photo"`, `recto` pour les photos ; ~22 nouveaux
-  documents (§ 9) ; retouche d'une ligne de `note_secret`.
-- Nouveau `game/examine.ts` : objets à gros plan (a1–a14 : modèle, détail caché, carte au tableau),
-  traces révélées (c1–c11 : position, rayon, texte), pensées (§ 8 b : déclencheur, texte).
+- `game/notes.ts` : les 7 notes **inchangées** ; champs `kind` (`note` | `audio` | `photo`) et `recto` ;
+  une vingtaine de nouveaux documents (§ 13), 5 lignes au plus.
+- Nouveau `game/examine.ts` : gros plans a1–a14, traces c1–c8, pensées, événements d1–d12.
 
-**Plan (`game/level.ts`)** — positions indicatives dans les pièces existantes :
-- Docs : `photo_inauguration` (4, 24) ; `note_convoy` (38, 36) ; `note_shed_left` (−13, 21.5) ;
-  `note_shed_right` (−4, 15) ; `note_guard_log` (3, 16) ; `photo_residents` (−5, −5) ;
-  `note_calendar` (−12.5, 17) ; `note_inventory` (−14, −4.5) ; `note_lila_notebook` (−29, −17) ;
-  `photo_family` (−30, −16.5) ; `note_nightlights` (34, −6) ; `audio_okafor_1` (17, −6) ;
-  `note_postit` (11, −20) ; `note_edmee_log` (27, 10) ; `photo_first_harvest` (14, 9.5) ; `note_knock` (−36, −17).
-- Interactables : `cold_room` (cadenas, −30.5, 18) ; `shed_panel` (leviers, −13, 23) ;
-  `isolation_door` + box vitré solide (≈ x 19–22, z −8 à −4) ; `terminal` (11, −20.5) ;
-  `okafor_drawer` (16, −7) ; `corbiere_drawer` (12, −21) ; `serre_vent` (29, 21) ;
-  `edmee_office` (28, 20) ; `cam_monitor` (−3.5, 9) ; `uv_filter` (−4, 18) ;
-  `storage_locker` (−31, −5) ; objets à gros plan (thermos −27, 21.5 ; lapin −2, −4 ; boîte de
-  pêches −14, 18 ; sachet = `comms` ; plaque 10, 20.5) ; PNJ `gaspard`, `josette`.
-- `ENEMIES` : garder 5 (`walker_gen`, `crawler_cafe`, `walker_serre`, `walker_dorms`,
-  `walker_control`), ajouter `resident` et `carries` (objet porté) ; retirer les 5 autres.
+**Plan (`game/level.ts`)** — positions indicatives, dans les pièces existantes :
+- Chambre 1 : cloison au sud-est de l'infirmerie (≈ x 18–22, z 4–8), porte masquée par l'armoire `room1_cabinet` (18, 3.5).
+- Local technique : cloison au nord-est de la salle de contrôle (≈ x 26–30, z −22 à −18), porte `operator_door` (26, −20).
+- Entrée : `chalk_door` (0, 23.2), `poster_rule` (2.5, 23.6), `door_bolts` (−1.5, 23.4), `guard_radio` + `photo_inauguration` (4, 25).
+- Autres : `note_shed_left` (−13, 21.5) ; `note_shed_right` (−4, 15) ; `terminal` + post-it (3, 16) ;
+  `poster_notice` (−5, −5) ; `note_cook_postit` (−12.5, 17) ; `battery_locker` (−30, −4.5) ;
+  `note_infirmary_map` (11, −7) ; `uv_lamp` + `okafor_drawer` (16, −7) ; `note_lila_2` (15, −6.5) ;
+  `note_room1_file` (21, 6) ; `marceau_locker` (35, −6) ; `note_radio_logbook` (16, −20) ;
+  `note_lila_3` (−29, −17) ; `note_lila_4` (27, 10) ; `lila_lantern` (40, 30) ; `lila_drawing` (−36, −17).
+- PNJ : `cook` (−30, 18), `operator` (28, −20).
+- `ENEMIES` : garder 5 (`walker_ext`, `walker_gen`, `crawler_cafe`, `walker_control` déplacé à
+  l'infirmerie, `walker_dorms` déplacé au couloir nord), avec `resident`, `carries`, `habit`, `silent`
+  (Marceau) ; retirer les 5 autres.
 
 **Progression (`game/progress.ts`)**
-- Nouveaux cas dans `interactWith` : cadenas (3 chiffres), leviers (séquence), terminal (texte),
-  gros plan, examiner un endormi figé/assommé, PNJ, tiroirs et volet (si déduction faite), frapper.
-- `checkTriggers` : pensées et événements d1–d15 (une seule fois chacun, mémorisés).
-- Le chemin des 5 objectifs reste **inchangé** : `tests/unit/journey.test.ts` doit passer sans retouche.
-  Ajouter un test « enquête complète » (11 déductions, révélation).
+- Nouveaux cas dans `interactWith` : cadenas à lettres, leviers, terminal, gros plan, examiner un mordu
+  figé, PNJ, armoire / tiroir / casier / réserve (si déduction faite), console canal 2.
+- `checkTriggers` : première minute (craie, voix), pensées et événements, une seule fois chacun.
+- Le chemin des 5 objectifs reste **inchangé** : `tests/unit/journey.test.ts` passe sans retouche.
+  Ajouter un test « enquête complète » (X1–X7, C1–C4).
 
-**Combat (`game/combat.ts`, `game/enemy.ts`)**
-- Un endormi à 0 PV passe à l'état **assommé** (assis, Zzz) au lieu de disparaître ; reste dans `defeated`.
-- Veilleuse posée : zone qui fige durablement un endormi. Mode révélateur de la lampe : n'éblouit pas.
+**Mordus (`game/enemy.ts`, `game/combat.ts`)**
+- 5 mordus coriaces (favoriser l'évitement), chacun avec une ronde d'habitude ; pendant le gel par la
+  lampe, `E` = Examiner. Marceau : aucun son ; la musique se coupe quand il est proche.
+- Lampe UV : même charge que la lampe, ne fige pas.
 
 **Interface (`ui/`)**
-- Carnet : onglets **Notes / Enregistrements / Photos / Tableau / Résidents**.
-- Vue **gros plan** (rotation + loupe), **bulle de pensée** au-dessus de Lou, petits écrans
-  cadenas / leviers / terminal, bouton ou appui long pour le **mode révélateur**.
-- Dialogues : arbres écrits pour Gaspard et Josette (hors ligne). Le dialogue libre
-  (`/api/dialogue`) peut rester en option avec un nouveau canon SILLO 8.
-- `ui/story.ts` : personnages `gaspard`, `josette`, `radio_below` ; texte de fin du § 13.
+- Carnet : onglets **Notes / Enregistrements / Photos / Tableau**.
+- Tableau : glisser une carte sur une autre ; phrases à trous avec banque de mots ; colonne
+  « Questions sans réponse » ; bouton « Réfléchir » (3 paliers).
+- Vue **gros plan** (rotation + loupe, contour à portée), **bulle de pensée**, écrans cadenas à
+  lettres / leviers / terminal, appui long pour la **lampe UV**.
+- Dialogues écrits pour Cuisine et l'opératrice.
+- `ui/story.ts` : personnages `cook`, `operator`, `voice_below` ; ligne optionnelle de fin.
 
 **Rendu (`game/render/`)**
-- Accessoires du § 7, costume et objet porté de chaque endormi, pose « assommé », Lune-pâle
-  phosphorescente, vague d'allumage des néons, faisceau violet et traces qui luisent, silhouette
-  de Josette (d6).
+- Craie sur la porte, verrous côté dehors, cloisons de la chambre 1 et du local technique, armoire
+  déplaçable, lampe verte, costumes et objets portés des 5 mordus, traînées luisantes en UV, vague
+  d'allumage des néons.
+
+---
+
+## 23. Résumé à lire à voix haute
+
+SILLO 8 est un abri souterrain de quatre étages, et l'histoire est pensée pour les quatre. On commence
+par l'étage un. Un jeune bricoleur venu du dehors, bonnet olive et veste moutarde, arrive devant la
+grande porte du silo. Dessus, quelqu'un a écrit à la craie, en lettres d'enfant : « Ils sont
+descendus. Pas tous. » Près de la guérite, une radio grésille. Une voix de femme, douce et fatiguée,
+dit : « Ici l'opératrice de nuit, il y a quelqu'un ? » Puis plus rien. En une minute, le joueur veut
+savoir qui est resté.
+
+À l'intérieur, cinq mordus errent encore. Ce sont de vrais zombies, mais chacun était un habitant,
+répète une vieille habitude et porte un indice. On peut les éviter, ou les figer à la lampe pour les
+examiner. Les piles sont rares, et ce manque est au cœur de l'histoire.
+
+Une affiche officielle explique que les mordus sont entrés par la porte de service pendant l'orage.
+À la lampe ultraviolette, il n'y a aucune trace à cette porte : la traînée part de l'infirmerie,
+derrière une armoire. Là se trouve une chambre secrète. Marceau, le chef technique, avait été mordu
+pendant une expédition. Le sergent Bérard, son ami, l'a fait entrer en cachette. Le docteur Okafor
+l'a gardé sous deux lampes. Lila, son aide, volait les piles pour ces lampes, et le cuisinier a fini
+par les enfermer sous cadenas.
+
+Puis vient la vraie question : la nuit de l'orage, qui a ouvert la porte de Marceau ? Tout le monde a
+un secret. Le joueur vérifie les alibis : Lila n'avait plus de lumière, le cuisinier était à
+l'entrepôt, Bérard à l'entrée, Okafor dormait. Reste une lampe verte vue dans le couloir, une
+alliance gravée « à ma Nuit », et un trou dans le cahier de radio, juste à l'heure du drame. C'est
+l'opératrice de nuit, la voix gentille du début. Elle était la femme de Marceau. Elle voulait lui dire
+adieu, et la pile de sa lampe s'est éteinte.
+
+Le joueur relie les indices dans son carnet et complète des phrases. Une erreur ne punit jamais, elle
+fait réfléchir. Les bonnes déductions ouvrent des passages et des tiroirs.
+
+Mais l'étage un ne dit pas tout. Pourquoi les verrous de la grande porte sont-ils du côté dehors ? Qui
+est l'inconnu de dos sur la vieille photo ? À la fin, la radio réparée capte la voix d'Okafor : « Ne
+descendez pas. Lila, tu n'es jamais arrivée. » Puis un signal tapé à la main, que l'opératrice traduit
+lettre par lettre : « Viens ». Il vient de plus bas que l'étage deux, là où il ne devrait y avoir
+personne. Le bricoleur prend la clé cachée par Lila, et descend.
+
+---
+
+## Annexe — Relecture avec la checklist de `RECHERCHE_ENQUETE.md`
+
+✅ = respecté · ⚠️ = respecté en partie, avec la limite indiquée.
+
+**Le mystère**
+- ✅ **Vérité complète en 5 lignes.** Qui : l'opératrice de nuit. Quoi : elle a ouvert la chambre 1. Comment : coupure de courant pendant l'orage, lampe verte. Pourquoi : un adieu à son mari avant qu'on le « sorte » à l'aube. Pourquoi c'est caché : Bérard et Okafor mentaient déjà sur Marceau, et elle s'est tue par honte.
+- ✅ **Chronologie jour par jour, sans contradiction.** Elle est au § 6. Les heures sont cohérentes partout : 1 h 50, 2 h 00, 2 h 05, 2 h 10, 2 h 14, 2 h 15, 2 h 20.
+- ✅ **Règles des mordus fixées et montrées avant de servir.** Liste au § 7 : la lumière (génératrice), le bruit (extérieur), l'habitude (guetteur), la morsure (expédition).
+- ✅ **Coupable dans la première pièce, sans paraître suspecte.** C'est sa voix à la guérite, dès la première minute.
+- ✅ **Mobile personnel et compréhensible.** L'amour, un adieu, puis la honte.
+
+**Le fair play**
+- ✅ **3 indices au moins, dans 2 pièces au moins, par déduction obligatoire.** Liste pour C1 à C4 au § 16 : chaque case de C4 a 3 sources ou plus.
+- ✅ **Aucun indice nécessaire après la révélation.** La scène d'aveu confirme seulement ce qui est déjà établi (§ 18).
+- ✅ **Le héros ne conclut jamais avant le joueur.** Ses pensées posent des questions ; son résumé arrive *après* la validation de C4.
+- ✅ **Moment « Défi au joueur ».** Pensée « J'ai tout vu. Qui a ouvert la chambre 1 ? », juste avant C4.
+- ✅ **Au moins 5 détails changent de sens à la relecture.** Il y en a 8 au § 19.
+
+**Les fausses pistes**
+- ✅ **2 ou 3 fausses pistes, chacune expliquée par un vrai petit secret.** La porte de service, Lila, Cuisine (§ 9). S'y ajoutent Bérard et Okafor, coupables d'autre chose.
+- ✅ **Chaque fausse piste s'écarte avec un indice trouvable.** UV, liste n° 3, feuille de comptage.
+- ✅ **Aucune fausse piste ne repose sur un mensonge du jeu.** Seuls les personnages mentent : l'avis officiel, l'infirmier qui se trompe, l'opératrice. Les notes canon disent vrai, seulement pas tout.
+
+**Le joueur qui déduit**
+- ✅ **Le joueur affirme au moins 5 fois.** 7 contradictions et 4 phrases à trous.
+- ✅ **Erreur possible, remarquée, réparable.** « Presque… », pensées d'erreur, aucune pénalité.
+- ✅ **Une porte au moins s'ouvre par une information.** PECHES, MARCEAU, l'armoire (X1/X2), le canal 2.
+- ✅ **Impossible de gagner en essayant tout.** La validation porte sur la phrase entière, avec des mots débloqués seulement par les indices.
+  - ⚠️ C4 a 5 cases et une petite banque : à surveiller en test pour que la force brute reste fastidieuse.
+
+**Le décor et les mordus**
+- ✅ **Une scène muette par pièce, qui pose une question.** Tableau du § 11.
+- ⚠️ **Chaque mordu a un nom, une habitude et un indice.** Les habitudes et les indices sont là. Trois mordus n'ont qu'un nom de fonction (guetteur, commis, infirmier), par choix, pour ne pas créer de nouveaux personnages.
+- ✅ **On peut traverser l'étage en évitant la plupart des mordus.** Rondes prévisibles, lampe, contournements, aucun passage clé gardé sans alternative.
+- ✅ **Pièces de lecture calmes, pièces de passage tendues.** Aucun mordu dans les dortoirs, le hub, l'entrepôt, l'atelier, le contrôle et la pièce cachée.
+
+**Téléphone**
+- ✅ **Aucune note de plus de 5 lignes.** Les notes canon font 3 ou 4 lignes ; les nouvelles, 5 au plus.
+- ✅ **Indices obligatoires assez gros et surlignés.** Contour à portée, gros plans.
+  - ⚠️ L'éclat vert (a7) est petit dans le décor, mais il passe par un gros plan et il est doublé par la lampe ébréchée et les lueurs vertes.
+- ✅ **Aide en 3 paliers, jamais la phrase complète.** § 17.
+- ⚠️ **Chaque pièce se termine sur une découverte en moins de 5 minutes.** C'est prévu (§ 4), à vérifier en test.
+- ⚠️ **Un testeur termine l'étage et sait raconter ce qui s'est passé.** À faire : 5 à 7 tests avec des joueurs qui découvrent le jeu.
+
+**La fin**
+- ✅ **Les questions des couches 1 à 3 ont une réponse.** Comment, qui a caché, qui a ouvert.
+- ✅ **Une seule grande question ouverte, née de la révélation.** « Qui appelle “VIENS”, plus bas que l'étage 2 ? » Elle découle de la voix d'Okafor. Les autres questions sont des indices dormants, rangés dans leur colonne.
+
+**Les 4 étages**
+- ✅ **Affaire locale résolue, grand mystère laissé dans l'ombre.** § 2 et § 6.
+- ✅ **3 à 5 indices dormants, avec étage de paiement.** 6 au tableau du § 20, dont 2 liés (verrous et règle n° 1).
+- ✅ **Rien de révélé à l'étage 1 ne sera contredit sans explication.** Les étages suivants élargissent seulement (§ 20).
+- ✅ **La fin est une réponse qui crée une question.** Lila n'est pas en bas, et quelqu'un appelle de plus bas.
+
+**Survie et enquête**
+- ✅ **On peut finir l'étage sans vaincre de mordu.** C'est la règle du § 7.
+- ✅ **Une ressource sert à survivre et à enquêter.** La charge de la lampe : figer ou révéler.
+- ✅ **Un dilemme ressource contre information.** Il y en a deux : une pile pour l'opératrice, un bandage pour Cuisine.
+- ✅ **Aucune pénurie pendant la lecture ou la déduction.** § 8, règles de dosage.
+- ✅ **La rareté vécue éclaire les mobiles.** Les piles comptées expliquent le cadenas de Cuisine et la lampe qui s'éteint.
+
+**Comptage des indices** (cible : 25 à 35). Le joueur trouve environ **33 cartes** :
+- 7 notes canon et la craie ;
+- 19 nouveaux documents et enregistrements ;
+- environ 6 gros plans ou traces qui ne doublent pas un document : alliance, bracelet, montre, éclat vert, loquet, seuil UV.
+
+Environ un tiers sert aux conclusions C1 à C4.
