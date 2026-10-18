@@ -176,7 +176,7 @@ export const ENEMIES: EnemySpawn[] = [
   { id: "walker_dorms", kind: "walker", x: -22, z: -12, patrol: [[-22, -12], [-28, -16], [-14, -9]] },
   { id: "crawler_hub", kind: "crawler", x: 3, z: 3, patrol: [[3, 3], [-3, -3], [3, -3]] },
   { id: "walker_control", kind: "walker", x: 20, z: -14, patrol: [[20, -14], [12, -12], [26, -18]] },
-  { id: "crawler_workshop", kind: "crawler", x: 30, z: 0, patrol: [[30, 0], [25, -4], [33, 5]] },
+  { id: "crawler_workshop", kind: "crawler", x: 30, z: 0, patrol: [[30, 0], [25, -4], [31, 4]] },
 ];
 
 export const SPAWN = { x: 0, z: 41, yaw: Math.PI };

@@ -736,3 +736,148 @@ export function centerMonitorTexture(label: string, seed = 1): Texture {
     g.beginPath(); g.arc(w - 22, 20, 7, 0, Math.PI * 2); g.fill();
   }, false);
 }
+
+// ——— Aile est (salle de contrôle, infirmerie, atelier, serre) ———
+
+/** Écran allumé de la salle de contrôle : courbes et lignes de données bleues sur fond nuit. */
+export function eastScreenTexture(seed = 1): Texture {
+  return make("east-screen:" + seed, 128, 96, (g, w, h) => {
+    const r = rng(300 + seed);
+    g.fillStyle = "#0f2a44";
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "rgba(120,200,255,0.12)";
+    for (let y = 0; y < h; y += 4) g.fillRect(0, y, w, 1);
+    g.strokeStyle = "#7fd0ff";
+    g.lineWidth = 2;
+    g.beginPath();
+    for (let x = 0; x <= w; x += 8) g.lineTo(x, h * 0.35 + Math.sin(x * 0.08 + seed) * 10 + (r() - 0.5) * 8);
+    g.stroke();
+    g.fillStyle = "#a9e2ff";
+    for (let k = 0; k < 7; k++) g.fillRect(8, h * 0.58 + k * 5, 10 + r() * 60, 2);
+    g.fillStyle = "#5fb4f0";
+    for (let k = 0; k < 5; k++) { const bh = 6 + r() * 26; g.fillRect(84 + k * 8, h - 8 - bh, 5, bh); }
+  });
+}
+
+/** Neige d'un écran sans signal (grise et granuleuse, répétable pour la faire défiler). */
+export function eastStaticTexture(): Texture {
+  return make("east-static", 64, 64, (g, w, h) => {
+    const r = rng(77);
+    for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) {
+      const v = 40 + Math.floor(r() * 120);
+      g.fillStyle = `rgb(${v},${v + 6},${v + 4})`;
+      g.fillRect(x, y, 2, 2);
+    }
+  });
+}
+
+/** Grand écran mural : plan du silo en fil de fer, points d'alerte. */
+export function eastRadarTexture(seed = 1): Texture {
+  return make("east-radar:" + seed, 192, 128, (g, w, h) => {
+    const r = rng(500 + seed);
+    g.fillStyle = "#0d2640";
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = "rgba(127,208,255,0.25)";
+    g.lineWidth = 1;
+    for (let x = 0; x < w; x += 16) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+    for (let y = 0; y < h; y += 16) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+    g.strokeStyle = "#8fd8ff";
+    g.lineWidth = 2;
+    if (seed % 2) {
+      g.beginPath(); g.arc(w / 2, h / 2, 22, 0, Math.PI * 2); g.stroke();
+      g.strokeRect(w / 2 - 80, h / 2 - 40, 50, 30); g.strokeRect(w / 2 + 30, h / 2 - 40, 50, 30);
+      g.strokeRect(w / 2 - 80, h / 2 + 10, 50, 30); g.strokeRect(w / 2 + 30, h / 2 + 10, 50, 30);
+    } else {
+      for (let k = 1; k < 4; k++) { g.beginPath(); g.arc(w / 2, h / 2, k * 18, 0, Math.PI * 2); g.stroke(); }
+      g.beginPath(); g.moveTo(w / 2, h / 2); g.lineTo(w / 2 + 50, h / 2 - 30); g.stroke();
+    }
+    for (let k = 0; k < 4; k++) {
+      g.fillStyle = k === 0 ? "#ffb35a" : "#c9f0ff";
+      g.beginPath(); g.arc(20 + r() * (w - 40), 20 + r() * (h - 40), 3, 0, Math.PI * 2); g.fill();
+    }
+    g.fillStyle = "#c9f0ff";
+    g.font = "12px 'Special Elite', monospace";
+    g.fillText(seed % 2 ? "SILLO 8 · ÉTAGE 1" : "RÉSEAU · ANTENNE", 8, h - 8);
+  });
+}
+
+/** Écran radio réparé : onde verte et message. */
+export function eastSignalTexture(): Texture {
+  return make("east-signal", 128, 96, (g, w, h) => {
+    g.fillStyle = "#10301f";
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = "#8ff0a8";
+    g.lineWidth = 3;
+    g.beginPath();
+    for (let x = 0; x <= w; x += 3) g.lineTo(x, h * 0.42 + Math.sin(x * 0.2) * Math.sin(x * 0.03) * 22);
+    g.stroke();
+    g.fillStyle = "#c9ffd6";
+    g.font = "15px 'Special Elite', monospace";
+    g.textAlign = "center";
+    g.fillText("SIGNAL ÉTABLI", w / 2, h - 14);
+  });
+}
+
+/** Croix rouge peinte sur une plaque crème. */
+export function eastCrossTexture(): Texture {
+  return make("east-cross", 128, 128, (g, w, h) => {
+    g.fillStyle = "#e9dcc0";
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = "#6a4528";
+    g.lineWidth = 6;
+    g.strokeRect(5, 5, w - 10, h - 10);
+    g.fillStyle = "#c8453a";
+    g.fillRect(w / 2 - 15, 22, 30, h - 44);
+    g.fillRect(22, h / 2 - 15, w - 44, 30);
+  }, false);
+}
+
+/** Carte papier annotée posée sur la table de la salle de contrôle. */
+export function eastMapTexture(): Texture {
+  return make("east-map", 256, 160, (g, w, h) => {
+    const r = rng(61);
+    g.fillStyle = "#e9dcc0";
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = "#6a4528";
+    g.lineWidth = 3;
+    g.beginPath(); g.arc(w / 2, h / 2, 26, 0, Math.PI * 2); g.stroke();
+    g.strokeRect(20, 20, 70, 50); g.strokeRect(20, 90, 70, 50); g.strokeRect(166, 20, 70, 50); g.strokeRect(166, 90, 70, 50);
+    g.strokeStyle = "#556045";
+    g.lineWidth = 2;
+    g.beginPath();
+    for (let k = 0; k < 8; k++) g.lineTo(r() * w, r() * h);
+    g.stroke();
+    g.strokeStyle = "#c8453a";
+    g.lineWidth = 3;
+    for (const [x, y] of [[200, 45], [55, 115]]) { g.beginPath(); g.arc(x, y, 14, 0, Math.PI * 2); g.stroke(); }
+    g.fillStyle = "#3a2a1c";
+    g.font = "16px 'Patrick Hand', cursive";
+    g.fillText("antenne ?", 170, 82);
+    g.fillText("serre = sûr", 30, 154);
+  }, false);
+}
+
+/** Panneau perforé de l'atelier. */
+export function eastPegboardTexture(): Texture {
+  return make("east-pegboard", 256, 128, (g, w, h) => {
+    g.fillStyle = "#b08657";
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "rgba(60,38,20,0.55)";
+    for (let y = 8; y < h; y += 14) for (let x = 8; x < w; x += 14) { g.beginPath(); g.arc(x, y, 2.2, 0, Math.PI * 2); g.fill(); }
+  });
+}
+
+/** Note manuscrite punaisée (décor non interactif). */
+export function eastNoteTexture(text: string): Texture {
+  return make("east-note:" + text, 128, 160, (g, w, h) => {
+    g.fillStyle = "#f2e8cf";
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "rgba(122,74,42,0.15)";
+    g.fillRect(0, h - 26, w, 26);
+    g.fillStyle = "#c8453a";
+    g.beginPath(); g.arc(w / 2, 10, 6, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#3a2a1c";
+    g.font = "17px 'Patrick Hand', cursive";
+    text.split("\n").forEach((line, i) => g.fillText(line, 10, 40 + i * 22));
+  }, false);
+}
