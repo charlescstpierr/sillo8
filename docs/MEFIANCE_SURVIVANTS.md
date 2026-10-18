@@ -100,7 +100,8 @@ une vraie raison d'être fâché, et à Lou un geste simple de réparation (**re
 - Compatible avec le grand secret de l'étage 4 (le silo a été construit pour **garder** les mordus
   dedans), avec les **verrous côté dehors**, la **photo de l'inauguration** (la personne de dos, la
   valise au triangle) et le signal **« VIENS »** venu d'en bas.
-- Révélé à l'étage 3 ou 4 ; à l'étage 1, seulement 2 ou 3 indices dormants très discrets.
+- Révélé à l'étage 3 ou 4. À l'étage 1, le joueur sait **dès le début** que Lou cache quelque chose,
+  sans savoir quoi ; les pensées de Lou peuvent se taire, jamais mentir au joueur.
 
 ### Trois options
 
@@ -140,15 +141,30 @@ de la photo, peut-être celui qui tape « VIENS ».
 **Recommandation : option A.** On peut lui emprunter un détail de C : le paquet contient aussi un
 **mot du vieux**, qu'on ne lira qu'à l'étage 4.
 
-### Les indices dormants de l'étage 1 (option A)
+### Le joueur sait dès le début (décision de l'auteur)
 
-Trois seulement, très discrets. Lou **ne pense jamais quelque chose de faux** : il se tait, c'est tout.
-C'est la règle du narrateur du *Meurtre de Roger Ackroyd* : on omet, on ne ment pas.
+**Dès la première minute, le joueur sait que Lou cache quelque chose, sans savoir quoi.** Après la
+pensée canon devant la craie (« Pas tous. Alors quelqu'un est encore là-dedans. »), la main de Lou se
+pose sur sa sacoche et une deuxième pensée hésite : **« Je ne devais pas entrer… »** Puis rien. Et dans
+l'inventaire, dès le début, un **paquet noué** qu'il refuse d'ouvrir.
+
+**Règle d'écriture : les pensées de Lou peuvent se taire, jamais mentir au joueur.** « Je ne devais pas
+entrer » est vrai (il avait promis de fermer de dehors). Quand il hésite, la bulle reste vide (« … ») ;
+elle ne dit jamais « rien » ou « ce n'est pas important ». C'est la règle du narrateur du *Meurtre de
+Roger Ackroyd* : on omet, on ne ment pas. Lou peut, par choix du joueur, mentir **à un personnage**
+(« Chercher un abri, c'est tout »), jamais au joueur.
+
+L'effet : le joueur partage le soupçon des survivants. Il sait que Lou n'est pas coupable de l'orage
+(il vient d'arriver), mais il sait aussi que Cuisine a raison sur un point. C'est le moteur de tension.
+
+### Les indices de l'étage 1 (option A)
+
+Trois indices : le premier est visible dès le début, les deux autres sont discrets.
 
 | # | Où | Ce qu'on voit | Ce qu'on en pense à l'étage 1 | Où ça paie |
 |---|---|---|---|---|
-| L1 | **Sacoche** (inventaire du carnet) | Un **paquet noué dans un chiffon**, lourd. `E` : « Un chiffon noué. » Pensée : « Pas maintenant. » On ne peut pas l'ouvrir. | Lou garde un souvenir. | Étage 3 : la clé au triangle. |
-| L2 | **Entrée**, photo de l'inauguration (gros plan a1) | En zoomant sur la valise au triangle, la main de Lou se pose sur sa sacoche. Pensée coupée : « Ce triangle… » puis « Non. Rien. » | Un détail qui le trouble. | Étage 3 : même triangle que sur la clé. |
+| L1 | **Sacoche** (inventaire, dès le début) et **première minute** | Un **paquet noué dans un chiffon**, lourd. `E` : « Un chiffon noué. » Pensée : « Pas maintenant. » On ne peut pas l'ouvrir. Et la pensée « Je ne devais pas entrer… » | Lou cache quelque chose, c'est sûr. Quoi ? | Étage 3 : la clé au triangle ; étage 4 : la promesse. |
+| L2 | **Entrée**, photo de l'inauguration (gros plan a1) | En zoomant sur la valise au triangle, la main de Lou se pose sur sa sacoche. Pensée coupée : « Ce triangle… » puis une bulle vide : « … ». | Un détail qui le trouble. | Étage 3 : même triangle que sur la clé. |
 | L3 | **Entrée**, les verrous côté dehors (première minute) | Après la pensée canon (« Drôle de porte… »), Lou passe le gant sur un verrou, une seconde, comme on reconnaît un travail. Pas de pensée. | Rien, ou presque. | Étage 4 : c'est le vieux qui les a posés. |
 
 **Pas d'indice sur le signal à l'étage 1** : à la fin, Lou découvre « VIENS » avec le joueur.
@@ -381,7 +397,7 @@ et le moment où Lou dit **sa** vérité partielle (« J'ai fait une promesse »
 ### Lou
 
 **Quand on lui demande pourquoi il est venu** (aucune réponse n'est « bonne » ; toutes sont vraies ou presque)
-> **[Lou] Chercher un abri.** → **Cuisine :** Mouais. *(Il plisse les yeux.)*
+> **[Lou] Chercher un abri.** → **Cuisine :** Mouais. *(Il plisse les yeux. Demi-mensonge à un personnage, permis ; on s'en souviendra à l'étage 3.)*
 > **[Lou] J'ai fait une promesse. Je ne peux pas en dire plus.** → **Cuisine :** Une promesse à qui ? …Correct, garde-la.
 > **[Lou] Ça ne te regarde pas.** → **Cuisine :** Ben là, ça me regarde un peu, l'étranger.
 
@@ -434,6 +450,10 @@ Sans preuve, la scène se termine ainsi : « Tant que tu me prouves pas le contr
 affaires. » Au tableau apparaît la question **« Comment prouver que je n'y suis pour rien ? »**
 
 ### M4 — Le commis (sauvetage, pendant M3 ou juste après)
+
+*Le commis est l'un des **5 mordus de l'étage 1**, tous évitables ; cette scène n'oblige à vaincre
+personne. Et comme la borne de recharge ne sert **qu'une fois par visite**, la charge dépensée ici
+compte vraiment.*
 
 Cuisine hors de sa chambre froide, c'est Cuisine **exposé**. Le commis mordu, fidèle à son habitude,
 revient avec son plateau vide… et se tourne vers son ancien patron. Cuisine reste figé : « C'est… mon
@@ -578,7 +598,8 @@ objectifs et les messages du jeu sont inchangés.
 | **§ 1. Résumé en 5 lignes** | Lignes 2 et 4 : l'étranger soupçonné, puis disculpé. |
 | **§ 2. L'arc sur 4 étages** | Le « fil de Lou » : réputation et secret, étage par étage. |
 | **§ 3. Comment l'enquête est construite** | Un point sur la méfiance (le héros est lui-même une fausse piste). |
-| **§ 4. Micro-révélations** | Hub : l'accusation ; cafétéria : « depuis que t'es là ». |
+| **§ 4. Première minute et micro-révélations** | Pensée « Je ne devais pas entrer… » et main sur le paquet (le joueur sait dès le début) ; hub : l'accusation ; cafétéria : « depuis que t'es là ». |
+| **§ 8. Survie** | La borne de recharge sert **une fois par visite** (rareté des piles). |
 | **§ 5. Personnages** | Le héros : ce qu'il dit, ce qu'il tait ; les noms qu'on lui donne ; la méfiance des deux survivants. |
 | **§ 6. Chronologie** | Le jour de l'arrivée devient « J+9 », avec ses événements (porte laissée ouverte, génératrice, accusation). |
 | **§ 9. Fausses pistes** | Quatrième fausse piste : l'étranger. Contradictions X8 à X10. |
@@ -593,7 +614,7 @@ objectifs et les messages du jeu sont inchangés.
 | **§ 19. Révélation** | Trois relectures nouvelles (« Pas tous », « mon garçon », l'avis). |
 | **§ 20. Indices dormants** | Trois indices sur le secret de Lou (L1-L3). |
 | **§ 21. Fin** | Le message radio et le départ selon la confiance. |
-| **§ 22. Intégration technique** | État `trust`, `accused`, cartes et scènes nouvelles. |
+| **§ 22. Intégration technique** | État `trust`, `accused`, cartes et scènes nouvelles ; borne une fois par visite ; 5 mordus, tous évitables. |
 | **§ 23. Résumé à lire à voix haute** | Réécrit avec la méfiance et le secret. |
 | **Annexe** | Comptes mis à jour (10 contradictions, 5 phrases, 4 fausses pistes). |
 
@@ -610,7 +631,7 @@ objectifs et les messages du jeu sont inchangés.
 | La jauge cachée qui « dérive » | Des marches et des faux pas nommés, que le PNJ annonce. |
 | Le rappel « X s'en souviendra » sans suite | Au plus 4 rappels, chacun avec une suite visible dans l'étage. |
 | La coupable qui fabrique des preuves | L'opératrice ne fabrique rien : elle dit du vrai qui oriente, et ment une fois, de façon vérifiable. |
-| Le héros qui sait avant le joueur | Lou ne pense jamais faux ; il se tait sur son passé, pas sur l'enquête. Il découvre « VIENS » avec le joueur. |
+| Le héros qui sait avant le joueur | Le joueur sait dès la première minute que Lou cache quelque chose. Les pensées de Lou peuvent se taire, jamais mentir. Il se tait sur son passé, pas sur l'enquête. Il découvre « VIENS » avec le joueur. |
 | Le secret qui rend le héros coupable | Le secret de Lou est une promesse, pas une faute ; il l'a même désobéie pour sauver les vivants. |
 
 ---

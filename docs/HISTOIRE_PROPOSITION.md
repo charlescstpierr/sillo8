@@ -78,8 +78,9 @@ donne, la porte, l'arme, ce qu'on partage).
 
 **Le secret de Lou** : il n'est pas venu seulement chercher un abri. Il a fait une promesse à un vieux
 serrurier du dehors (proposé : « le vieux Gaspard », **jamais nommé à l'étage 1**), qui a posé les
-verrous côté dehors. Lou n'est coupable de rien. Le secret est révélé aux étages 3 et 4 ; l'étage 1
-n'en plante que 3 indices dormants.
+verrous côté dehors. Lou n'est coupable de rien. Le joueur sait **dès la première minute** que Lou cache
+quelque chose (« Je ne devais pas entrer… », un paquet qu'il n'ouvre pas), sans savoir quoi. Le secret
+est révélé aux étages 3 et 4. Règle : les pensées de Lou peuvent se taire, jamais mentir au joueur.
 
 **Le reste :**
 - Un prénom pour le héros (proposé, à choisir).
@@ -117,7 +118,7 @@ une réponse qui crée une nouvelle question.
 
 | Étage | Ce qu'on croit de Lou | Ce qu'on apprend de son secret |
 |---|---|---|
-| **1** | « L'étranger » qui a laissé entrer les mordus. Il se disculpe par l'enquête (C5). | Rien, sauf 3 indices dormants : un paquet noué qu'il n'ouvre pas, son trouble devant le triangle de la photo, son gant sur les verrous. |
+| **1** | « L'étranger » qui a laissé entrer les mordus. Il se disculpe par l'enquête (C5). | Qu'il cache quelque chose, dès la première minute (« Je ne devais pas entrer… », un paquet noué qu'il n'ouvre pas). Puis deux indices discrets : son trouble devant le triangle de la photo, son gant sur les verrous. |
 | **2** | Sa réputation le précède par le message radio de l'opératrice : « Lou » ou « l'étranger de la porte de service ». Okafor, autrice de l'avis mensonger, est tentée de le désigner à nouveau. | Les survivants sentent qu'il cache quelque chose. |
 | **3** | Pour ceux d'en bas, « l'étranger » veut dire : ceux qui ont fermé la porte. | Le triangle est la marque des fondateurs. **Le paquet est ouvert : une clé de laiton au triangle**, la clé des verrous du dehors. Lou doit dire sa promesse. |
 | **4** | Le silo gardait le mal dedans : l'homme du dehors était venu tenir la porte. | Le mot du vieux serrurier : « Si le 8 tombe, ferme-le. De dehors. » Choix final : tenir la promesse, ou non, avec des vivants en bas. |
@@ -166,12 +167,16 @@ seulement élargi.
 2. **La voix.** En approchant de la guérite, une radio grésille. Une voix de femme, douce, fatiguée :
    « …ici l'opératrice de nuit… c'est l'heure de la relève… il y a quelqu'un ? » Puis la pile de la
    radio meurt. Plus rien.
-3. **La pensée du héros** : « Pas tous. Alors quelqu'un est encore là-dedans. »
+3. **La pensée du héros** : « Pas tous. Alors quelqu'un est encore là-dedans. » Sa main se pose sur
+   sa sacoche, sur un paquet noué. Deuxième pensée, qui hésite : **« Je ne devais pas entrer… »** Puis
+   rien. Dès la première minute, **le joueur sait que Lou cache quelque chose**, sans savoir quoi.
+   *(Règle : les pensées de Lou peuvent se taire, jamais mentir au joueur. Cette phrase est vraie : il
+   avait promis de fermer le silo de dehors, sans entrer. On ne le saura qu'aux étages 3 et 4.)*
 4. **Le détail qui ne paiera que bien plus tard** (indice dormant) : les gros verrous de la porte sont
    **du côté dehors**. Pensée : « Drôle de porte. On dirait qu'elle ferme de l'extérieur. »
 
-En une minute, le joueur a une question (qui est resté ?), une voix à retrouver, et un détail
-étrange qu'il ne comprendra qu'à l'étage 4.
+En une minute, le joueur a une question (qui est resté ?), une voix à retrouver, un héros qui tait
+quelque chose, et un détail étrange qu'il ne comprendra qu'à l'étage 4.
 
 ### Une micro-révélation par pièce
 
@@ -209,6 +214,8 @@ Chaque pièce pose une petite question et donne une petite réponse, en moins de
   n'entre pas. » Lou ne sait pas pourquoi. Devant la porte, il lit « PAS TOUS » : des vivants sont
   dedans. **Il désobéit et entre.** Il n'est coupable de rien.
   *Deux autres options étudiées (le message reçu, la lettre à remettre) : voir `MEFIANCE_SURVIVANTS.md` § 4.*
+- **Le joueur sait dès le début qu'il cache quelque chose** (le paquet noué de sa sacoche, qu'il
+  n'ouvre jamais ; la pensée « Je ne devais pas entrer… » dès la première minute), sans savoir quoi.
 - **Pas de famille dans le silo.** Il découvre l'histoire de l'étage en même temps que le joueur.
 - **Prénom : Lou** (choisi par l'auteur). Comment on l'appelle dit la confiance qu'on lui fait :
   « **l'étranger** » (méfiance), « **le bricoleur** » (prudence), « **Lou** » (confiance). L'opératrice
@@ -337,7 +344,7 @@ manque a une raison dans l'histoire**, et la rareté vécue par le joueur lui fa
 | Ressource | Pourquoi elle manque | Ce que le joueur trouve | Ce qu'on lui demande |
 |---|---|---|---|
 | **Piles** (lampe) | Les lampes de la chambre 1 en ont mangé 4 par nuit pendant 10 nuits. Le silo s'est vidé. Le reste est sous cadenas. | Très peu : quelques piles isolées, 3 dans l'armoire de Cuisine (énigme 1), 2 dans sa réserve. | L'opératrice demande **1 pile** pour sa lampe. |
-| **Charge de la lampe** | — | La borne du poste de sécurité recharge (point sûr). | **Choix permanent** : dépenser la charge pour **figer** un mordu, ou pour **révéler** des traces à la lampe UV. Se protéger ou voir. |
+| **Charge de la lampe** | Les piles sont rares (ci-dessus) : la borne ne peut pas tout compenser. | La borne du poste de sécurité recharge la lampe **une fois par visite** : il faut ressortir et revenir pour la réutiliser (point sûr, pas une source infinie). | **Choix permanent** : dépenser la charge pour **figer** un mordu, ou pour **révéler** des traces à la lampe UV. Se protéger ou voir. |
 | **Conserves** | Le groupe descendu a emporté le reste. Il ne reste que des pêches (canon). | Quelques boîtes de pêches. | — |
 | **Bandages / trousses** | Okafor a descendu le stock de l'infirmerie. | L'armoire à pharmacie est vide, sauf un bandage. | Cuisine demande **1 bandage** (il s'est coupé en barricadant sa porte). |
 | **Ferraille** | C'est elle qui manquait au régulateur : la cause de l'expédition, donc de la morsure de Marceau. | Les 3 pièces de la génératrice, dont une posée par Lila près de sa lanterne. | La génératrice (objectif 2), le module radio (objectif 4). |
@@ -398,7 +405,7 @@ Suit l'ordre des objectifs. ⭐ = facultatif pour finir l'étage, mais utile à 
 | **Entrée (extérieur)** | 1 | Craie « ILS SONT DESCENDUS. PAS TOUS. », voix de l'opératrice (première minute). Consigne de Bérard (canon). ⭐ Affiche de la règle n° 1, verrous côté dehors, photo de l'inauguration à la guérite. ⭐ Seuil de la porte de service (a15 : poussière, deux séries de pas). | — |
 | **Zone extérieure** | 2 | Ferrailles dans les épaves. ⭐ Lanterne de Lila et une ferraille posée à côté. | Le guetteur |
 | **Génératrice** | 2 | Journal de maintenance (canon). ⭐ **Énigme 2** une fois le courant revenu. ⭐ Moitié de consigne. | Marceau, le Silencieux |
-| **Sécurité** | 3 | Borne de recharge : **point sûr**. ⭐ **Énigme 3** (terminal de Bérard). ⭐ Autre moitié de consigne. | — |
+| **Sécurité** | 3 | Borne de recharge (**une fois par visite**) : **point sûr**. ⭐ **Énigme 3** (terminal de Bérard). ⭐ Autre moitié de consigne. | — |
 | **Hub central** | 3 | ⭐ Avis officiel. Valises abandonnées en file vers le nord. **Scène M3 : Cuisine accuse Lou** devant l'avis. | — |
 | **Couloir nord / Accès étage 2** | fin | Porte de l'étage 2, verrouillée. | Bérard |
 | **Cafétéria** | — | Menu du jour (canon). ⭐ Post-it de Cuisine. ⭐ 9 traits sur la porte de la chambre froide. **Survivant : Cuisine.** | Le commis |
@@ -472,7 +479,8 @@ posent des questions ; elles ne concluent jamais à la place du joueur.
 | Entrée | Craie sur la porte | « Pas tous. Alors quelqu'un est encore là-dedans. » |
 | Entrée | Voix à la radio, puis silence | « Elle a dit “la relève”. À qui parle-t-elle ? » |
 | Entrée | Verrous | « Drôle de porte. On dirait qu'elle ferme de l'extérieur. » Puis Lou passe le gant sur un verrou, une seconde, sans rien penser. *(Dormant L3.)* |
-| Entrée | Triangle de la photo (a1) | « Ce triangle… » puis « Non. Rien. » *(Dormant L2.)* |
+| Entrée | Craie, juste après la pensée canon | « Je ne devais pas entrer… » *(Le joueur sait dès lors que Lou cache quelque chose.)* |
+| Entrée | Triangle de la photo (a1) | « Ce triangle… » puis une bulle vide : « … ». *(Dormant L2. Lou se tait, il ne dit pas « rien ».)* |
 | Sacoche | Examiner le paquet (a16) | « Pas maintenant. » *(Dormant L1.)* |
 | Entrée | Affiche de la règle n° 1 | « Aucun mordu ne franchit la porte. Et pourtant… » |
 | Extérieur | Lanterne + ferraille | « Une lanterne de gamin et une pièce bien rangée. Quelqu'un faisait le même boulot que moi. » |
@@ -809,7 +817,7 @@ restent en français standard. Entre crochets : les choix du joueur.
 > réclamer une. J'ai dit non. *(Il regarde ses mains.)* Une gamine qui vole, ça se punit, non ?
 > **[Lou] Pourquoi tu me regardes comme ça ?**
 > **Cuisine :** Tu tiens ta sacoche comme si y avait un bébé dedans. Qu'est-ce que tu caches ?
-> **[Lou] Chercher un abri, c'est tout.** → **Cuisine :** Mouais.
+> **[Lou] Chercher un abri, c'est tout.** → **Cuisine :** Mouais. *(Demi-mensonge à Cuisine, choisi par le joueur ; on s'en souviendra à l'étage 3.)*
 > **[Lou] J'ai fait une promesse. Je ne peux pas en dire plus.** → **Cuisine :** Correct. Garde-la. *(Compte comme une vérité.)*
 
 **M2 — La voix au haut-parleur** *(après l'énigme 2)* : l'opératrice annonce, sur le circuit général,
@@ -1088,8 +1096,8 @@ Ils intriguent à l'étage 1 sans bloquer, et restent dans la colonne « Questio
 | Le **« vieux dossier du fond »** | Rapport n° 1, dossier de la chambre 1 | Okafor avait une référence. | Étages 2 et 3 | Les mordus étaient connus du silo **bien avant** Marceau. |
 | Le **dessin de Lila** : 4 étages, « ICI ÇA TAPE » au 3ᵉ, croix au 4ᵉ | Pièce cachée | Un dessin d'enfant. | Étages 2, 3, 4 | Lila avait entendu le signal **avant tout le monde**. |
 | Le **signal « VIENS »** tapé à la main | Radio (fin d'étage) | Lila ? | Étage 2 (puis 3) | Ce n'est pas Lila : quelqu'un d'enfermé plus bas depuis longtemps. |
-| **L1 — Le paquet noué** de Lou (a16) | Sacoche (inventaire) | Un souvenir qu'il garde. « Pas maintenant. » | Étage 3 | Une clé de laiton au triangle : la clé des verrous du dehors. |
-| **L2 — Le trouble devant le triangle** de la photo | Entrée (a1) | « Ce triangle… Non. Rien. » | Étage 3 | Le même triangle est gravé sur sa clé : la marque des fondateurs. |
+| **L1 — Le paquet noué** de Lou (a16) et « Je ne devais pas entrer… » | Sacoche (inventaire, dès le début) ; première minute | Lou cache quelque chose, c'est sûr. Quoi ? « Pas maintenant. » | Étage 3 | Une clé de laiton au triangle : la clé des verrous du dehors. |
+| **L2 — Le trouble devant le triangle** de la photo | Entrée (a1) | « Ce triangle… » puis « … ». | Étage 3 | Le même triangle est gravé sur sa clé : la marque des fondateurs. |
 | **L3 — Le gant sur le verrou** | Entrée (première minute) | Un geste sans pensée. | Étage 4 | Le vieux serrurier de Lou a posé ces verrous ; il lui a fait promettre de fermer le silo de dehors. |
 
 **Ce qui ne sera jamais contredit plus bas :** Marceau était le premier mordu **de l'étage 1** ; Bérard
@@ -1185,6 +1193,8 @@ eu des mordus avant), ils ne reviennent pas dessus.
 - 5 mordus coriaces (favoriser l'évitement), chacun avec une ronde d'habitude ; pendant le gel par la
   lampe, `E` = Examiner. Marceau : aucun son ; la musique se coupe quand il est proche.
 - Lampe UV : même charge que la lampe, ne fige pas.
+- Borne de recharge : une seule recharge par visite du poste de sécurité (réarmée quand on quitte la pièce).
+- Exactement **5 mordus** à l'étage 1, tous **évitables** ; aucune scène (y compris M4, le commis) n'oblige à en vaincre un.
 
 **Interface (`ui/`)**
 - Carnet : onglets **Notes / Enregistrements / Photos / Tableau**.
@@ -1213,8 +1223,9 @@ SILLO 8 est un abri souterrain de quatre étages, et l'histoire est pensée pour
 par l'étage un. Un jeune bricoleur venu du dehors, Lou, bonnet olive et veste moutarde, arrive devant la
 grande porte du silo. Dessus, quelqu'un a écrit à la craie, en lettres d'enfant : « Ils sont
 descendus. Pas tous. » Près de la guérite, une radio grésille. Une voix de femme, douce et fatiguée,
-dit : « Ici l'opératrice de nuit, il y a quelqu'un ? » Puis plus rien. En une minute, le joueur veut
-savoir qui est resté.
+dit : « Ici l'opératrice de nuit, il y a quelqu'un ? » Puis plus rien. Lou pose la main sur un paquet
+noué dans sa sacoche et pense : « Je ne devais pas entrer… » En une minute, le joueur veut savoir qui
+est resté, et il sait que son héros cache quelque chose.
 
 À l'intérieur, cinq mordus errent encore. Ce sont de vrais zombies, mais chacun était un habitant,
 répète une vieille habitude et porte un indice. On peut les éviter, ou les figer à la lampe pour les
