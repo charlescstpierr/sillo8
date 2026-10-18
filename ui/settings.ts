@@ -1,6 +1,7 @@
 // Réglages persistés (localStorage « sillo8-settings ») et leur application au moteur.
 import type { Engine } from "@/game/engine";
 import { SERVER_ROUTE } from "@/game/dialogue";
+import { DEFAULT_SOUND } from "@/game/mix";
 
 export const SETTINGS_KEY = "sillo8-settings";
 
@@ -9,9 +10,18 @@ export interface Settings {
   endpoint: string;
   model: string;
   useServer: boolean;
+  /** Son : volumes 0 → 1 et vibration (absents des anciennes sauvegardes de réglages). */
+  master: number;
+  music: number;
+  sfx: number;
+  vibration: boolean;
 }
 
-export const DEFAULT_SETTINGS: Settings = { lowQuality: null, endpoint: "", model: "", useServer: false };
+export const DEFAULT_SETTINGS: Settings = { lowQuality: null, endpoint: "", model: "", useServer: false, ...DEFAULT_SOUND };
+
+function volume(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : fallback;
+}
 
 export function loadSettings(): Settings {
   try {
@@ -23,6 +33,10 @@ export function loadSettings(): Settings {
       endpoint: typeof data.endpoint === "string" ? data.endpoint.slice(0, 512) : "",
       model: typeof data.model === "string" ? data.model.slice(0, 128) : "",
       useServer: data.useServer === true,
+      master: volume(data.master, DEFAULT_SOUND.master),
+      music: volume(data.music, DEFAULT_SOUND.music),
+      sfx: volume(data.sfx, DEFAULT_SOUND.sfx),
+      vibration: typeof data.vibration === "boolean" ? data.vibration : DEFAULT_SOUND.vibration,
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -58,8 +72,14 @@ export function applyDialogue(engine: Engine, settings: Settings, serverEnabled:
 }
 
 /** Au démarrage : réglages enregistrés appliqués au moteur (l'adresse ?low= reste prioritaire). */
+/** Volumes et vibration appliqués au son du moteur. */
+export function applySound(engine: Engine, settings: Pick<Settings, "master" | "music" | "sfx" | "vibration">): void {
+  engine.audio.configure({ master: settings.master, music: settings.music, sfx: settings.sfx, vibration: settings.vibration });
+}
+
 export function applyStartupSettings(engine: Engine, urlLow: string | null): void {
   const settings = loadSettings();
+  applySound(engine, settings);
   if (urlLow === null && settings.lowQuality !== null && settings.lowQuality !== engine.lowQuality) {
     engine.setLowQuality(settings.lowQuality);
   }
