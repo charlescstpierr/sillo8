@@ -17,6 +17,9 @@ import { createHorde } from "./enemy";
 import { Combat, LAMP, WRENCH } from "./combat";
 import { checkTriggers, interactWith, type ProgressEffects } from "./progress";
 import type { Horde, HordeContext } from "./types";
+import { GameAudio } from "./audio";
+import { GameEvents } from "./events";
+import { SoundDirector } from "./sound";
 import { buildWorld, type WorldView } from "./render/world";
 import { animateOperator, buildOperator, type OperatorRig } from "./render/operator";
 import { PALETTE } from "./render/palette";
@@ -49,6 +52,10 @@ export class Engine {
   readonly world: WorldView;
   readonly horde: Horde;
   readonly combat: Combat;
+  /** Événements de jeu (le son les écoute, voir game/sound.ts) et son synthétisé. */
+  readonly events = new GameEvents();
+  readonly audio = new GameAudio();
+  private readonly sound = new SoundDirector(this.audio, this.events);
   tooltipEl: HTMLElement | null = null;
   lowQuality: boolean;
   /** Point visé au sol (souris), ou null. */
@@ -186,6 +193,7 @@ export class Engine {
   dispose(): void {
     this.stop();
     this.input.dispose();
+    this.audio.dispose();
     this.dialogue.cancel();
     this.resizeObserver?.disconnect();
     this.renderer.dispose();
@@ -444,6 +452,7 @@ export class Engine {
     if (this.ui.get().mode === "playing") this.simulate(dt);
     else this.input.clearPressed();
     this.render(dt);
+    this.sound.update(dt, this);
   }
 
   private simulate(dt: number): void {
@@ -592,7 +601,7 @@ export class Engine {
   }
 
   interact(def: InteractableDef): void {
-    interactWith(def, this.state, this.progressEffects);
+    this.events.emit({ type: "interact", id: def.id, changed: interactWith(def, this.state, this.progressEffects) });
   }
 
   private updateHighlights(): void {

@@ -76,6 +76,16 @@ lance-clous et voient mieux qui se tient debout : s'accroupir aide à passer.
 
 Logique pure dans `game/tutorial.ts` (testée par `tests/unit/tutorial.test.ts`), chevron dans `game/render/guide.ts`.
 
+## Son
+
+Aucun fichier audio : tout est synthétisé avec la Web Audio API (`game/audio.ts`, `game/music.ts`, `game/synth.ts`),
+démarré au premier geste. Boîte à musique mystérieuse en exploration, ambiance propre à chaque zone (vent, bourdonnement
+une fois la génératrice relancée, gouttes, tuyaux), bruits inexpliqués rares et lointains ; une couche de tension discrète
+monte quand des zombies en alerte sont tout près, et un battement de cœur sous 30 de vie. Le moteur émet des événements
+(`engine.events`, déduits à chaque image par `game/sound.ts`) que le son écoute. Pour l'enquête :
+`engine.audio.cue("radio_static", x, z)` (ou `engine.events.emit({ type: "cue", name, x, z })`).
+Volumes et vibration dans les réglages.
+
 ## Vérifier
 
 ```sh
