@@ -1,19 +1,24 @@
 // Construction 3D du silo : sols, murets coupés à mi-hauteur, portes, décor post-apocalyptique,
 // objets interactifs, lumières qui grésillent, poussière dans les faisceaux.
 import {
-  AdditiveBlending, BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial,
+  AdditiveBlending, BufferAttribute, Color, BufferGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial,
   PlaneGeometry, PointLight, Points, PointsMaterial, BoxGeometry, SphereGeometry, CylinderGeometry, TorusGeometry,
   type Scene,
 } from "three";
 import {
   DOORS, INTERACTABLES, ROOMS, WALL_HEIGHT, WALL_THICKNESS, buildWalls, doorBox, wallBox,
-  type InteractableDef, type Room,
+  type Door, type InteractableDef, type Room,
 } from "../level";
+import { doorOpen, interactableAvailable } from "../rules";
+import type { SiloState } from "../state";
+import { ARCHIVES_MODELS, decorateArchives } from "./sectors/archives";
+import { CORE_MODELS, decorateCore } from "./sectors/core";
+import { MAINTENANCE_MODELS, decorateMaintenance } from "./sectors/maintenance";
 import type { Box } from "../collision";
 import { glow, toon } from "./toon";
 import { PALETTE } from "./palette";
 import {
-  beamTexture, blobTexture, concreteTexture, crackTexture, dirtTexture, paperTexture, sprayTexture, drawingTexture, dustTexture, grimeTexture, holeTexture, liftTexture, rng, signTexture, tilesTexture,
+  beamTexture, blobTexture, concreteTexture, concreteFloorTexture, crackTexture, grateTexture, dirtTexture, paperTexture, sprayTexture, drawingTexture, dustTexture, grimeTexture, holeTexture, liftTexture, rng, signTexture, tilesTexture,
 } from "./textures";
 import {
   block, can, cable, crate, cylinder, decal, grass, hazardStrip, mesh, overgrowth, panel, rubble, signBoard, stringLights,
@@ -29,28 +34,60 @@ export interface InteractableView {
 }
 
 interface Flicker {
-  light: PointLight;
+  x: number; y: number; z: number;
+  color: string;
+  distance: number;
   base: number;
   seed: number;
   /** 0 = stable, 1 = grésille beaucoup. */
   nervous: number;
   bulb?: Mesh;
+  level: number;
 }
+
+/** Nombre de lampes ponctuelles réellement allumées : les plus proches du joueur prennent les places. */
+export const LIGHT_POOL = 6;
+
+/** Outils fournis aux modules de décor de chaque secteur (render/sectors/*). */
+export interface DecorContext {
+  root: Group;
+  /** Obstacles solides du décor (boîtes alignées sur les axes). */
+  colliders: Box[];
+  /** Lampe ponctuelle qui peut grésiller (nervous 0 → 1). `fixture` ajoute une ampoule visible. */
+  light(x: number, y: number, z: number, color: string, intensity: number, distance: number, nervous: number, seed: number, fixture?: boolean): void;
+  /** Faisceau poussiéreux vertical sous une lampe. */
+  beam(x: number, top: number, z: number, radius: number, color: string): void;
+  /** Point d'émission de poussière flottante (au plus ~4 par secteur). */
+  dust(x: number, y: number, z: number): void;
+  /** Animation de décor appelée à chaque image (temps en secondes, position du joueur). */
+  animate(fn: (dt: number, time: number, playerX: number, playerZ: number) => void): void;
+}
+
+export type ModelBuilder = (def: InteractableDef) => { group: Group; height: number };
 
 export interface WorldView {
   root: Group;
+  /** Murs, décor solide et portes encore fermées. Recalculé par refresh(). */
   colliders: Box[];
   interactables: Map<string, InteractableView>;
-  update(dt: number, time: number): void;
+  /** Met à jour portes, relais, cœur et objets ramassés selon l'état (port de SiloWorld.refresh). */
+  refresh(state: SiloState): void;
+  update(dt: number, time: number, playerX: number, playerZ: number): void;
+  /** Éclairage de fin : rouge-orangé (MÈRE) ou teal (N-7). */
+  setEndingTint(ending: "" | "mother" | "n7"): void;
+  /** Coupure brève de toutes les lampes (événement « colosse »). */
+  shudder(): void;
   setLowQuality(low: boolean): void;
 }
 
 function floor(root: Group, room: Room): void {
   const w = room.x1 - room.x0;
   const d = room.z1 - room.z0;
-  const texture = (room.floor === "lift" ? liftTexture() : tilesTexture()).clone();
+  const source = { lift: liftTexture, tiles: tilesTexture, concrete: concreteFloorTexture, grate: grateTexture }[room.floor]();
+  const texture = source.clone();
   texture.needsUpdate = true;
-  texture.repeat.set(w / 2, d / 2);
+  const tile = room.floor === "grate" ? 1 : 2;
+  texture.repeat.set(w / tile, d / tile);
   const m = mesh(new PlaneGeometry(w, d), toon("#ffffff", { map: texture, rim: 0 }), (room.x0 + room.x1) / 2, 0, (room.z0 + room.z1) / 2, false);
   m.rotation.x = -Math.PI / 2;
   root.add(m);
@@ -127,7 +164,9 @@ function wall(root: Group, x0: number, z0: number, x1: number, z1: number): void
   }
 }
 
-function doorFrame(root: Group, colliders: Box[], index: number): void {
+interface LockView { door: Door; group: Group; open: boolean; box: Box; }
+
+function doorFrame(root: Group, index: number, locks: LockView[]): void {
   const door = DOORS[index];
   const half = door.width / 2;
   for (const side of [-1, 1]) {
@@ -141,29 +180,40 @@ function doorFrame(root: Group, colliders: Box[], index: number): void {
   decal(root, label, door.x, door.z + 1.0, 3.2, 0.6, 0, 0.016);
   hazardStrip(root, door.x, door.z + 0.3, door.width, 0.2);
   hazardStrip(root, door.x, door.z - 0.3, door.width, 0.2);
-  if (door.locked) {
-    // Sas fermé : deux battants d'acier et un voyant rouge.
-    for (const side of [-1, 1]) {
-      const leaf = block(root, half, 1.5, 0.16, PALETTE.steel, door.x + side * half / 2, 0, door.z, 0.03);
-      leaf.name = "door-leaf";
-      block(root, 0.08, 1.2, 0.18, PALETTE.danger, door.x + side * 0.06, 0.15, door.z, 0.02);
+  if (door.lock) {
+    const group = new Group();
+    group.position.set(door.x, 0, door.z);
+    if (door.axis === "z") group.rotation.y = Math.PI / 2;
+    if (door.lock === "gate") {
+      // Porte blindée du cœur : deux battants d'acier, voyant rouge, « RELAIS HORS LIGNE ».
+      for (const side of [-1, 1]) {
+        const leaf = block(group, half, 1.5, 0.16, PALETTE.steel, side * half / 2, 0, 0, 0.03);
+        leaf.name = side < 0 ? "leaf-left" : "leaf-right";
+        block(leaf, 0.08, 1.2, 0.18, PALETTE.danger, -side * (half / 2 - 0.06), -0.6, 0, 0.02);
+      }
+      panel(group, signTexture("VERROUILLÉ\nRELAIS HORS LIGNE", { bg: PALETTE.paper, fg: PALETTE.danger, border: PALETTE.danger, width: 256, height: 96 }), 0, 1.1, 0.1, 1.2, 0.45, 0);
+    } else {
+      // Verrou électrique : barreaux sous tension rouge-orangé.
+      for (let i = 0; i < 7; i++) {
+        const x = -half + 0.2 + (i * (door.width - 0.4)) / 6;
+        const bar = mesh(new CylinderGeometry(0.03, 0.03, 1.5, 6), glow(PALETTE.danger), x, 0.75, 0, false);
+        group.add(bar);
+      }
+      block(group, door.width, 0.1, 0.2, PALETTE.steelDark, 0, 1.5, 0, 0.02);
+      block(group, door.width, 0.1, 0.2, PALETTE.steelDark, 0, 0, 0, 0.02);
     }
-    colliders.push(doorBox(door));
+    root.add(group);
+    locks.push({ door, group, open: false, box: doorBox(door) });
   }
 }
 
-function addLight(root: Group, flickers: Flicker[], x: number, y: number, z: number, color: string, intensity: number, distance: number, nervous: number, seed: number, fixture = true): PointLight {
-  const light = new PointLight(color, intensity, distance, 1.6);
-  light.position.set(x, y, z);
-  light.castShadow = false;
-  root.add(light);
+function addLight(root: Group, flickers: Flicker[], x: number, y: number, z: number, color: string, intensity: number, distance: number, nervous: number, seed: number, fixture = true): void {
   let bulb: Mesh | undefined;
   if (fixture) {
     bulb = mesh(new SphereGeometry(0.09, 10, 8), new MeshBasicMaterial({ color }), x, y, z, false);
     root.add(bulb);
   }
-  flickers.push({ light, base: intensity, seed, nervous, bulb });
-  return light;
+  flickers.push({ x, y, z, color, distance, base: intensity, seed, nervous, bulb, level: 1 });
 }
 
 /** Faisceau lumineux poussiéreux sous une lampe : deux plans croisés additifs. */
@@ -198,7 +248,7 @@ function dust(root: Group, centers: [number, number, number][], perCenter: numbe
 }
 
 /** Couche de ruine commune : fissures, salissures, papiers, dalles tombées. */
-function ruin(root: Group, x0: number, x1: number, z0: number, z1: number, seed: number, slabs: number, density = 1): void {
+export function ruin(root: Group, x0: number, x1: number, z0: number, z1: number, seed: number, slabs: number, density = 1): void {
   const r = rng(seed);
   const rx = () => x0 + 0.8 + r() * (x1 - x0 - 1.6);
   const rz = () => z0 + 0.8 + r() * (z1 - z0 - 1.6);
@@ -222,6 +272,15 @@ function ruin(root: Group, x0: number, x1: number, z0: number, z1: number, seed:
 }
 
 // ——— Objets interactifs ———
+
+/** Modèles fournis par les secteurs (relais, N-7, archive, verrou, cœur…). */
+const SECTOR_MODELS: Record<string, ModelBuilder> = { ...MAINTENANCE_MODELS, ...ARCHIVES_MODELS, ...CORE_MODELS };
+
+/** Réactions des secteurs à l'état (ex. panneau du relais qui disparaît après le scan). */
+const REFRESH_HOOKS: ((view: WorldView, state: SiloState) => void)[] = [];
+export function onWorldRefresh(hook: (view: WorldView, state: SiloState) => void): void {
+  if (!REFRESH_HOOKS.includes(hook)) REFRESH_HOOKS.push(hook);
+}
 
 function interactableModel(def: InteractableDef): { group: Group; height: number } {
   const g = new Group();
@@ -483,6 +542,17 @@ export function buildWorld(scene: Scene): WorldView {
   scene.add(root);
   const colliders: Box[] = [];
   const flickers: Flicker[] = [];
+  const locks: LockView[] = [];
+  const dustCenters: [number, number, number][] = [[0, 2.3, 8.4], [0, 2.1, -5], [-5.5, 1.9, 0.8], [5, 1.4, -5.4]];
+  const decor: DecorContext = {
+    root,
+    colliders,
+    light: (x, y, z, color, intensity, distance, nervous, seed, fixture = true) => addLight(root, flickers, x, y, z, color, intensity, distance, nervous, seed, fixture),
+    beam: (x, top, z, radius, color) => beam(root, x, top, z, radius, color),
+    dust: (x, y, z) => { dustCenters.push([x, y, z]); },
+    animate: (fn) => { animations.push(fn); },
+  };
+  const animations: ((dt: number, time: number, playerX: number, playerZ: number) => void)[] = [];
 
   // Fond sombre sous le silo (terre, vide au-delà des murs).
   const ground = mesh(new PlaneGeometry(120, 120), toon(PALETTE.sky, { rim: 0 }), 0, -0.02, -10, false);
@@ -494,9 +564,12 @@ export function buildWorld(scene: Scene): WorldView {
     wall(root, w.x0, w.z0, w.x1, w.z1);
     colliders.push(wallBox(w));
   }
-  DOORS.forEach((_, i) => doorFrame(root, colliders, i));
+  DOORS.forEach((_, i) => doorFrame(root, i, locks));
   decorateRefuge(root, flickers);
   decorateDecon(root, flickers);
+  decorateMaintenance(decor);
+  decorateArchives(decor);
+  decorateCore(decor);
 
   // Obstacles solides du décor.
   colliders.push(
@@ -512,26 +585,101 @@ export function buildWorld(scene: Scene): WorldView {
   for (const z of [-1.8, -5, -8.2]) for (const side of [-1, 1]) colliders.push({ minX: side * 1.7 - 0.1, maxX: side * 1.7 + 0.1, minZ: z - 0.1, maxZ: z + 0.1 });
 
   const interactables = new Map<string, InteractableView>();
+  const solidItems = new Map<string, Box>();
   for (const def of INTERACTABLES) {
-    const { group, height } = interactableModel(def);
+    const { group, height } = (SECTOR_MODELS[def.id] ?? interactableModel)(def);
     root.add(group);
     const highlight = addHighlight(group);
     interactables.set(def.id, { def, group, highlight, tooltipHeight: height });
-    if (!def.kind) colliders.push({ minX: def.x - def.radius, maxX: def.x + def.radius, minZ: def.z - def.radius * 0.8, maxZ: def.z + def.radius * 0.8 });
+    if (def.solid ?? !def.kind) solidItems.set(def.id, { minX: def.x - def.radius, maxX: def.x + def.radius, minZ: def.z - def.radius * 0.8, maxZ: def.z + def.radius * 0.8 });
   }
 
-  const motes = dust(root, [[0, 2.3, 8.4], [0, 2.1, -5], [-5.5, 1.9, 0.8], [5, 1.4, -5.4]], 60);
+  const staticColliders = [...colliders];
+  const view: WorldView = { root, colliders: [], interactables, refresh, update, setEndingTint, shudder, setLowQuality };
+  const motes = dust(root, dustCenters, lowDust() ? 30 : 50);
   let lowQuality = false;
+  let shudderTime = 0;
+  let tint: Color | null = null;
+  const pool: PointLight[] = [];
+  for (let i = 0; i < LIGHT_POOL; i++) {
+    const light = new PointLight("#ffffff", 0, 8, 1.6);
+    light.castShadow = false;
+    root.add(light);
+    pool.push(light);
+  }
+  let poolClock = 0;
+  let assigned: Flicker[] = [];
 
-  function update(dt: number, time: number): void {
+  function refresh(state: SiloState): void {
+    const active: Box[] = [...staticColliders];
+    for (const lock of locks) {
+      const open = doorOpen(lock.door, state);
+      if (open !== lock.open) {
+        lock.open = open;
+        if (lock.door.lock === "gate") {
+          // Les battants s'enfoncent dans le sol.
+          for (const leaf of lock.group.children.filter((c) => c.name.startsWith("leaf"))) leaf.userData.target = open ? -1.55 : 0;
+          lock.group.userData.animating = true;
+        } else lock.group.visible = !open;
+      }
+      if (!open) active.push(lock.box);
+    }
+    for (const [id, item] of interactables) {
+      const available = interactableAvailable(item.def, state);
+      item.group.visible = available;
+      item.group.userData.available = available;
+      const box = solidItems.get(id);
+      if (box && available) active.push(box);
+    }
+    view.colliders = active;
+    for (const hook of REFRESH_HOOKS) hook(view, state);
+  }
+
+  function setEndingTint(ending: "" | "mother" | "n7"): void {
+    tint = ending === "" ? null : new Color(ending === "mother" ? "#ff6737" : "#63e9e0");
+  }
+
+  function shudder(): void {
+    shudderTime = 1.0;
+  }
+
+  function update(dt: number, time: number, playerX: number, playerZ: number): void {
+    // Portes du cœur qui s'ouvrent.
+    for (const lock of locks) {
+      if (!lock.group.userData.animating) continue;
+      let moving = false;
+      for (const leaf of lock.group.children) {
+        if (leaf.userData.target === undefined) continue;
+        const target = leaf.userData.target as number;
+        leaf.position.y += (target - leaf.position.y) * Math.min(1, dt * 2.5);
+        if (Math.abs(target - leaf.position.y) > 0.01) moving = true;
+      }
+      lock.group.userData.animating = moving;
+    }
+    for (const fn of animations) fn(dt, time, playerX, playerZ);
+    shudderTime = Math.max(0, shudderTime - dt);
+    const dim = shudderTime > 0 ? (shudderTime > 0.85 ? 0.05 : 1 - shudderTime * 0.8) : 1;
     for (const f of flickers) {
       // Bruit pseudo-aléatoire : variations douces + coupures brèves pour les lampes nerveuses.
       const wobble = Math.sin(time * 9 + f.seed * 7) * 0.5 + Math.sin(time * 23 + f.seed * 3) * 0.5;
       const cut = Math.sin(time * 1.7 + f.seed * 11) > 0.93 - f.nervous * 0.1 && Math.sin(time * 41 + f.seed) > 0 ? 0.15 : 1;
-      const level = (1 - f.nervous * 0.25 + wobble * f.nervous * 0.2) * (f.nervous > 0.3 ? cut : 1);
-      f.light.intensity = f.base * level;
-      if (f.bulb) (f.bulb.material as MeshBasicMaterial).color.setScalar(0.4 + level * 0.6).multiply(f.light.color);
+      f.level = (1 - f.nervous * 0.25 + wobble * f.nervous * 0.2) * (f.nervous > 0.3 ? cut : 1) * dim;
+      if (f.bulb) (f.bulb.material as MeshBasicMaterial).color.set(tint ?? f.color).multiplyScalar(0.4 + f.level * 0.6);
     }
+    // Les lampes les plus proches du joueur occupent les places de lumière (coût constant).
+    poolClock -= dt;
+    if (poolClock <= 0) {
+      poolClock = 0.4;
+      assigned = [...flickers].sort((a, b) => Math.hypot(a.x - playerX, a.z - playerZ) - Math.hypot(b.x - playerX, b.z - playerZ)).slice(0, LIGHT_POOL);
+    }
+    pool.forEach((light, i) => {
+      const f = assigned[i];
+      if (!f) { light.intensity = 0; return; }
+      light.position.set(f.x, f.y, f.z);
+      light.color.set(tint ?? f.color);
+      light.distance = f.distance;
+      light.intensity = f.base * f.level;
+    });
     if (!lowQuality) {
       const positions = motes.geometry.getAttribute("position") as BufferAttribute;
       const origin = motes.userData.origin as Float32Array;
@@ -544,15 +692,16 @@ export function buildWorld(scene: Scene): WorldView {
     }
   }
 
-  return {
-    root,
-    colliders,
-    interactables,
-    update,
-    setLowQuality(low) {
-      lowQuality = low;
-      motes.visible = !low;
-    },
-  };
+  function setLowQuality(low: boolean): void {
+    lowQuality = low;
+    motes.visible = !low;
+  }
+
+  view.colliders = [...staticColliders, ...locks.map((l) => l.box), ...solidItems.values()];
+  return view;
+}
+
+function lowDust(): boolean {
+  return typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
 }
 

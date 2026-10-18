@@ -1,0 +1,29 @@
+// Mode d'interface courant (port des modes de main.gd). La simulation ne tourne qu'en mode "playing".
+import type { Character } from "./state";
+
+export type UiMode = "menu" | "playing" | "pause" | "settings" | "inventory" | "dialogue" | "ending" | "conclusion" | "death";
+
+export interface UiSnapshot {
+  mode: UiMode;
+  /** Mode d'où l'on vient (retour depuis les réglages). */
+  previous: UiMode;
+  /** Interlocuteur du dialogue, ou choix de fin pour la conclusion. */
+  character: Character;
+}
+
+export class UiStore {
+  private snapshot: UiSnapshot = { mode: "playing", previous: "playing", character: "mother" };
+  private listeners = new Set<() => void>();
+
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  };
+
+  get = (): UiSnapshot => this.snapshot;
+
+  set(mode: UiMode, character?: Character): void {
+    this.snapshot = { mode, previous: this.snapshot.mode, character: character ?? this.snapshot.character };
+    for (const listener of this.listeners) listener();
+  }
+}

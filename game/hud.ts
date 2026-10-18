@@ -11,6 +11,10 @@ export interface HudSnapshot {
   ammo: number;
   reserve: number;
   components: number;
+  medkits: number;
+  cells: number;
+  /** 0 = D9, 1 = ARC-3. */
+  weapon: 0 | 1;
   reloading: boolean;
   notice: string;
   noticeId: number;

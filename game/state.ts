@@ -50,6 +50,15 @@ export class SiloState {
     return () => this.listeners.delete(listener);
   }
 
+  /** Remet une partie neuve en place (nouvelle descente), en gardant les abonnés. */
+  reset(): void {
+    const fresh = new SiloState();
+    const listeners = this.listeners;
+    Object.assign(this, fresh);
+    this.listeners = listeners;
+    this.changed();
+  }
+
   private changed(): void {
     for (const listener of this.listeners) listener();
   }

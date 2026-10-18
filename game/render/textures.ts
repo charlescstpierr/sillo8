@@ -405,3 +405,40 @@ export function sprayTexture(text: string, color: string): Texture {
     for (let k = 0; k < 8; k++) g.fillRect(40 + r() * (w - 80), h / 2 + size * 0.3, 2, 8 + r() * 26);
   }, false);
 }
+
+/** Dalle de béton brut fissurée (maintenance, cœur). 1 texture = 2 × 2 m. */
+export function concreteFloorTexture(): Texture {
+  return make("concrete-floor", 512, 512, (g, w, h) => {
+    const r = rng(19);
+    g.fillStyle = "#9c9a8c";
+    g.fillRect(0, 0, w, h);
+    for (let k = 0; k < 60; k++) {
+      const x = r() * w, y = r() * h, rad = 10 + r() * 60;
+      const grad = g.createRadialGradient(x, y, 0, x, y, rad);
+      grad.addColorStop(0, r() > 0.5 ? "rgba(255,250,235,0.08)" : "rgba(50,45,35,0.12)");
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = grad;
+      g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    }
+    g.strokeStyle = "rgba(60,55,45,0.5)";
+    g.lineWidth = 3;
+    g.strokeRect(0, 0, w, h);
+    for (let k = 0; k < 4; k++) crack(g, r, r() * w, r() * h, 140, "rgba(50,45,35,0.55)");
+  });
+}
+
+/** Caillebotis métallique (conduites, local technique). 1 texture = 1 × 1 m. */
+export function grateTexture(): Texture {
+  return make("grate", 256, 256, (g, w, h) => {
+    g.fillStyle = "#2a2f30";
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "#7d8a8c";
+    for (let i = 0; i < 8; i++) {
+      g.fillRect(i * 32 + 3, 0, 6, h);
+      g.fillRect(0, i * 32 + 3, w, 6);
+    }
+    g.fillStyle = "rgba(168,86,46,0.35)";
+    const r = rng(23);
+    for (let k = 0; k < 6; k++) { g.beginPath(); g.arc(r() * w, r() * h, 10 + r() * 25, 0, Math.PI * 2); g.fill(); }
+  });
+}

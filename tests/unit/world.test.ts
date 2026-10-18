@@ -6,7 +6,7 @@ import { PLAYER, PlayerController } from "@/game/player";
 import { SPAWN as STATE_SPAWN } from "@/game/state";
 
 const walls = buildWalls().map(wallBox);
-const blocked = [...walls, ...DOORS.filter((d) => d.locked).map(doorBox)];
+const blocked = [...walls, ...DOORS.filter((d) => d.lock).map(doorBox)];
 
 describe("plan", () => {
   it("place le départ dans le refuge, cohérent avec l'état", () => {
@@ -23,14 +23,15 @@ describe("plan", () => {
       ids.add(item.id);
     }
     for (const id of ["mother", "recharge", "upgrade", "ending"]) expect(roomAt(INTERACTABLES.find((i) => i.id === id)!.x, INTERACTABLES.find((i) => i.id === id)!.z)?.id).toBe("refuge");
-    expect(INTERACTABLES.filter((i) => i.kind === "components")).toHaveLength(3);
+    expect(INTERACTABLES.filter((i) => i.kind === "components")).toHaveLength(9);
   });
 
   it("laisse les portes ouvertes praticables et bloque le sas verrouillé", () => {
     expect(segmentClear(0, 8, 0, -5, blocked)).toBe(true);
-    expect(segmentClear(0, -5, 0, -14, blocked)).toBe(false);
+    expect(segmentClear(0, -5, 0, -40, blocked)).toBe(true);
+    expect(segmentClear(0, -40, 0, -52, blocked)).toBe(false);
     expect(segmentClear(-6, 0, -6, 8, blocked)).toBe(false);
-    for (const room of ROOMS) expect(room.x1 - room.x0).toBeGreaterThan(5);
+    for (const room of ROOMS) expect(Math.min(room.x1 - room.x0, room.z1 - room.z0)).toBeGreaterThanOrEqual(3);
   });
 });
 
@@ -73,10 +74,10 @@ describe("opérateur", () => {
   it("reste dans le silo en fonçant dans les murs", () => {
     const p = new PlayerController(SPAWN.x, SPAWN.z, 0);
     for (let i = 0; i < 600; i++) p.update(1 / 60, intent(0, -1, { sprint: true }), blocked);
-    expect(roomAt(p.x, p.z)?.id).toBe("decon");
-    expect(p.z).toBeGreaterThan(-12);
+    expect(roomAt(p.x, p.z)?.id).toBe("archives");
+    expect(p.z).toBeGreaterThan(-48);
     for (let i = 0; i < 600; i++) p.update(1 / 60, intent(1, 0, { sprint: true }), blocked);
-    expect(p.x).toBeLessThan(8);
+    expect(p.x).toBeLessThan(11);
   });
 
   it("tire et recharge au rythme du D9", () => {

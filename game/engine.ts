@@ -1,16 +1,22 @@
-// Boucle de jeu three.js, hors de React. L'interface lit `hud` et positionne l'infobulle via `tooltipEl`.
+// Boucle de jeu three.js, hors de React. L'interface lit `hud` et `ui`, et positionne l'infobulle via `tooltipEl`.
+// Port de main.gd (modes, partie, fins) et de SiloWorld.interact.
 import {
-  Clock, Color, DirectionalLight, Fog, HemisphereLight, Mesh, MeshBasicMaterial, NeutralToneMapping, PCFSoftShadowMap,
-  PerspectiveCamera, Scene, SphereGeometry, SRGBColorSpace, Vector3, WebGLRenderer,
+  Clock, Color, DirectionalLight, Fog, HemisphereLight, NeutralToneMapping, PCFSoftShadowMap,
+  PerspectiveCamera, Scene, SRGBColorSpace, Vector3, WebGLRenderer, type Mesh,
 } from "three";
 import { CAMERA, CameraRig } from "./camera";
 import { AIM_HEIGHT, assistTarget, groundPoint, yawTowards } from "./aim";
 import { InputState } from "./input";
 import { PlayerController } from "./player";
-import { SiloState, type KeyValueStore } from "./state";
+import { Phase, SiloState, type Character, type KeyValueStore } from "./state";
 import { SiloDialogue } from "./dialogue";
-import { sectorAt, type InteractableDef } from "./level";
+import { COLOSSUS_Z, DOORS, sectorAt, type InteractableDef } from "./level";
+import { doorOpen, interactableAvailable } from "./rules";
 import { HudStore, type HudSnapshot } from "./hud";
+import { UiStore, type UiMode } from "./ui";
+import { createHorde } from "./enemy";
+import { Combat } from "./combat";
+import type { Horde, HordeContext } from "./types";
 import { buildWorld, type WorldView } from "./render/world";
 import { animateOperator, buildOperator, type OperatorRig } from "./render/operator";
 import { PALETTE } from "./render/palette";
@@ -30,6 +36,7 @@ export class Engine {
   readonly dialogue = new SiloDialogue();
   readonly input = new InputState();
   readonly hud: HudStore;
+  readonly ui = new UiStore();
   readonly renderer: WebGLRenderer;
   readonly scene = new Scene();
   readonly camera: PerspectiveCamera;
@@ -37,12 +44,14 @@ export class Engine {
   readonly player: PlayerController;
   readonly operator: OperatorRig;
   readonly world: WorldView;
+  readonly horde: Horde;
+  readonly combat: Combat;
   tooltipEl: HTMLElement | null = null;
-  paused = false;
   lowQuality: boolean;
   /** Point visé au sol (souris), ou null. */
   aimPoint: Vector3 | null = null;
   focus: InteractableDef | null = null;
+  storage: KeyValueStore | null;
 
   private clock = new Clock();
   private frame = 0;
@@ -56,13 +65,14 @@ export class Engine {
   private notice = "";
   private noticeId = 0;
   private noticeTime = 0;
+  private colossusTriggered = false;
+  private worldDirty = true;
   private sun: DirectionalLight;
-  private flash: Mesh;
   private shadowBlob: Mesh;
-  private storage: KeyValueStore | null;
   private readonly tmp = new Vector3();
   private readonly aimTmp = new Vector3();
   private resizeObserver: ResizeObserver | null = null;
+  private hordeContext: HordeContext;
 
   constructor(readonly canvas: HTMLCanvasElement, options: EngineOptions = {}) {
     this.lowQuality = options.lowQuality ?? false;
@@ -80,17 +90,11 @@ export class Engine {
     this.camera = new PerspectiveCamera(CAMERA.fov, 16 / 9, 0.5, 120);
     this.rig = new CameraRig(this.camera);
 
-    const hemi = new HemisphereLight("#ffe9c8", "#3d4a3c", 0.95);
-    this.scene.add(hemi);
+    this.scene.add(new HemisphereLight("#ffe9c8", "#3d4a3c", 0.95));
     this.sun = new DirectionalLight("#ffd7a3", 1.25);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
-    this.sun.shadow.camera.left = -15;
-    this.sun.shadow.camera.right = 15;
-    this.sun.shadow.camera.top = 15;
-    this.sun.shadow.camera.bottom = -15;
-    this.sun.shadow.camera.near = 1;
-    this.sun.shadow.camera.far = 40;
+    Object.assign(this.sun.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15, near: 1, far: 40 });
     this.sun.shadow.bias = -0.0008;
     this.sun.shadow.normalBias = 0.03;
     this.sun.shadow.radius = 4;
@@ -102,14 +106,35 @@ export class Engine {
     this.operator = buildOperator();
     this.scene.add(this.operator.root, this.operator.droppedMag);
     this.shadowBlob = decal(this.scene, blobTexture("shadow"), px, pz, 1.1, 1.1, 0, 0.02);
-    this.flash = new Mesh(new SphereGeometry(0.11, 8, 6), new MeshBasicMaterial({ color: "#ffe28a", transparent: true, opacity: 0.95 }));
-    this.flash.visible = false;
-    this.flash.position.set(0, -0.36, 0.02);
-    this.operator.gun.add(this.flash);
+
+    this.horde = createHorde(this.state);
+    this.scene.add(this.horde.root);
+    this.hordeContext = {
+      player: { x: px, z: pz, crouched: false, alive: true },
+      colliders: this.world.colliders,
+      doorOpen: (id) => {
+        const door = DOORS.find((d) => d.id === id);
+        return door ? doorOpen(door, this.state) : false;
+      },
+      damagePlayer: (amount) => this.damagePlayer(amount),
+      dormant: false,
+    };
+    this.combat = new Combat({
+      scene: this.scene,
+      state: this.state,
+      player: this.player,
+      operator: this.operator,
+      horde: this.horde,
+      world: this.world,
+      notify: (text) => this.notify(text),
+      noise: (x, z, radius) => this.horde.hearNoise(x, z, radius),
+    });
 
     this.dialogue.setup(this.state);
+    this.state.subscribe(() => { this.worldDirty = true; });
     this.hud = new HudStore(this.snapshot());
     this.setLowQuality(this.lowQuality);
+    this.refreshWorld();
     this.rig.snap(new Vector3(px, 0, pz));
     this.input.attach(canvas);
     this.resize();
@@ -160,16 +185,141 @@ export class Engine {
     this.lowQuality = low;
     this.renderer.shadowMap.enabled = !low;
     this.sun.castShadow = !low;
-    this.shadowBlob.visible = true;
-    this.operator.headlamp.visible = true;
     this.world.setLowQuality(low);
+    this.horde.setLowQuality(low);
+    this.combat.setLowQuality(low);
     this.resize();
   }
 
+  // ——— Modes et partie (port de main.gd) ———
+
+  get paused(): boolean {
+    return this.ui.get().mode !== "playing";
+  }
+
+  setMode(mode: UiMode, character?: Character): void {
+    this.ui.set(mode, character);
+    if (mode !== "playing") this.input.releaseAll();
+    this.publishHud();
+  }
+
+  /** Pause / reprise (bouton ❚❚, Échap). */
   setPaused(paused: boolean): void {
-    this.paused = paused;
-    if (paused) this.input.releaseAll();
-    this.publishHud(true);
+    if (paused) this.openPause();
+    else this.resume();
+  }
+
+  resume(): void {
+    this.dialogue.cancel();
+    this.setMode(this.state.health > 0 ? "playing" : "death");
+  }
+
+  newGame(): void {
+    this.dialogue.cancel();
+    this.state.reset();
+    this.startRun();
+    this.setMode("playing");
+    this.notify("MÈRE : Bienvenue au niveau 09. Trouvez le relais et rétablissez l'alimentation.");
+  }
+
+  saveGame(): boolean {
+    if (!this.storage) {
+      this.notify("Sauvegarde indisponible dans ce navigateur.");
+      return false;
+    }
+    if (this.state.health <= 0) {
+      this.notify("Sauvegarde indisponible dans cet état.");
+      return false;
+    }
+    this.state.playerPosition = [this.player.x, 0, this.player.z];
+    this.state.playerYaw = this.player.yaw;
+    const result = this.state.saveGame(this.storage);
+    this.notify(result === "ok" ? "Progression sauvegardée." : "Échec de sauvegarde.");
+    return result === "ok";
+  }
+
+  hasSave(): boolean {
+    try {
+      return Boolean(this.storage?.getItem("silo9-save"));
+    } catch {
+      return false;
+    }
+  }
+
+  loadGame(): boolean {
+    if (!this.storage) {
+      this.notify("Sauvegarde indisponible dans ce navigateur.");
+      return false;
+    }
+    // Validation sur une copie : un échec laisse la partie en cours intacte.
+    const result = new SiloState().loadGame(this.storage);
+    if (result !== "ok") {
+      this.notify(result === "missing" ? "Aucune sauvegarde." : "Sauvegarde invalide.");
+      return false;
+    }
+    this.dialogue.cancel();
+    this.state.loadGame(this.storage);
+    this.startRun();
+    this.setMode("playing");
+    this.notify("Progression restaurée.");
+    return true;
+  }
+
+  /** Replace le joueur et le monde d'après l'état courant (nouvelle partie ou chargement). */
+  private startRun(): void {
+    const [x, , z] = this.state.playerPosition;
+    this.player.x = x;
+    this.player.z = z;
+    this.player.vx = this.player.vz = 0;
+    this.player.yaw = this.state.playerYaw;
+    this.player.reloadTime = 0;
+    this.colossusTriggered = z < COLOSSUS_Z;
+    this.horde.sync(this.state);
+    this.refreshWorld();
+    this.rig.snap(new Vector3(x, 0, z));
+  }
+
+  openPause(): void {
+    this.setMode("pause");
+  }
+
+  openInventory(): void {
+    this.setMode("inventory");
+  }
+
+  openConversation(character: Character): void {
+    this.setMode("dialogue", character);
+  }
+
+  openEnding(): void {
+    if (this.state.phase < Phase.CORE_RECOVERED || this.state.ending !== "") {
+      this.notify("Récupérez d'abord le noyau dans le secteur 04.");
+      return;
+    }
+    this.setMode("ending");
+  }
+
+  chooseEnding(choice: Character): boolean {
+    if (!this.state.chooseEnding(choice)) {
+      this.notify("Ce choix n'est pas disponible.");
+      return false;
+    }
+    this.refreshWorld();
+    this.saveGame();
+    this.setMode("conclusion", choice);
+    return true;
+  }
+
+  useMedkit(): boolean {
+    const ok = this.state.heal();
+    this.notify(ok ? "Santé restaurée." : "Aucune trousse utilisable.");
+    return ok;
+  }
+
+  useCell(): boolean {
+    const ok = this.state.useCell();
+    this.notify(ok ? "Batterie rechargée." : "Aucune cellule utilisable.");
+    return ok;
   }
 
   notify(text: string): void {
@@ -178,12 +328,32 @@ export class Engine {
     this.noticeTime = 6;
   }
 
+  damagePlayer(amount: number): void {
+    if (this.state.health <= 0) return;
+    this.state.damage(amount);
+    this.operator.root.userData.hurt = 0.25;
+    if (this.state.health <= 0) this.setMode("death");
+  }
+
+  private refreshWorld(): void {
+    this.worldDirty = false;
+    this.world.refresh(this.state);
+    this.world.setEndingTint(this.state.ending);
+    this.hordeContext.colliders = this.world.colliders;
+  }
+
+  // ——— Boucle ———
+
   /** Avance la simulation d'un pas (utilisé aussi par les tests). */
   tick(dt: number): void {
     this.input.update();
-    if (this.input.consume("pause")) this.setPaused(!this.paused);
+    const mode = this.ui.get().mode;
     if (this.input.consume("perf")) this.showPerf = !this.showPerf;
-    if (!this.paused) this.simulate(dt);
+    if (this.input.consume("pause")) {
+      if (mode === "playing") this.openPause();
+      else if (mode !== "menu" && mode !== "death" && mode !== "ending") this.resume();
+    } else if (mode === "inventory" && this.input.consume("inventory")) this.resume();
+    if (this.ui.get().mode === "playing") this.simulate(dt);
     else this.input.clearPressed();
     this.render(dt);
   }
@@ -193,6 +363,7 @@ export class Engine {
     this.state.elapsed += dt;
     const input = this.input;
     this.rig.zoom(input.takeZoom());
+    if (this.worldDirty) this.refreshWorld();
 
     // Visée
     let aimYaw: number | null = null;
@@ -209,43 +380,52 @@ export class Engine {
       aimYaw = Math.atan2(input.aimStick.x, -input.aimStick.y);
       aiming = true;
     } else if (input.device === "touch") {
-      const target = assistTarget(this.player.x, this.player.z, this.player.yaw, this.aimCandidates());
+      const target = assistTarget(this.player.x, this.player.z, this.player.yaw, this.horde.aimCandidates());
       if (target) {
         aimYaw = yawTowards(this.player.x, this.player.z, target.x, target.z);
         aiming = true;
-      } else if (input.firing) {
-        aiming = true;
       }
     }
-    if (input.firing && !aiming) aiming = true;
+    if (input.firing) aiming = true;
 
     // Déplacement (le haut de l'écran est le nord, −Z)
     this.player.update(dt, { x: input.move.x, z: -input.move.y, sprint: input.sprint, crouch: input.crouch, aimYaw }, this.world.colliders);
 
-    // Armes (le tir lui-même et les dégâts arrivent à l'étape 3)
-    if (input.firing && this.player.tryFire(() => this.state.fireRound())) {
-      this.flash.visible = true;
-      this.flash.scale.setScalar(1);
-    }
-    if (input.firing && this.state.ammo === 0 && !this.player.reloading) this.startReload(true);
+    // Armes et scan
     if (input.consume("reload")) this.startReload(false);
+    if (input.firing && this.combat.weapon === 0 && this.state.ammo === 0 && !this.player.reloading) this.startReload(true);
     if (this.player.takeReloadCompleted()) this.state.reloadRounds(12);
-    if (this.player.shotTime < 0.12) this.flash.visible = false;
+    this.combat.update(dt, {
+      firing: input.firing,
+      arc: input.consume("arc"),
+      scan: input.consume("scan"),
+      weapon1: input.consume("weapon1"),
+      weapon2: input.consume("weapon2"),
+    });
 
-    // Interaction
+    // Interaction et raccourcis
     this.focus = this.findFocus();
-    if (input.consume("interact")) {
-      if (this.focus) this.interact(this.focus);
+    if (input.consume("interact") && this.focus) this.interact(this.focus);
+    if (input.consume("save")) this.saveGame();
+    if (input.consume("load")) this.loadGame();
+    if (input.consume("heal")) this.useMedkit();
+    if (input.consume("cell")) this.useCell();
+    if (input.consume("inventory")) this.openInventory();
+
+    // Zombies
+    this.hordeContext.player.x = this.player.x;
+    this.hordeContext.player.z = this.player.z;
+    this.hordeContext.player.crouched = this.player.crouched;
+    this.hordeContext.player.alive = this.state.health > 0;
+    this.hordeContext.dormant = this.state.ending === "n7";
+    this.horde.update(dt, this.hordeContext);
+
+    // Événement « colosse » à l'entrée du cœur
+    if (!this.colossusTriggered && this.player.z < COLOSSUS_Z) {
+      this.colossusTriggered = true;
+      this.world.shudder();
+      this.notify("Quelque chose bouge sous vos pieds. MÈRE : « Poursuivez. Ce n'est qu'une dilatation thermique. »");
     }
-    if (input.consume("save")) this.save();
-    if (input.consume("load")) this.load();
-    if (input.consume("heal")) this.notify(this.state.heal() ? "Santé restaurée." : "Aucune trousse utilisable.");
-    if (input.consume("cell")) this.notify(this.state.useCell() ? "Batterie rechargée." : "Aucune cellule utilisable.");
-    input.consume("scan");
-    input.consume("arc");
-    input.consume("weapon1");
-    input.consume("weapon2");
-    input.consume("inventory");
 
     this.noticeTime = Math.max(0, this.noticeTime - dt);
     this.state.playerPosition = [this.player.x, 0, this.player.z];
@@ -263,12 +443,12 @@ export class Engine {
       reload: this.player.reloadProgress,
       aiming,
     }, dt);
-    this.world.update(dt, this.elapsed);
+    this.world.update(dt, this.elapsed, this.player.x, this.player.z);
     this.updateHighlights();
   }
 
   private startReload(silent: boolean): void {
-    const canReload = this.state.ammo < 12 && this.state.reserve > 0;
+    const canReload = this.combat.weapon === 0 && this.state.ammo < 12 && this.state.reserve > 0;
     if (this.player.startReload(canReload)) {
       if (!silent) this.notify("Rechargement du D9…");
     } else if (!silent && !this.player.reloading) {
@@ -276,14 +456,8 @@ export class Engine {
     }
   }
 
-  private aimCandidates(): { id: string; x: number; z: number }[] {
-    // Aucune machine dans le secteur 01 : les ennemis s'ajoutent à l'étape 4.
-    return [];
-  }
-
   available(def: InteractableDef): boolean {
-    if (def.kind) return !this.state.collected.includes(def.id);
-    return true;
+    return interactableAvailable(def, this.state);
   }
 
   private findFocus(): InteractableDef | null {
@@ -305,7 +479,7 @@ export class Engine {
     return best;
   }
 
-  /** Port de SiloWorld.interact pour les objets du refuge et du secteur 01. */
+  /** Port de SiloWorld.interact. */
   interact(def: InteractableDef): void {
     const s = this.state;
     if (def.kind) {
@@ -314,7 +488,8 @@ export class Engine {
     }
     switch (def.id) {
       case "mother":
-        this.notify("MÈRE : " + this.dialogue.offlineReply("mother", "bonjour"));
+      case "n7":
+        this.openConversation(def.id);
         break;
       case "recharge":
         s.recharge();
@@ -323,8 +498,23 @@ export class Engine {
       case "upgrade":
         this.notify(s.upgrade() ? "Batterie améliorée : 150 énergie." : "L'établi demande 3 composants, amélioration unique.");
         break;
+      case "relay":
+        this.notify(s.repairRelay() ? "Alimentation rétablie. Le cœur est accessible." : "Révélez le relais au SCAN ÉCHO, puis apportez 3 composants.");
+        break;
+      case "evidence":
+        s.addFact("surface_signal");
+        s.remember("Le joueur a découvert un signal humain à la surface.");
+        this.notify("ARCHIVE 09 : une voix humaine a émis depuis la surface il y a 6 heures. MÈRE a classé le signal « bruit ».");
+        break;
+      case "core":
+        this.notify(s.recoverCore() ? "Cœur récupéré. Retournez à l'ascenseur et choisissez à qui le confier." : "Cœur verrouillé. Réparez le relais de maintenance.");
+        break;
       case "ending":
-        this.notify(s.phase === 3 ? "Choix final disponible." : "Descente suspendue. Récupérez le cœur mémoriel du secteur 04.");
+        if (s.phase === Phase.CORE_RECOVERED) this.openEnding();
+        else this.notify(s.phase === Phase.COMPLETE ? "La descente est terminée." : "Descente suspendue. Récupérez le cœur mémoriel du secteur 04.");
+        break;
+      case "device":
+        this.notify("Utilisez l'ARC-3 pour couper le verrou, ou prenez la conduite de service à droite.");
         break;
     }
   }
@@ -332,7 +522,6 @@ export class Engine {
   private updateHighlights(): void {
     for (const view of this.world.interactables.values()) {
       const available = this.available(view.def);
-      view.group.visible = available;
       const distance = Math.hypot(view.def.x - this.player.x, view.def.z - this.player.z);
       const shown = available && distance < 15;
       view.highlight.setVisible(shown);
@@ -341,24 +530,6 @@ export class Engine {
         view.highlight.setStrength(this.focus === view.def ? pulse : 0.55);
       }
     }
-  }
-
-  save(): void {
-    if (!this.storage) return this.notify("Sauvegarde indisponible dans ce navigateur.");
-    const result = this.state.saveGame(this.storage);
-    this.notify(result === "ok" ? "Progression sauvegardée." : "Échec de sauvegarde.");
-  }
-
-  load(): void {
-    if (!this.storage) return this.notify("Sauvegarde indisponible dans ce navigateur.");
-    const result = this.state.loadGame(this.storage);
-    if (result !== "ok") return this.notify(result === "missing" ? "Aucune sauvegarde." : "Sauvegarde invalide.");
-    const [x, , z] = this.state.playerPosition;
-    this.player.x = x;
-    this.player.z = z;
-    this.player.yaw = this.state.playerYaw;
-    this.rig.snap(new Vector3(x, 0, z));
-    this.notify("Progression restaurée.");
   }
 
   private render(dt: number): void {
@@ -379,7 +550,7 @@ export class Engine {
       this.fpsClock = 0;
     }
     this.hudClock += dt;
-    if (this.hudClock >= 0.1) this.publishHud(false);
+    if (this.hudClock >= 0.1) this.publishHud();
   }
 
   private placeTooltip(): void {
@@ -411,21 +582,22 @@ export class Engine {
       ammo: s.ammo,
       reserve: s.reserve,
       components: s.components,
+      medkits: s.medkits,
+      cells: s.cells,
+      weapon: this.combat?.weapon ?? 0,
       reloading: this.player?.reloading ?? false,
       notice: this.noticeTime > 0 ? this.notice : "",
       noticeId: this.noticeId,
       prompt: this.focus ? { name: this.focus.name, action: this.focus.action } : null,
       device: this.input.device,
-      paused: this.paused,
+      paused: this.ui.get().mode !== "playing",
       fps: this.fps,
       showPerf: this.showPerf,
     };
   }
 
-  private publishHud(force: boolean): void {
+  private publishHud(): void {
     this.hudClock = 0;
-    const next = this.snapshot();
-    if (force) this.hud.set({ ...next });
-    else this.hud.set(next);
+    this.hud.set(this.snapshot());
   }
 }
