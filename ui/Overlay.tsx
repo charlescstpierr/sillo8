@@ -11,7 +11,7 @@ import { InventorySheet } from "./InventorySheet";
 import { DialogueSheet } from "./DialogueSheet";
 import { ConclusionSheet, DeathSheet, EndingSheet } from "./OutcomeSheets";
 import { NoteSheet } from "./NoteSheet";
-import { JournalSheet } from "./JournalSheet";
+import { JournalSheet, PLAN_PAGE } from "./JournalSheet";
 import { heal, openJournal, setMode, useCell, type AnyMode } from "./compat";
 import styles from "./sheets.module.css";
 
@@ -68,11 +68,14 @@ function useSheetKeys(engine: Engine, mode: string) {
   }, [engine, mode]);
 }
 
-/** J ouvre ou ferme le carnet, en jeu comme depuis une note (géré ici, avant le moteur). */
+/**
+ * J ouvre le carnet sur les notes (ou le ferme s'il y est), M l'ouvre sur le plan (ou le ferme s'il y est),
+ * en jeu comme depuis une note (géré ici, avant le moteur).
+ */
 function useJournalKey(engine: Engine) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code !== "KeyJ") return;
+      if (e.code !== "KeyJ" && e.code !== "KeyM") return;
       const target = e.target as HTMLElement | null;
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
       const mode = engine.ui.get().mode as AnyMode;
@@ -80,8 +83,13 @@ function useJournalKey(engine: Engine) {
       e.stopImmediatePropagation();
       e.preventDefault();
       if (e.repeat) return;
-      if (mode === "journal") engine.resume();
+      const onPlan = engine.ui.get().character === PLAN_PAGE;
+      if (e.code === "KeyM") {
+        if (mode === "journal" && onPlan) engine.resume();
+        else setMode(engine, "journal", PLAN_PAGE);
+      } else if (mode === "journal" && !onPlan) engine.resume();
       else if (mode === "note") setMode(engine, "journal");
+      else if (onPlan) setMode(engine, "journal", "");
       else openJournal(engine);
     };
     window.addEventListener("keydown", onKey, { capture: true });

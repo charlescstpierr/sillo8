@@ -1,6 +1,10 @@
 // État d'une partie de SILLO 8 : ressources du bricoleur, carnet de notes, objectifs de l'étage 1, sauvegarde.
 // Ressources : ferraille (`components`), clous (`ammo` dans le lance-clous, `reserve` dans la sacoche),
 // charge des piles de la lampe (`energy`), piles de rechange (`cells`), bandages, trousses, conserves.
+import { ROOMS } from "./level";
+
+/** Identifiants des pièces de l'étage (plan du carnet). */
+const ROOM_IDS: readonly string[] = ROOMS.map((r) => r.id);
 
 export type Character = string;
 export type Ending = string;
@@ -70,6 +74,8 @@ export class SiloState {
   playerYaw = Math.PI;
   elapsed = 0;
   relations: Record<string, number> = {};
+  /** Pièces déjà visitées (plan du carnet), dans l'ordre de découverte. */
+  visited: string[] = [];
 
   private listeners = new Set<Listener>();
 
@@ -303,6 +309,14 @@ export class SiloState {
     return loaded;
   }
 
+  /** Note la pièce où se tient le bricoleur. Vrai à la première visite. */
+  visitRoom(id: string): boolean {
+    if (!ROOM_IDS.includes(id) || this.visited.includes(id)) return false;
+    this.visited.push(id);
+    this.changed();
+    return true;
+  }
+
   markDefeated(id: string): void {
     if (validId(id) && !this.defeated.includes(id) && this.defeated.length < 128) {
       this.defeated.push(id);
@@ -396,6 +410,8 @@ export class SiloState {
     this.playerPosition = [data.player_position[0], data.player_position[1], data.player_position[2]];
     this.playerYaw = data.player_yaw;
     this.elapsed = data.elapsed;
+    // Sauvegardes antérieures au plan : aucune pièce connue, le moteur note la pièce courante.
+    this.visited = data.visited ? [...data.visited] : [];
     this.ending = "";
     this.changed();
     return "ok";
@@ -423,6 +439,7 @@ export class SiloState {
       player_position: [...this.playerPosition],
       player_yaw: this.playerYaw,
       elapsed: this.elapsed,
+      visited: [...this.visited],
     };
   }
 }
@@ -448,9 +465,13 @@ export interface Snapshot {
   player_position: number[];
   player_yaw: number;
   elapsed: number;
+  /** Optionnel : absent des sauvegardes antérieures au plan du carnet. */
+  visited?: string[];
 }
 
-const SNAPSHOT_KEYS = Object.keys(new SiloState().snapshot());
+/** Champs facultatifs : une sauvegarde peut ne pas les avoir. */
+const OPTIONAL_KEYS = ["visited"];
+const SNAPSHOT_KEYS = Object.keys(new SiloState().snapshot()).filter((key) => !OPTIONAL_KEYS.includes(key));
 
 /** Chaque fait n'est possible qu'après celui dont il dépend. */
 const REQUIRES: Partial<Record<FactId, FactId>> = {
@@ -462,7 +483,7 @@ const REQUIRES: Partial<Record<FactId, FactId>> = {
 };
 
 export function validSnapshot(data: Record<string, unknown>): boolean {
-  if (Object.keys(data).length !== SNAPSHOT_KEYS.length) return false;
+  for (const key of Object.keys(data)) if (!SNAPSHOT_KEYS.includes(key) && !OPTIONAL_KEYS.includes(key)) return false;
   for (const key of SNAPSHOT_KEYS) if (!(key in data)) return false;
   const d = data as Record<string, any>;
   if (d.game !== "sillo8" || !num(d.schema, 2, 2) || typeof d.upgraded !== "boolean") return false;
@@ -480,6 +501,10 @@ export function validSnapshot(data: Record<string, unknown>): boolean {
   for (const fact of d.facts) if (!(FACT_IDS as readonly string[]).includes(fact)) return false;
   for (const [fact, required] of Object.entries(REQUIRES)) {
     if (d.facts.includes(fact) && !d.facts.includes(required)) return false;
+  }
+  if ("visited" in d) {
+    if (!strings(d.visited, ROOM_IDS.length, 40, true)) return false;
+    for (const room of d.visited) if (!ROOM_IDS.includes(room)) return false;
   }
   return true;
 }

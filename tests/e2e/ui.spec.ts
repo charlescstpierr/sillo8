@@ -350,3 +350,122 @@ test("sauvegarde automatique : progrès, minuterie, arrière-plan, reprise", asy
   expect(JSON.stringify(await saved())).toBe(before);
   expect(errors).toEqual([]);
 });
+
+/** Met la partie à mi-chemin : génératrice relancée, hub atteint, plusieurs pièces parcourues, notes lues. */
+async function midGame(page: Page) {
+  await page.evaluate(() => {
+    const engine = (window as any).__silo;
+    const s = engine.state;
+    for (const room of ["plaza", "exterior", "generator", "cafeteria", "west", "storage", "security", "greenhouse", "north"]) s.visitRoom(room);
+    s.exploreEntrance();
+    s.collect("e2e-parts", "components", 3);
+    s.powerGenerator();
+    s.readNote("note_entrance");
+    s.readNote("note_generator");
+    s.readNote("note_cafeteria");
+    engine.player.x = 3;
+    engine.player.z = 2;
+    engine.player.yaw = -Math.PI / 4;
+    engine.player.vx = engine.player.vz = 0;
+  });
+  await expect.poll(() => page.evaluate(() => (window as any).__silo.state.visited.includes("hub"))).toBe(true);
+}
+
+const planRoom = (page: Page, id: string) => page.locator(`svg[aria-label="Plan de l'étage 1"] [data-room="${id}"]`);
+
+test("plan du carnet : ordi (touche M, onglets) et téléphone en portrait", async ({ browser }) => {
+  test.setTimeout(400_000);
+  const desk = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  let page = await desk.newPage();
+  let errors = await boot(page);
+  await page.evaluate(() => (window as any).__silo.newGame());
+  await expect.poll(() => page.evaluate(() => (window as any).__silo.state.visited)).toEqual(["plaza"]);
+  // M ouvre le carnet directement sur le plan.
+  await page.keyboard.press("m");
+  await expect.poll(() => mode(page)).toBe("journal");
+  const map = page.getByRole("img", { name: "Plan de l'étage 1" });
+  await expect(map).toBeVisible();
+  await expect(page.getByRole("tab", { name: /Plan/ })).toHaveAttribute("aria-selected", "true");
+  // Pièce de départ dessinée et nommée ; une pièce lointaine reste blanche ; les voisines en pointillé.
+  await expect(planRoom(page, "plaza")).toHaveAttribute("data-state", "current");
+  await expect(map.locator('[data-label="plaza"]')).toHaveText("Entrée");
+  await expect(planRoom(page, "control")).toHaveCount(0);
+  await expect(planRoom(page, "secret")).toHaveCount(0);
+  await expect(planRoom(page, "security")).toHaveAttribute("data-state", "hint");
+  await expect(map.locator('[data-label="security"]')).toHaveCount(0);
+  await expect(map.locator('[data-door="plaza_security"][data-locked="true"]')).toHaveCount(1);
+  await expect(map.locator('[data-mark="player"]')).toHaveCount(1);
+  await expect(map.locator('[data-mark="objective"]')).toHaveCount(1);
+  await expect(page.getByText("1 / 16 pièces visitées")).toBeVisible();
+  await shot(page, "plan");
+  // Onglets à la souris : Notes puis Plan ; M referme.
+  await page.getByRole("tab", { name: /Notes/ }).click();
+  await expect(page.getByText(/notes trouvées/)).toBeVisible();
+  await expect(map).toHaveCount(0);
+  await page.getByRole("tab", { name: /Plan/ }).click();
+  await expect(map).toBeVisible();
+  await page.keyboard.press("m");
+  await expect.poll(() => mode(page)).toBe("playing");
+  // J rouvre le carnet sur les notes, M bascule sur le plan, J revient aux notes puis referme.
+  await page.keyboard.press("j");
+  await expect(page.getByText(/notes trouvées/)).toBeVisible();
+  await page.keyboard.press("m");
+  await expect(map).toBeVisible();
+  await page.keyboard.press("j");
+  await expect(page.getByText(/notes trouvées/)).toBeVisible();
+  await page.keyboard.press("j");
+  await expect.poll(() => mode(page)).toBe("playing");
+  // À mi-parcours : pièces parcourues, notes lues, portes ouvertes ou non, objectif suivant.
+  await midGame(page);
+  await page.keyboard.press("m");
+  await expect(planRoom(page, "hub")).toHaveAttribute("data-state", "current");
+  await expect(planRoom(page, "generator")).toHaveAttribute("data-state", "visited");
+  await expect(map.locator('[data-mark="note"]')).toHaveCount(3);
+  await expect(map.locator('[data-door="plaza_security"][data-locked="true"]')).toHaveCount(0);
+  await expect(map.locator('[data-door="north_stairs"][data-locked="true"]')).toHaveCount(1);
+  await shot(page, "plan-progression");
+  // Les pièces visitées sont sauvegardées.
+  await page.keyboard.press("m");
+  await expect.poll(() => mode(page)).toBe("playing");
+  await page.evaluate(() => (window as any).__silo.saveGame());
+  const saved = await page.evaluate(() => JSON.parse(window.localStorage.getItem("sillo8-save") ?? "{}").visited);
+  expect(saved).toEqual(expect.arrayContaining(["plaza", "hub", "generator"]));
+  expect(errors).toEqual([]);
+  await desk.close();
+
+  // Téléphone en portrait : le plan tient dans la largeur, onglets au doigt, zoom aux boutons.
+  const phone = await browser.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  page = await phone.newPage();
+  errors = await boot(page);
+  await page.evaluate(() => (window as any).__silo.newGame());
+  await page.evaluate(() => { (window as any).__silo.input.device = "touch"; });
+  await expect.poll(() => page.evaluate(() => (window as any).__silo.state.visited)).toEqual(["plaza"]);
+  await page.getByRole("button", { name: "Carnet" }).dispatchEvent("pointerdown");
+  await expect.poll(() => mode(page)).toBe("journal");
+  await page.getByRole("tab", { name: /Plan/ }).tap();
+  const phoneMap = page.getByRole("img", { name: "Plan de l'étage 1" });
+  await expect(phoneMap).toBeVisible();
+  await expect(planRoom(page, "plaza")).toBeVisible();
+  await expect(planRoom(page, "control")).toHaveCount(0);
+  const box = await phoneMap.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+  expect(box!.width, "plan assez large").toBeGreaterThan(300);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await shot(page, "plan-portrait");
+  // Le jeu est figé carnet ouvert : on referme, on avance, et le carnet se rouvre à la dernière page.
+  await page.getByRole("button", { name: /Fermer le carnet/ }).tap();
+  await expect.poll(() => mode(page)).toBe("playing");
+  await midGame(page);
+  await page.getByRole("button", { name: "Carnet" }).dispatchEvent("pointerdown");
+  await expect(phoneMap).toBeVisible();
+  await page.getByRole("button", { name: "Centrer sur moi" }).tap();
+  await expect.poll(async () => Number(await phoneMap.getAttribute("data-zoom"))).toBeGreaterThan(2);
+  await expect(planRoom(page, "hub")).toBeVisible();
+  await shot(page, "plan-portrait-zoom");
+  await page.getByRole("tab", { name: /Notes/ }).tap();
+  await expect(page.getByText(/notes trouvées/)).toBeVisible();
+  expect(errors).toEqual([]);
+  await phone.close();
+});
