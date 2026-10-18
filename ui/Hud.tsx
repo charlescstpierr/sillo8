@@ -274,6 +274,6 @@ export function Notice({ engine }: { engine: Engine }) {
     return () => clearTimeout(timer);
   }, [hud.noticeId]);
   const mode = ui.mode as string;
-  if (!hud.notice || expired === hud.noticeId || mode === "dialogue" || mode === "note" || mode === "journal") return null;
+  if (!hud.notice || expired === hud.noticeId || mode === "dialogue" || mode === "note" || mode === "journal" || mode === "closeup") return null;
   return <p key={hud.noticeId} className={styles.notice} data-mode={ui.mode} role="status" data-avoid-captions>{hud.notice}</p>;
 }
