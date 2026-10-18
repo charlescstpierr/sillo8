@@ -13,7 +13,7 @@ import type { Box } from "../collision";
 import { glow, toon } from "./toon";
 import { PALETTE } from "./palette";
 import {
-  beamTexture, blobTexture, concreteTexture, drawingTexture, dustTexture, grimeTexture, holeTexture, liftTexture, rng, signTexture, tilesTexture,
+  beamTexture, blobTexture, concreteTexture, crackTexture, dirtTexture, paperTexture, sprayTexture, drawingTexture, dustTexture, grimeTexture, holeTexture, liftTexture, rng, signTexture, tilesTexture,
 } from "./textures";
 import {
   block, can, cable, crate, cylinder, decal, grass, hazardStrip, mesh, overgrowth, panel, rubble, signBoard, stringLights,
@@ -62,24 +62,69 @@ function wall(root: Group, x0: number, z0: number, x1: number, z1: number): void
   const alongX = Math.abs(x1 - x0) > Math.abs(z1 - z0);
   const cx = (x0 + x1) / 2;
   const cz = (z0 + z1) / 2;
-  const texture = concreteTexture().clone();
-  texture.needsUpdate = true;
-  texture.repeat.set(length / 2.5, 0.64);
-  const body = mesh(new BoxGeometry(alongX ? length : WALL_THICKNESS, WALL_HEIGHT, alongX ? WALL_THICKNESS : length), toon("#ffffff", { map: texture, rim: 0.12 }), cx, WALL_HEIGHT / 2, cz);
-  root.add(body);
-  // Plinthe sombre et tranche colorée (la coupe de la maison de poupée).
+  const r = rng(Math.round(Math.abs(cx * 31 + cz * 17 + length * 7)) + 1);
+  // Repère local : `u` le long du mur, `v` à travers.
+  const at = (u: number, v = 0): [number, number] => (alongX ? [cx + u, cz + v] : [cx + v, cz + u]);
+  const size = (along: number, across: number): [number, number] => (alongX ? [along, across] : [across, along]);
+
+  // Le mur est découpé en tronçons : la plupart intacts, certains effondrés (béton ébréché, fer à béton).
+  const pieces = Math.max(1, Math.round(length / 1.8));
+  const piece = length / pieces;
+  for (let i = 0; i < pieces; i++) {
+    const u = -length / 2 + piece * (i + 0.5);
+    const broken = pieces > 2 && r() < 0.3;
+    const height = broken ? 0.85 + r() * 0.4 : WALL_HEIGHT;
+    const texture = concreteTexture().clone();
+    texture.needsUpdate = true;
+    texture.repeat.set(piece / 2.5, height / 2.5);
+    texture.offset.set(r(), 0);
+    const [w, d] = size(piece + 0.002, WALL_THICKNESS);
+    const [px, pz] = at(u);
+    root.add(mesh(new BoxGeometry(w, height, d), toon("#ffffff", { map: texture, rim: 0.12 }), px, height / 2, pz));
+    if (!broken) {
+      const [cw, cd] = size(piece + 0.02, WALL_THICKNESS + 0.08);
+      // Tranche colorée (coupe de la maison de poupée), parfois ébréchée.
+      root.add(mesh(new BoxGeometry(cw, 0.09, cd), toon(PALETTE.wallCap), px, WALL_HEIGHT + 0.045, pz));
+      if (r() < 0.35) {
+        const [nx, nz] = at(u + (r() - 0.5) * piece * 0.6);
+        const notch = mesh(new BoxGeometry(0.35, 0.2, WALL_THICKNESS + 0.1), toon(PALETTE.concreteDark), nx, WALL_HEIGHT - 0.02, nz);
+        notch.rotation.set(0.3, alongX ? 0 : Math.PI / 2, 0.4);
+        root.add(notch);
+      }
+    } else {
+      // Sommet déchiqueté : blocs de béton inclinés + tiges de fer à béton tordues.
+      for (let k = 0; k < 4; k++) {
+        const [bx, bz] = at(u + (r() - 0.5) * piece * 0.9, (r() - 0.5) * 0.1);
+        const chunk = mesh(new BoxGeometry(0.22 + r() * 0.25, 0.18 + r() * 0.2, WALL_THICKNESS * (0.7 + r() * 0.3)), toon(r() > 0.5 ? PALETTE.concrete : PALETTE.concreteDark), bx, height + 0.06, bz);
+        chunk.rotation.set(r() - 0.5, alongX ? r() * 0.4 : Math.PI / 2 + r() * 0.4, r() - 0.5);
+        root.add(chunk);
+      }
+      for (let k = 0; k < 3; k++) {
+        const [bx, bz] = at(u + (r() - 0.5) * piece * 0.8);
+        const rod = mesh(new CylinderGeometry(0.018, 0.018, 0.5 + r() * 0.5, 5), toon(PALETTE.rust), bx, height + 0.2, bz);
+        rod.rotation.set((r() - 0.5) * 0.9, 0, (r() - 0.5) * 0.9);
+        root.add(rod);
+      }
+      // Gravats tombés de part et d'autre.
+      for (const side of [-1, 1]) {
+        const [gx, gz] = at(u, side * (WALL_THICKNESS / 2 + 0.35));
+        rubble(root, gx, gz, 5, Math.floor(r() * 1000), 0.35);
+      }
+    }
+  }
+  // Plinthe sombre et liseré jaune, sur toute la longueur.
+  const [sw, sd] = size(length + 0.02, WALL_THICKNESS + 0.04);
+  root.add(mesh(new BoxGeometry(sw, 0.42, sd), toon(PALETTE.wainscot), cx, 0.21, cz));
+  const [tw, td] = size(length + 0.02, WALL_THICKNESS + 0.045);
+  root.add(mesh(new BoxGeometry(tw, 0.05, td), toon(PALETTE.yellow), cx, 0.44, cz, false));
   // Salissures au pied du mur, des deux côtés (fausse occlusion ambiante).
   for (const side of [-1, 1]) {
-    const grime = decal(root, grimeTexture(), alongX ? cx : cx + side * (WALL_THICKNESS / 2 + 0.3), alongX ? cz + side * (WALL_THICKNESS / 2 + 0.3) : cz, alongX ? length : 0.6, alongX ? 0.6 : length, 0, 0.008);
-    grime.rotation.z = alongX ? (side > 0 ? Math.PI : 0) : (side > 0 ? Math.PI / 2 : -Math.PI / 2);
-    if (!alongX) grime.scale.set(length, 0.6, 1);
+    const [gx, gz] = at(0, side * (WALL_THICKNESS / 2 + 0.3));
+    const grime = decal(root, grimeTexture(), gx, gz, 1, 1, 0, 0.008);
+    grime.scale.set(length, 0.6, 1);
+    // La partie sombre du dégradé touche le mur.
+    grime.rotation.z = (alongX ? 0 : Math.PI / 2) + (side < 0 ? Math.PI : 0);
   }
-  const skirt = mesh(new BoxGeometry(alongX ? length + 0.02 : WALL_THICKNESS + 0.04, 0.42, alongX ? WALL_THICKNESS + 0.04 : length + 0.02), toon(PALETTE.wainscot), cx, 0.21, cz);
-  root.add(skirt);
-  const stripe = mesh(new BoxGeometry(alongX ? length + 0.02 : WALL_THICKNESS + 0.045, 0.05, alongX ? WALL_THICKNESS + 0.045 : length + 0.02), toon(PALETTE.yellow), cx, 0.44, cz, false);
-  root.add(stripe);
-  const cap = mesh(new BoxGeometry(alongX ? length + 0.04 : WALL_THICKNESS + 0.08, 0.09, alongX ? WALL_THICKNESS + 0.08 : length + 0.04), toon(PALETTE.wallCap), cx, WALL_HEIGHT + 0.045, cz);
-  root.add(cap);
 }
 
 function doorFrame(root: Group, colliders: Box[], index: number): void {
@@ -150,6 +195,30 @@ function dust(root: Group, centers: [number, number, number][], perCenter: numbe
   points.userData.centers = centers;
   root.add(points);
   return points;
+}
+
+/** Couche de ruine commune : fissures, salissures, papiers, dalles tombées. */
+function ruin(root: Group, x0: number, x1: number, z0: number, z1: number, seed: number, slabs: number, density = 1): void {
+  const r = rng(seed);
+  const rx = () => x0 + 0.8 + r() * (x1 - x0 - 1.6);
+  const rz = () => z0 + 0.8 + r() * (z1 - z0 - 1.6);
+  const area = (x1 - x0) * (z1 - z0) * density;
+  for (let i = 0; i < Math.round(area / 22); i++) decal(root, crackTexture(1 + (i % 4)), rx(), rz(), 2 + r() * 2, 2 + r() * 2, r() * 6, 0.011);
+  for (let i = 0; i < Math.round(area / 30); i++) decal(root, dirtTexture(1 + (i % 3)), rx(), rz(), 3 + r() * 3, 3 + r() * 3, r() * 6, 0.009);
+  for (let i = 0; i < Math.round(area / 9); i++) {
+    const sheet = decal(root, paperTexture(1 + (i % 4)), rx(), rz(), 0.22, 0.28, r() * 6, 0.02);
+    sheet.renderOrder = 2;
+  }
+  for (let i = 0; i < Math.round(area / 25); i++) rubble(root, rx(), rz(), 3 + Math.floor(r() * 4), Math.floor(r() * 9999), 0.3);
+  // Dalles de béton tombées, inclinées contre le sol.
+  for (let i = 0; i < slabs; i++) {
+    const slab = mesh(new BoxGeometry(1.2 + r() * 0.8, 0.14, 0.8 + r() * 0.6), toon(r() > 0.5 ? PALETTE.concrete : PALETTE.concreteDark), rx(), 0.2, rz());
+    slab.rotation.set(0.15 + r() * 0.2, r() * 3, (r() - 0.5) * 0.3);
+    root.add(slab);
+    const rod = mesh(new CylinderGeometry(0.015, 0.015, 0.7, 5), toon(PALETTE.rust), slab.position.x + 0.3, 0.35, slab.position.z);
+    rod.rotation.set(0.9, r() * 3, 0.4);
+    root.add(rod);
+  }
 }
 
 // ——— Objets interactifs ———
@@ -282,6 +351,9 @@ function decorateRefuge(root: Group, flickers: Flicker[]): void {
   for (const x of [-4.7, 4.7]) cylinder(root, 0.03, 2.1, PALETTE.woodDark, x, 0, 12.6);
   stringLights(root, -4.7, 12.6, 4.7, 12.6, 2.05, 14);
   signBoard(root, "ASCENSEUR / REFUGE MOBILE\nÉTAGE 009 — AUCUNE LIAISON SURFACE", 0, 1.25, 12.62, 2.6, 0.55, Math.PI, { bg: PALETTE.paper, fg: PALETTE.outline, border: PALETTE.rust });
+  ruin(root, -5, 5, 4, 13, 101, 0, 0.45);
+  // Décompte des jours de survivants griffonné au sol, près du matelas.
+  decal(root, sprayTexture("IIII IIII IIII II", "rgba(240,232,210,0.85)"), 2.4, 12.4, 1.6, 0.45, 0, 0.017);
   addLight(root, flickers, 0, 2.3, 8.4, "#ffd9a0", 9, 10, 0.08, 1);
   beam(root, 0, 2.3, 8.4, 1.2, "#ffe6b0");
 }
@@ -392,6 +464,12 @@ function decorateDecon(root: Group, flickers: Flicker[]): void {
   decal(root, blobTexture("scorch"), 2.8, 1.2, 1.6, 1.2, 0.8);
   cable(root, -7.75, -7.2, 1.0);
   cable(root, 7.75, -8.6, 1.2, PALETTE.danger);
+
+  ruin(root, -8, 8, -12, 4, 202, 3);
+  decal(root, sprayTexture("NE PAS\nENTRER", "rgba(216,69,43,0.9)"), -3.6, -11.0, 2.4, 0.8, 0, 0.017);
+  decal(root, sprayTexture("ILS MENTENT", "rgba(240,232,210,0.8)"), 3.6, 0.8, 2.6, 0.7, -0.15, 0.017);
+  decal(root, dirtTexture(2), 5.0, -5.6, 3.2, 3.2, 0, 0.01);
+  panel(root, sprayTexture("→ SURFACE ?", "rgba(242,194,48,0.95)"), 7.83, 1.05, -7.2, 1.3, 0.42, -Math.PI / 2);
 
   // Alarme rouge près du sas fermé, qui grésille.
   addLight(root, flickers, 2.3, 1.9, -11.6, "#ff5a36", 7, 7, 0.9, 4);

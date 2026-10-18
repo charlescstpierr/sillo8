@@ -3,7 +3,7 @@
 export const PALETTE = {
   outline: "#1e140d",
   concrete: "#a3ae9a",
-  concreteDark: "#77836f",
+  concreteDark: "#858277",
   wainscot: "#5f7064",
   wallCap: "#c98f55",
   tile: "#dcd5bf",

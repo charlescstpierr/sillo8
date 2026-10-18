@@ -81,7 +81,22 @@ export function tilesTexture(): Texture {
       g.beginPath(); g.moveTo(i * cell, 0); g.lineTo(i * cell, h); g.stroke();
       g.beginPath(); g.moveTo(0, i * cell); g.lineTo(w, i * cell); g.stroke();
     }
-    for (let k = 0; k < 3; k++) crack(g, r, r() * w, r() * h, 120 + r() * 80, "rgba(70,60,48,0.55)");
+    for (let k = 0; k < 5; k++) crack(g, r, r() * w, r() * h, 120 + r() * 80, "rgba(60,50,40,0.6)");
+    for (let k = 0; k < 12; k++) {
+      const x = r() * w, y = r() * h, rad = 20 + r() * 50;
+      const grad = g.createRadialGradient(x, y, 0, x, y, rad);
+      grad.addColorStop(0, "rgba(70,58,40,0.18)");
+      grad.addColorStop(1, "rgba(70,58,40,0)");
+      g.fillStyle = grad;
+      g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    }
+    // Carreaux fendus en diagonale
+    g.strokeStyle = "rgba(60,50,40,0.5)";
+    g.lineWidth = 2;
+    for (let k = 0; k < 4; k++) {
+      const i = Math.floor(r() * 4), j = Math.floor(r() * 4);
+      g.beginPath(); g.moveTo(i * cell + 4, j * cell + r() * cell); g.lineTo((i + 1) * cell - 4, j * cell + r() * cell); g.stroke();
+    }
   });
 }
 
@@ -326,5 +341,67 @@ export function holeTexture(): Texture {
     g.fill();
     g.fillStyle = "#3a2c20";
     for (let k = 0; k < 20; k++) { g.beginPath(); g.arc(30 + r() * 68, 30 + r() * 68, 2 + r() * 4, 0, Math.PI * 2); g.fill(); }
+  }, false);
+}
+
+/** Grande fissure en découpe alpha, posée au sol ou sur un mur. */
+export function crackTexture(seed = 1): Texture {
+  return make("crack-" + seed, 256, 256, (g, w, h) => {
+    const r = rng(seed * 13);
+    g.clearRect(0, 0, w, h);
+    for (let k = 0; k < 3; k++) crack(g, r, w * 0.5 + (r() - 0.5) * 40, h * 0.5 + (r() - 0.5) * 40, 160, "rgba(40,30,22,0.85)", 3 - k * 0.8);
+  }, false);
+}
+
+/** Grande salissure irrégulière (suie, boue, poussière). */
+export function dirtTexture(seed = 1): Texture {
+  return make("dirt-" + seed, 256, 256, (g, w, h) => {
+    const r = rng(seed * 29);
+    g.clearRect(0, 0, w, h);
+    for (let k = 0; k < 40; k++) {
+      const x = w / 2 + (r() - 0.5) * w * 0.6;
+      const y = h / 2 + (r() - 0.5) * h * 0.6;
+      const radius = 10 + r() * 45;
+      const grad = g.createRadialGradient(x, y, 0, x, y, radius);
+      grad.addColorStop(0, `rgba(${50 + r() * 30},${40 + r() * 20},${28},0.22)`);
+      grad.addColorStop(1, "rgba(50,40,28,0)");
+      g.fillStyle = grad;
+      g.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+    }
+  }, false);
+}
+
+/** Feuille de papier froissée, pour les détritus. */
+export function paperTexture(seed = 1): Texture {
+  return make("paper-" + seed, 64, 80, (g, w, h) => {
+    const r = rng(seed * 5);
+    g.fillStyle = r() > 0.5 ? "#efe6cc" : "#e2d7b8";
+    g.beginPath();
+    g.moveTo(4, 6); g.lineTo(w - 6, 2); g.lineTo(w - 2, h - 8); g.lineTo(6, h - 3);
+    g.closePath();
+    g.fill();
+    g.strokeStyle = "rgba(60,50,40,0.45)";
+    g.lineWidth = 2;
+    for (let y = 16; y < h - 12; y += 9) { g.beginPath(); g.moveTo(10, y); g.lineTo(w - 12 - r() * 16, y + 1); g.stroke(); }
+  }, false);
+}
+
+/** Inscription bombée à la peinture (graffiti de survivants). */
+export function sprayTexture(text: string, color: string): Texture {
+  return make("spray:" + text + color, 512, 160, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    const lines = text.split("\n");
+    const size = Math.min(h / (lines.length * 1.1), (w * 1.5) / Math.max(...lines.map((l) => l.length)));
+    g.font = `${Math.floor(size)}px 'Patrick Hand', cursive`;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillStyle = color;
+    g.shadowColor = color;
+    g.shadowBlur = 6;
+    lines.forEach((line, i) => g.fillText(line, w / 2, h / 2 + (i - (lines.length - 1) / 2) * size));
+    // Coulures
+    g.shadowBlur = 0;
+    const r = rng(text.length * 3);
+    for (let k = 0; k < 8; k++) g.fillRect(40 + r() * (w - 80), h / 2 + size * 0.3, 2, 8 + r() * 26);
   }, false);
 }
