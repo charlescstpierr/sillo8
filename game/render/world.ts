@@ -331,7 +331,7 @@ function interactableModel(def: InteractableDef): { group: Group; height: number
       }
       const coil = mesh(new TorusGeometry(0.16, 0.035, 6, 14), toon(PALETTE.outline), 0, 0.3, 0.28);
       g.add(coil);
-      panel(g, signTexture("ÉNERGIE ∞", { bg: PALETTE.paper, fg: PALETTE.outline, width: 256, height: 64 }), 0, 1.15, 0.255, 0.42, 0.1, 0);
+      panel(g, signTexture("PILES ∞", { bg: PALETTE.paper, fg: PALETTE.outline, width: 256, height: 64 }), 0, 1.15, 0.255, 0.42, 0.1, 0);
       height = 1.7;
       break;
     }

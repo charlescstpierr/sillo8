@@ -468,6 +468,7 @@ export function dirtGroundTexture(): Texture {
   });
 }
 
+<<<<<<< HEAD
 // ——— Extérieur (entrée et zone extérieure) ———
 
 /** Sentier de terre tassée, bords fondus, ornières et cailloux. Le sentier court le long de V. */
@@ -575,5 +576,163 @@ export function extRustPlateTexture(text: string, lit = false): Texture {
       g.fillStyle = grad;
       g.fillRect(x, h * 0.6, 3 + r() * 4, h * 0.4);
     }
+=======
+// ——— Zone centre (sécurité, hub, accès étage 2) ———
+
+/** Anneaux concentriques peints au sol du hub central : disque sombre usé, liserés ocre, joints rayonnants. */
+export function centerRingTexture(): Texture {
+  return make("center-ring", 1024, 1024, (g, w, h) => {
+    const r = rng(808);
+    const cx = w / 2, cy = h / 2;
+    g.clearRect(0, 0, w, h);
+    const ring = (radius: number, width: number, color: string) => {
+      g.strokeStyle = color; g.lineWidth = width;
+      g.beginPath(); g.arc(cx, cy, radius, 0, Math.PI * 2); g.stroke();
+    };
+    // Disque de béton ciré, plus sombre vers l'extérieur.
+    const disc = g.createRadialGradient(cx, cy, 120, cx, cy, 500);
+    disc.addColorStop(0, "rgba(120,112,92,0.55)");
+    disc.addColorStop(1, "rgba(70,64,52,0.75)");
+    g.fillStyle = disc;
+    g.beginPath(); g.arc(cx, cy, 500, 0, Math.PI * 2); g.fill();
+    // Joints rayonnants entre les dalles.
+    g.strokeStyle = "rgba(40,34,26,0.45)"; g.lineWidth = 4;
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      g.beginPath(); g.moveTo(cx + Math.cos(a) * 200, cy + Math.sin(a) * 200); g.lineTo(cx + Math.cos(a) * 470, cy + Math.sin(a) * 470); g.stroke();
+    }
+    ring(496, 16, "rgba(216,164,58,0.9)");
+    ring(470, 6, "rgba(40,34,26,0.6)");
+    // Pointillés de sécurité.
+    g.setLineDash([26, 22]);
+    ring(440, 14, "rgba(233,220,192,0.7)");
+    g.setLineDash([]);
+    ring(330, 10, "rgba(216,164,58,0.75)");
+    ring(205, 22, "rgba(40,34,26,0.55)");
+    // Usure : la peinture s'écaille.
+    g.globalCompositeOperation = "destination-out";
+    for (let k = 0; k < 260; k++) {
+      g.globalAlpha = 0.2 + r() * 0.5;
+      g.beginPath(); g.ellipse(r() * w, r() * h, 4 + r() * 22, 3 + r() * 10, r() * 3, 0, Math.PI * 2); g.fill();
+    }
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = "source-over";
+  }, false);
+}
+
+/** Emblème du silo : silo stylisé et grand « 8 » sur médaillon moutarde. */
+export function centerEmblemTexture(): Texture {
+  return make("center-emblem", 512, 512, (g, w, h) => {
+    const cx = w / 2, cy = h / 2;
+    g.clearRect(0, 0, w, h);
+    g.fillStyle = "#e9dcc0";
+    g.beginPath(); g.arc(cx, cy, 248, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#d8a43a";
+    g.beginPath(); g.arc(cx, cy, 222, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = "#3a332c"; g.lineWidth = 10;
+    g.beginPath(); g.arc(cx, cy, 200, 0, Math.PI * 2); g.stroke();
+    // Silo : dôme + fût, et le 8 au milieu.
+    g.fillStyle = "#3a332c";
+    g.beginPath();
+    g.moveTo(cx - 100, cy + 150); g.lineTo(cx - 100, cy - 60);
+    g.arc(cx, cy - 60, 100, Math.PI, 0);
+    g.lineTo(cx + 100, cy + 150); g.closePath(); g.fill();
+    g.fillRect(cx - 150, cy + 140, 300, 22);
+    g.fillStyle = "#e9dcc0";
+    g.font = "bold 230px 'Special Elite', monospace";
+    g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("8", cx, cy + 30);
+    const r = rng(88);
+    g.globalCompositeOperation = "destination-out";
+    for (let k = 0; k < 90; k++) { g.globalAlpha = 0.35; g.beginPath(); g.arc(r() * w, r() * h, 2 + r() * 7, 0, Math.PI * 2); g.fill(); }
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = "source-over";
+  }, false);
+}
+
+/** Panneau directionnel en bois peint, flèche dessinée (gauche, droite, haut, bas). */
+export function centerArrowTexture(text: string, dir: "left" | "right" | "up" | "down", bg = "#d8a43a", fg = "#3a332c"): Texture {
+  return make("center-arrow:" + text + dir + bg, 512, 160, (g, w, h) => {
+    g.fillStyle = bg;
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = fg; g.lineWidth = 8;
+    g.strokeRect(6, 6, w - 12, h - 12);
+    const ax = dir === "right" ? w - 70 : 70;
+    g.fillStyle = fg;
+    g.save();
+    g.translate(ax, h / 2);
+    g.rotate({ left: Math.PI, right: 0, up: -Math.PI / 2, down: Math.PI / 2 }[dir]);
+    g.beginPath();
+    g.moveTo(40, 0); g.lineTo(0, -34); g.lineTo(0, -14); g.lineTo(-40, -14); g.lineTo(-40, 14); g.lineTo(0, 14); g.lineTo(0, 34);
+    g.closePath(); g.fill();
+    g.restore();
+    const lines = text.split("\n");
+    const size = Math.min((h - 30) / (lines.length * 1.1), (360 * 1.7) / Math.max(...lines.map((l) => l.length)));
+    g.font = `${Math.floor(size)}px 'Special Elite', monospace`;
+    g.textAlign = "center"; g.textBaseline = "middle";
+    const tx = dir === "right" ? (w - 130) / 2 + 6 : (w + 130) / 2 - 6;
+    lines.forEach((line, i) => g.fillText(line, tx, h / 2 + (i - (lines.length - 1) / 2) * size * 1.05));
+    const r = rng(text.length * 7);
+    g.globalCompositeOperation = "destination-out";
+    for (let k = 0; k < 50; k++) { g.globalAlpha = 0.3; g.beginPath(); g.arc(r() * w, r() * h, 1 + r() * 5, 0, Math.PI * 2); g.fill(); }
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = "source-over";
+  }, false);
+}
+
+/** Mot manuscrit de survivant : papier crème, ruban adhésif, écriture penchée. */
+export function centerNoteTexture(text: string, seed = 1): Texture {
+  return make("center-note:" + text + seed, 192, 224, (g, w, h) => {
+    const r = rng(seed * 31);
+    g.clearRect(0, 0, w, h);
+    g.fillStyle = ["#f4ecd6", "#efe0b8", "#e9dcc0", "#f2d9a8"][seed % 4];
+    g.beginPath(); g.moveTo(8, 14); g.lineTo(w - 10, 8); g.lineTo(w - 6, h - 10); g.lineTo(12, h - 6); g.closePath(); g.fill();
+    g.fillStyle = "rgba(255,240,200,0.75)";
+    g.save(); g.translate(w / 2, 14); g.rotate((r() - 0.5) * 0.4); g.fillRect(-30, -9, 60, 18); g.restore();
+    g.fillStyle = seed % 3 === 0 ? "#8a3a2a" : "#3a332c";
+    const lines = text.split("\n");
+    const size = Math.min(40, (w * 1.8) / Math.max(...lines.map((l) => l.length)));
+    g.font = `${Math.floor(size)}px 'Patrick Hand', cursive`;
+    g.textAlign = "center"; g.textBaseline = "middle";
+    g.save(); g.translate(w / 2, h / 2 + 8); g.rotate((r() - 0.5) * 0.12);
+    lines.forEach((line, i) => g.fillText(line, 0, (i - (lines.length - 1) / 2) * size * 1.15));
+    g.restore();
+  }, false);
+}
+
+/** Cadenas peint (pictogramme du poste de sécurité). */
+export function centerPadlockTexture(): Texture {
+  return make("center-padlock", 128, 128, (g, w) => {
+    g.clearRect(0, 0, w, w);
+    g.fillStyle = "#3a332c";
+    g.beginPath(); g.arc(w / 2, w / 2, 62, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = "#e9dcc0"; g.lineWidth = 10;
+    g.beginPath(); g.moveTo(w / 2 - 20, 62); g.lineTo(w / 2 - 20, 50); g.arc(w / 2, 50, 20, Math.PI, 0); g.lineTo(w / 2 + 20, 62); g.stroke();
+    g.fillStyle = "#e9dcc0";
+    g.fillRect(w / 2 - 30, 60, 60, 44);
+    g.fillStyle = "#3a332c";
+    g.beginPath(); g.arc(w / 2, 78, 7, 0, Math.PI * 2); g.fill();
+    g.fillRect(w / 2 - 3, 80, 6, 14);
+  }, false);
+}
+
+/** Écran de caméra de surveillance : image verdâtre, lignes de balayage, libellé. */
+export function centerMonitorTexture(label: string, seed = 1): Texture {
+  return make("center-monitor:" + label + seed, 256, 192, (g, w, h) => {
+    const r = rng(seed * 17);
+    g.fillStyle = "#1d3a34";
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "rgba(159,240,226,0.25)";
+    g.beginPath(); g.moveTo(40, h); g.lineTo(100, 70); g.lineTo(156, 70); g.lineTo(216, h); g.closePath(); g.fill();
+    g.fillStyle = "rgba(159,240,226,0.4)";
+    for (let k = 0; k < 4; k++) g.fillRect(20 + r() * 200, 40 + r() * 120, 10 + r() * 30, 6 + r() * 20);
+    g.fillStyle = "rgba(0,0,0,0.25)";
+    for (let y = 0; y < h; y += 4) g.fillRect(0, y, w, 2);
+    g.fillStyle = "#9ff0e2";
+    g.font = "24px 'Special Elite', monospace";
+    g.fillText(label, 12, 28);
+    g.fillStyle = "#ff5a36";
+    g.beginPath(); g.arc(w - 22, 20, 7, 0, Math.PI * 2); g.fill();
+>>>>>>> worktree-agent-a4b50cd71b4a9b1df
   }, false);
 }
