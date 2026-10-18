@@ -1,9 +1,10 @@
 // Textes narratifs des fiches, isolés en données : l'histoire de SILLO 8 reste à écrire.
-// Les entrées ci-dessous sont des valeurs provisoires, indexées par les identifiants du moteur.
+// Les entrées ci-dessous sont des valeurs provisoires, indexées par les identifiants du moteur
+// (les identifiants techniques du module de dialogue ne sont jamais affichés).
 import type { Character } from "@/game/state";
 
 export interface CharacterSheet {
-  /** Nom affiché (titre du canal, étiquettes du journal). */
+  /** Nom affiché (titre de la conversation, étiquettes). */
   name: string;
   /** Rôle court, sur l'étiquette de toile. */
   title: string;
@@ -21,9 +22,14 @@ export interface EndingSheetData {
 }
 
 export const CHARACTERS: Record<Character, CharacterSheet> = {
-  mother: { name: "MÈRE", title: "IA DU SILO" },
-  n7: { name: "N-7", title: "ROBOT DE MAINTENANCE" },
+  mother: { name: "LA RADIO", title: "VOIX DU RELAIS" },
+  n7: { name: "SURVIVANT", title: "VOIX INCONNUE" },
 };
+
+/** Fiche d'un interlocuteur, avec repli pour un identifiant inconnu. */
+export function characterSheet(id: Character): CharacterSheet {
+  return CHARACTERS[id] ?? { name: "INCONNU", title: "VOIX À LA RADIO" };
+}
 
 export const ENDING_PROMPT = {
   tag: "POUR CETTE DESCENTE",
@@ -34,16 +40,16 @@ export const ENDING_PROMPT = {
 
 export const ENDINGS: Record<Character, EndingSheetData> = {
   mother: {
-    choice: `SE RANGER DU CÔTÉ DE ${CHARACTERS.mother.name}`,
-    description: "L'ordre est rétabli, au prix de la liberté.",
-    stamp: "CONFINEMENT",
-    conclusion: ["Le silo a retrouvé son ordre.", "Les portes restent closes."],
+    choice: "SUIVRE LA RADIO",
+    description: "Suivre la voix du relais, sans savoir qui parle vraiment.",
+    stamp: "SIGNAL SUIVI",
+    conclusion: ["La voix vous guide plus bas.", "Le silence revient derrière vous."],
   },
   n7: {
-    choice: `SE RANGER DU CÔTÉ DE ${CHARACTERS.n7.name}`,
-    description: "Le réseau s'ouvre, sans plus personne pour le tenir.",
-    stamp: "ÉMANCIPATION",
-    conclusion: ["Pour la première fois, les portes s'ouvrent.", "Personne ne sait ce qui attend plus bas."],
+    choice: "REJOINDRE LE SURVIVANT",
+    description: "Faire confiance à quelqu'un de chair et d'os.",
+    stamp: "ENSEMBLE",
+    conclusion: ["Deux lampes valent mieux qu'une.", "Personne ne sait ce qui attend plus bas."],
   },
 };
 

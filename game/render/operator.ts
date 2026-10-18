@@ -1,8 +1,10 @@
 // L'opérateur : petite exploratrice chibi en « pâte à modeler » — bonnet olive, veste moutarde à capuche,
 // écharpe, sacoche en cuir en bandoulière, pantalon cargo et grosses bottes fourrées.
-// Animations procédurales : marche, course, accroupi, tir et rechargement du D9.
+// Outils de bricoleuse : clé à molette (corps à corps), lance-clous à batterie, lampe frontale qui éblouit.
+// Animations procédurales : marche, course, accroupi, coup de clé, tir et rechargement du lance-clous, éblouir.
 import {
-  BoxGeometry, CapsuleGeometry, CylinderGeometry, Group, Mesh, Object3D, SphereGeometry, SpotLight, TorusGeometry,
+  BoxGeometry, CapsuleGeometry, ConeGeometry, CylinderGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, Object3D,
+  RingGeometry, SphereGeometry, SpotLight, TorusGeometry,
 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { addOutline, glow, toon } from "./toon";
@@ -14,6 +16,11 @@ const SHIN = 0.22;
 const HIP_HEIGHT = 0.5;
 const UPPER_ARM = 0.17;
 const FOREARM = 0.19;
+/** Position de repos de la bande de clous sous la buse. */
+const MAG_Y = -0.2;
+const MAG_Z = -0.005;
+const LAMP_INTENSITY = 26;
+const LAMP_ANGLE = 0.52;
 
 /** Couleurs propres au personnage (planche de référence). */
 const LOOK = {
@@ -38,6 +45,13 @@ const LOOK = {
   pantsDark: "#4a5440",
   boot: "#6a4528",
   sole: "#3b2a1e",
+  wrench: "#b9c4c6",
+  wrenchDark: "#7f8c90",
+  tape: "#e6b23c",
+  tool: "#7b8a3c",
+  toolDark: "#5c6a2e",
+  toolTrim: "#f2b632",
+  nail: "#d9cfae",
 } as const;
 
 export interface OperatorRig {
@@ -48,11 +62,24 @@ export interface OperatorRig {
   torso: Group;
   legs: { hip: Group; knee: Group }[];
   arms: { shoulder: Group; elbow: Group }[];
+  /** Lance-clous dans la main droite : −Y local = buse, embout en (0, −0.36, 0.02). */
   gun: Group;
+  /** Bande de clous du lance-clous. */
   magazine: Mesh;
+  /** Clé à molette dans la main droite (arme 0) ; +Z local = vers la tête de la clé. */
+  wrench: Group;
+  /** Clé rangée à la ceinture quand le lance-clous est en main. */
+  holster: Group;
+  /** Traînée du coup de clé. */
+  trail: Mesh;
+  /** Lampe torche : clipsée sur la bandoulière, ou brandie dans la main gauche avec son faisceau. */
+  torchClip: Group;
+  torch: Group;
+  torchLens: Mesh;
+  beam: Mesh;
   headlamp: SpotLight;
   lens: Mesh;
-  /** Chargeur éjecté pendant le rechargement. */
+  /** Bande vide éjectée pendant le rechargement. */
   droppedMag: Mesh;
   dropped: { active: boolean; y: number; vy: number };
 }
@@ -156,7 +183,7 @@ function buildHead(head: Group): { lens: Mesh; headlamp: SpotLight } {
   lens.rotation.x = Math.PI / 2 - 0.25;
   lens.userData.noOutline = true;
   head.add(lens);
-  const headlamp = new SpotLight("#ffe6b0", 26, 11, 0.52, 0.65, 1.6);
+  const headlamp = new SpotLight("#ffe6b0", LAMP_INTENSITY, 11, LAMP_ANGLE, 0.65, 1.6);
   headlamp.position.set(-0.06, 0.305, 0.3);
   headlamp.castShadow = false;
   const lampTarget = new Object3D();
@@ -231,6 +258,75 @@ function buildTorso(torso: Group): void {
   satchel.add(clasp);
 }
 
+/** Clé à molette en acier, scotch moutarde sur le manche. Plat dans le plan XZ, tête vers +Z. */
+function buildWrench(): Group {
+  const wrench = new Group();
+  const handle = part(new RoundedBoxGeometry(0.055, 0.03, 0.27, 2, 0.012), LOOK.wrench, 0, 0, 0.1);
+  wrench.add(handle);
+  const tape = part(new RoundedBoxGeometry(0.066, 0.042, 0.13, 2, 0.016), LOOK.tape, 0, 0, 0.0);
+  wrench.add(tape);
+  const eye = part(new TorusGeometry(0.026, 0.012, 6, 12), LOOK.wrenchDark, 0, 0, -0.085);
+  eye.rotation.x = Math.PI / 2;
+  wrench.add(eye);
+  const neck = part(new CylinderGeometry(0.032, 0.032, 0.035, 10), LOOK.brass, 0.0, 0, 0.24);
+  neck.rotation.x = Math.PI / 2;
+  wrench.add(neck);
+  const head = part(new RoundedBoxGeometry(0.15, 0.04, 0.09, 2, 0.018), LOOK.wrench, 0, 0, 0.29);
+  wrench.add(head);
+  // Mâchoires : fixe (plus longue) et mobile, entrebâillées
+  const fixed = part(new RoundedBoxGeometry(0.045, 0.04, 0.1, 2, 0.015), LOOK.wrench, 0.05, 0, 0.36);
+  wrench.add(fixed);
+  const jaw = part(new RoundedBoxGeometry(0.04, 0.038, 0.075, 2, 0.014), LOOK.wrenchDark, -0.045, 0, 0.345);
+  wrench.add(jaw);
+  const knurl = part(new CylinderGeometry(0.018, 0.018, 0.05, 10), LOOK.brass, -0.03, 0.0, 0.27);
+  knurl.rotation.z = Math.PI / 2;
+  wrench.add(knurl);
+  return wrench;
+}
+
+/** Lance-clous à batterie, carrosserie olive et moutarde. −Y = buse, +Z = dessus du carter. */
+function buildNailGun(): { gun: Group; magazine: Mesh } {
+  const gun = new Group();
+  // Carter moteur au-dessus de la main, bandeau moutarde sur le dessus (lisible en vue plongeante)
+  const housing = part(new RoundedBoxGeometry(0.1, 0.27, 0.1, 3, 0.035), LOOK.tool, 0, -0.07, 0.085);
+  gun.add(housing);
+  const stripe = part(new RoundedBoxGeometry(0.075, 0.2, 0.03, 2, 0.012), LOOK.toolTrim, 0, -0.08, 0.135);
+  gun.add(stripe);
+  const cap = part(new SphereGeometry(0.055, 12, 10), LOOK.toolDark, 0, 0.07, 0.085);
+  cap.scale.set(0.95, 0.6, 0.95);
+  gun.add(cap);
+  // Poignée et batterie
+  const grip = part(new RoundedBoxGeometry(0.05, 0.06, 0.12, 2, 0.02), LOOK.toolDark, 0, 0.01, 0.0);
+  gun.add(grip);
+  const battery = part(new RoundedBoxGeometry(0.09, 0.14, 0.065, 2, 0.02), LOOK.toolTrim, 0, 0.03, -0.085);
+  gun.add(battery);
+  const led = decal(new BoxGeometry(0.05, 0.012, 0.01), PALETTE.teal, 0, 0.065, -0.05);
+  gun.add(led);
+  // Buse en acier : l'embout est en (0, −0.36, 0.02)
+  const nose = part(new CylinderGeometry(0.024, 0.03, 0.13, 10), PALETTE.steel, 0, -0.27, 0.025);
+  gun.add(nose);
+  const tip = part(new CylinderGeometry(0.03, 0.026, 0.025, 10), PALETTE.steelDark, 0, -0.345, 0.022);
+  gun.add(tip);
+  // Bande de clous sous la buse, têtes alignées
+  const magazine = part(new RoundedBoxGeometry(0.034, 0.2, 0.03, 1, 0.008), LOOK.toolDark, 0, MAG_Y, MAG_Z);
+  gun.add(magazine);
+  for (let i = 0; i < 6; i++) {
+    const nail = part(new CylinderGeometry(0.011, 0.011, 0.02, 6), LOOK.nail, 0.022, -0.075 + i * 0.03, 0);
+    nail.rotation.z = Math.PI / 2;
+    magazine.add(nail);
+  }
+  return { gun, magazine };
+}
+
+/** Grosse lampe torche, lentille vers −Y. */
+function buildTorch(): Group {
+  const torch = new Group();
+  torch.add(part(new CylinderGeometry(0.028, 0.028, 0.12, 10), PALETTE.steelDark, 0, -0.03, 0));
+  torch.add(part(new CylinderGeometry(0.032, 0.046, 0.06, 12), LOOK.toolTrim, 0, -0.11, 0));
+  torch.add(part(new RoundedBoxGeometry(0.03, 0.05, 0.02, 1, 0.006), LOOK.brass, 0, -0.03, 0.03));
+  return torch;
+}
+
 export function buildOperator(): OperatorRig {
   const root = new Group();
   root.name = "Operator";
@@ -274,6 +370,11 @@ export function buildOperator(): OperatorRig {
   torso.position.y = 0.02;
   hips.add(torso);
   buildTorso(torso);
+  // Lampe torche clipsée au bout de la bandoulière, sur la hanche gauche, lentille vers le bas
+  const torchClip = buildTorch();
+  torchClip.position.set(0.215, 0.1, 0.07);
+  torchClip.rotation.set(0.15, 0.6, 0.12);
+  torso.add(torchClip);
 
   const head = new Group();
   head.position.y = 0.46;
@@ -305,26 +406,58 @@ export function buildOperator(): OperatorRig {
     arms.push({ shoulder, elbow });
   }
 
-  // D9 dans la main droite. L'opérateur regarde +Z : sa droite est du côté −X (bras d'indice 0).
-  // Repère du pistolet : −Y = canon (dans l'axe de l'avant-bras), +Z = dessus de la culasse.
-  const gun = new Group();
+  // Outils dans la main droite. L'opératrice regarde +Z : sa droite est du côté −X (bras d'indice 0).
+  const hand = arms[0].elbow;
+  const wrench = buildWrench();
+  wrench.position.set(0, -FOREARM - 0.01, 0.01);
+  hand.add(wrench);
+  const { gun, magazine } = buildNailGun();
   gun.position.set(0, -FOREARM - 0.01, 0.0);
-  arms[0].elbow.add(gun);
-  const slide = part(new RoundedBoxGeometry(0.045, 0.24, 0.055, 2, 0.012), PALETTE.gun, 0, -0.09, 0.05);
-  gun.add(slide);
-  const grip = part(new RoundedBoxGeometry(0.04, 0.055, 0.1, 2, 0.012), PALETTE.gun, 0, 0.0, -0.005);
-  gun.add(grip);
-  const magazine = part(new BoxGeometry(0.032, 0.04, 0.06), PALETTE.steelDark, 0, 0.0, -0.06);
-  gun.add(magazine);
-  const muzzleTip = part(new CylinderGeometry(0.016, 0.016, 0.02, 8), PALETTE.amber, 0, -0.215, 0.05);
-  muzzleTip.userData.noOutline = true;
-  gun.add(muzzleTip);
+  hand.add(gun);
 
-  const droppedMag = part(new BoxGeometry(0.032, 0.06, 0.04), PALETTE.steelDark);
+  // Clé rangée, glissée dans la ceinture sur la hanche droite, tête vers le haut
+  const holster = buildWrench();
+  holster.scale.setScalar(0.8);
+  holster.position.set(-0.2, 0.0, 0.07);
+  holster.rotation.set(-Math.PI / 2 - 0.15, 0.25, 0.2);
+  holster.visible = false;
+  torso.add(holster);
+
+  // Lampe brandie dans la main gauche pour éblouir, faisceau en cône translucide
+  const torch = buildTorch();
+  torch.position.set(0, -FOREARM - 0.01, 0.0);
+  torch.visible = false;
+  arms[1].elbow.add(torch);
+  const torchLens = new Mesh(new CylinderGeometry(0.04, 0.04, 0.01, 12), glow("#fff6d2"));
+  torchLens.position.y = -0.142;
+  torchLens.userData.noOutline = true;
+  torch.add(torchLens);
+  const beamGeometry = new ConeGeometry(0.42, 1.5, 18, 1, true);
+  beamGeometry.translate(0, -0.75, 0);
+  const beam = new Mesh(beamGeometry, new MeshBasicMaterial({ color: "#fff0b8", transparent: true, opacity: 0, depthWrite: false, side: DoubleSide, toneMapped: false }));
+  beam.position.y = -0.145;
+  beam.userData.noOutline = true;
+  torch.add(beam);
+
+  // Traînée du coup de clé : arc crème, de l'épaule droite (haute) vers l'avant gauche
+  const trailPivot = new Group();
+  trailPivot.position.set(0, 0.32, 0.05);
+  trailPivot.rotation.z = -0.45;
+  torso.add(trailPivot);
+  const trail = new Mesh(
+    new RingGeometry(0.45, 0.82, 20, 1, Math.PI + 0.3, 2.2),
+    new MeshBasicMaterial({ color: "#fff4d6", transparent: true, opacity: 0, depthWrite: false, side: DoubleSide, toneMapped: false }),
+  );
+  trail.rotation.x = -Math.PI / 2;
+  trail.userData.noOutline = true;
+  trail.visible = false;
+  trailPivot.add(trail);
+
+  const droppedMag = part(new RoundedBoxGeometry(0.034, 0.2, 0.03, 1, 0.008), LOOK.toolDark);
   droppedMag.visible = false;
 
   addOutline(root, 0.016);
-  return { root, body, head, hips, torso, legs, arms, gun, magazine, headlamp, lens, droppedMag, dropped: { active: false, y: 0, vy: 0 } };
+  return { root, body, head, hips, torso, legs, arms, gun, magazine, wrench, holster, trail, torchClip, torch, torchLens, beam, headlamp, lens, droppedMag, dropped: { active: false, y: 0, vy: 0 } };
 }
 
 export interface OperatorAnimation {
@@ -337,6 +470,12 @@ export interface OperatorAnimation {
   reload: number;
   /** Vrai quand le joueur vise (souris, stick droit ou cible assistée). */
   aiming: boolean;
+  /** Arme en main : 0 = clé à molette (défaut), 1 = lance-clous. */
+  weapon?: 0 | 1;
+  /** Progression du coup de clé, 0 → 1 (0 = au repos). */
+  swing?: number;
+  /** Secondes restantes de l'éblouissement à la lampe (≤ 0.25), 0 sinon. */
+  dazzle?: number;
 }
 
 function smooth(current: number, target: number, rate: number, dt: number): number {
@@ -348,11 +487,52 @@ function window01(t: number, start: number, end: number): number {
   return Math.sin(((t - start) / (end - start)) * Math.PI);
 }
 
-const MAG_Z = -0.06;
 /** Visage légèrement levé vers la caméra plongeante. */
 const HEAD_TILT = -0.16;
 
-export function animateOperator(rig: OperatorRig, a: OperatorAnimation, dt: number): void {
+/** Pose de bras : épaule (x, y, z), coude, poignet (orientation de la clé). */
+type ArmKey = readonly [number, number, number, number, number];
+
+/** Clé tenue basse devant la hanche, tête vers l'avant. */
+const WRENCH_REST: ArmKey = [-0.15, 0, -0.35, -0.5, 0.9];
+/** Garde : clé levée devant l'épaule, prête à frapper. */
+const WRENCH_GUARD: ArmKey = [-0.75, 0.1, -0.4, -1.3, 1.3];
+
+/** Coup de clé : armé derrière l'épaule droite, frappe diagonale vers la gauche, retour. [t, bras, torsion, fente] */
+const SWING_KEYS: readonly (readonly [number, ArmKey, number, number])[] = [
+  [0, WRENCH_REST, 0, 0],
+  [0.25, [-2.7, -0.55, -0.5, -1.3, 0.2], -0.55, -0.03],
+  [0.42, [-1.4, 0.35, -0.1, -0.15, 1.6], 0.45, 0.12],
+  [0.55, [-0.75, 0.9, 0.1, -0.3, 1.35], 0.65, 0.14],
+  [1, WRENCH_REST, 0, 0],
+];
+
+function swingPose(t: number): { arm: number[]; twist: number; lunge: number } {
+  let i = 0;
+  while (i < SWING_KEYS.length - 2 && t > SWING_KEYS[i + 1][0]) i++;
+  const [t0, a0, w0, l0] = SWING_KEYS[i];
+  const [t1, a1, w1, l1] = SWING_KEYS[i + 1];
+  const u = Math.min(1, Math.max(0, (t - t0) / (t1 - t0)));
+  const e = u * u * (3 - 2 * u);
+  return { arm: a0.map((v, k) => v + (a1[k] - v) * e), twist: w0 + (w1 - w0) * e, lunge: l0 + (l1 - l0) * e };
+}
+
+type Arm = OperatorRig["arms"][number];
+
+function setArm(arm: Arm, sx: number, sy: number, sz: number, elbow: number, rate: number, dt: number): void {
+  arm.shoulder.rotation.x = smooth(arm.shoulder.rotation.x, sx, rate, dt);
+  arm.shoulder.rotation.y = smooth(arm.shoulder.rotation.y, sy, rate, dt);
+  arm.shoulder.rotation.z = smooth(arm.shoulder.rotation.z, sz, rate, dt);
+  arm.elbow.rotation.x = smooth(arm.elbow.rotation.x, elbow, rate, dt);
+}
+
+export function animateOperator(rig: OperatorRig, input: OperatorAnimation, dt: number): void {
+  // Forçage optionnel des paramètres (captures de poses)
+  const forced = rig.root.userData.animOverride as Partial<OperatorAnimation> | undefined;
+  const a = forced ? { ...input, ...forced } : input;
+  const weapon = a.weapon ?? 0;
+  const swingT = weapon === 0 ? Math.min(1, Math.max(0, a.swing ?? 0)) : 0;
+  const dazzle = Math.max(0, a.dazzle ?? 0);
   const crouch = a.pose === "crouch" || a.pose === "crouch-walk";
   const running = a.pose === "run";
   const moving = a.pose !== "idle" && a.pose !== "crouch";
@@ -360,49 +540,107 @@ export function animateOperator(rig: OperatorRig, a: OperatorAnimation, dt: numb
   const s = Math.sin(a.stride);
   const c = Math.cos(a.stride);
 
+  rig.wrench.visible = weapon === 0;
+  rig.gun.visible = weapon === 1;
+  rig.holster.visible = weapon === 1;
+
+  // Coup de clé : torsion du buste, petit pas en avant du pied gauche
+  const strike = swingT > 0 ? swingPose(swingT) : null;
+  const lunge = strike ? strike.lunge : 0;
+  const step = Math.max(0, lunge) / 0.14;
+
   // Jambes courtes : grands angles pour que la foulée reste lisible
   const crouchAngle = crouch ? 1.05 : 0;
   for (let i = 0; i < 2; i++) {
     const phase = i === 0 ? s : -s;
     const lift = Math.max(0, i === 0 ? -c : c);
-    const hipTarget = -crouchAngle - phase * swing;
-    const kneeTarget = crouchAngle * 2 + lift * swing * (running ? 1.5 : 1.1);
-    rig.legs[i].hip.rotation.x = smooth(rig.legs[i].hip.rotation.x, hipTarget, 18, dt);
-    rig.legs[i].knee.rotation.x = smooth(rig.legs[i].knee.rotation.x, kneeTarget, 18, dt);
+    const stepHip = i === 1 ? -0.6 * step : 0.3 * step;
+    const hipTarget = -crouchAngle - phase * swing + stepHip;
+    const kneeTarget = crouchAngle * 2 + lift * swing * (running ? 1.5 : 1.1) + (i === 1 ? 0.35 * step : 0);
+    rig.legs[i].hip.rotation.x = smooth(rig.legs[i].hip.rotation.x, hipTarget, strike ? 30 : 18, dt);
+    rig.legs[i].knee.rotation.x = smooth(rig.legs[i].knee.rotation.x, kneeTarget, strike ? 30 : 18, dt);
   }
+  rig.body.position.z = smooth(rig.body.position.z, lunge, 30, dt);
+
+  // Éblouir : 1 tant que la lampe est poussée à fond, retombe sur la fin
+  const glare = dazzle > 0 ? Math.min(1, dazzle / 0.08) : 0;
 
   // Hauteur du bassin : accroupi, rebond chibi de la foulée, respiration au repos
   const legReach = (THIGH + SHIN) * Math.cos(crouchAngle);
   const crouchDrop = crouch ? (THIGH + SHIN) - legReach : 0;
   const bob = moving ? Math.abs(c) * (running ? 0.06 : 0.04) : Math.sin(performance.now() / 650) * 0.006;
-  rig.hips.position.y = smooth(rig.hips.position.y, HIP_HEIGHT - crouchDrop + bob, 16, dt);
+  rig.hips.position.y = smooth(rig.hips.position.y, HIP_HEIGHT - crouchDrop + bob - step * 0.04, 16, dt);
   const lean = running ? 0.2 : crouch ? 0.28 : moving ? 0.05 : 0;
-  rig.torso.rotation.x = smooth(rig.torso.rotation.x, lean - (a.shotTime > 0 ? a.shotTime * 0.45 : 0), 14, dt);
-  rig.torso.rotation.y = smooth(rig.torso.rotation.y, moving ? s * 0.1 : 0, 10, dt);
+  const kick = weapon === 1 && a.shotTime > 0 ? a.shotTime * 0.25 : 0;
+  rig.torso.rotation.x = smooth(rig.torso.rotation.x, lean - kick - glare * 0.22 + step * 0.12, 14, dt);
+  rig.torso.rotation.y = smooth(rig.torso.rotation.y, (moving ? s * 0.1 : 0) + (strike ? strike.twist : 0), strike ? 30 : 10, dt);
   rig.torso.rotation.z = smooth(rig.torso.rotation.z, moving ? c * (running ? 0.05 : 0.035) : 0, 10, dt);
   // La grosse tête compense l'inclinaison et dodeline un peu
-  rig.head.rotation.x = smooth(rig.head.rotation.x, HEAD_TILT - lean * 0.7, 10, dt);
+  rig.head.rotation.x = smooth(rig.head.rotation.x, HEAD_TILT - lean * 0.7 + glare * 0.12, 10, dt);
   rig.head.rotation.z = smooth(rig.head.rotation.z, moving ? -c * 0.04 : 0, 8, dt);
+  rig.head.rotation.y = smooth(rig.head.rotation.y, strike ? -strike.twist * 0.5 : 0, 20, dt);
 
-  // Bras : gunArm tient le D9 (droite, −X), supportArm vient le stabiliser (gauche, +X).
-  const [gunArm, supportArm] = rig.arms;
-  const recoil = a.shotTime > 0 ? (a.shotTime / 0.18) * 0.45 : 0;
-  const r = a.reload;
-  if (r > 0) {
-    // Rechargement : arme ramenée devant la poitrine et inclinée, la main gauche éjecte,
-    // va chercher un chargeur à la ceinture, l'insère, puis arme la culasse.
+  // Lampe frontale poussée à fond pendant l'éblouissement, torche brandie, lentilles qui pulsent
+  const pulse = 1 + glare * (0.6 + 0.25 * Math.sin(performance.now() / 25));
+  rig.headlamp.intensity = LAMP_INTENSITY * (1 + 3 * glare);
+  rig.headlamp.angle = LAMP_ANGLE + 0.38 * glare;
+  rig.lens.scale.setScalar(pulse);
+  rig.torch.visible = glare > 0;
+  rig.torchClip.visible = glare <= 0;
+  rig.torchLens.scale.setScalar(pulse);
+  (rig.beam.material as MeshBasicMaterial).opacity = 0.26 * glare * (0.85 + 0.15 * Math.sin(performance.now() / 25));
+
+  // Traînée visible pendant la frappe
+  const smear = window01(swingT, 0.3, 0.62);
+  rig.trail.visible = smear > 0.02;
+  (rig.trail.material as MeshBasicMaterial).opacity = 0.7 * smear;
+
+  // Bras : toolArm tient l'outil (droite, −X), supportArm aide ou balance (gauche, +X).
+  const [toolArm, supportArm] = rig.arms;
+  const r = weapon === 1 ? a.reload : 0;
+  const armSwing = moving ? swing * 0.95 : 0;
+  const bend = running ? -1.3 : -0.35;
+  const swingArm = (arm: Arm, phase: number, out: number) =>
+    setArm(arm, phase * armSwing - (running ? 0.3 : 0.05), 0, out, bend, 14, dt);
+
+  if (weapon === 0) {
+    // Clé à molette : coup, garde quand on vise, sinon tenue basse qui suit le balancier
+    let key: readonly number[];
+    let rate = 14;
+    if (strike) {
+      key = strike.arm;
+      rate = 40;
+    } else if (a.aiming && !running) {
+      key = WRENCH_GUARD;
+    } else {
+      key = [WRENCH_REST[0] + s * armSwing - (running ? 0.3 : 0), 0, WRENCH_REST[2], running ? -1.2 : WRENCH_REST[3], WRENCH_REST[4]];
+    }
+    setArm(toolArm, key[0], key[1], key[2], key[3], rate, dt);
+    rig.wrench.rotation.x = smooth(rig.wrench.rotation.x, key[4], rate, dt);
+    if (strike) {
+      // Main gauche ouverte vers l'avant pour l'équilibre
+      setArm(supportArm, -0.9 + strike.twist * 0.6, -0.3, 0.45, -0.6, 30, dt);
+    } else {
+      swingArm(supportArm, -s, 0.3);
+    }
+  } else if (r > 0) {
+    // Rechargement : lance-clous ramené devant la poitrine, la main gauche tire la bande vide,
+    // va chercher une bande neuve à la ceinture, l'engage par l'arrière puis tire le poussoir.
     const raise = Math.min(1, r * 6, (1 - r) * 8);
-    const fetch = window01(r, 0.18, 0.55);
+    const pull = window01(r, 0.05, 0.3);
+    const fetch = window01(r, 0.25, 0.55);
     const insert = window01(r, 0.5, 0.82);
     const rack = window01(r, 0.82, 1);
-    gunArm.shoulder.rotation.set(-0.6 * raise, 0.55 * raise, -0.15);
-    gunArm.elbow.rotation.set(-1.75 * raise + rack * 0.3, 0, 0);
+    setArm(toolArm, -0.6 * raise, 0.55 * raise, -0.15, -1.75 * raise + rack * 0.25, 30, dt);
     rig.gun.rotation.z = -0.5 * raise;
-    supportArm.shoulder.rotation.set(-0.25 - 1.0 * Math.max(insert, rack) + fetch * 0.4, -0.6 * Math.max(insert, rack), 0.3 * fetch + 0.15);
-    supportArm.elbow.rotation.set(-0.5 - 1.1 * Math.max(insert, rack), 0, 0);
-    rig.magazine.position.z = MAG_Z - 0.06 * window01(r, 0.05, 0.6);
-    rig.magazine.visible = r < 0.15 || r > 0.55;
-    if (r > 0.15 && !rig.dropped.active && rig.dropped.y === 0) {
+    rig.gun.rotation.x = smooth(rig.gun.rotation.x, 0, 20, dt);
+    const reach = Math.max(pull, insert, rack);
+    setArm(supportArm, -0.25 - 1.0 * reach + fetch * 0.4, -0.6 * reach, 0.3 * fetch + 0.15, -0.5 - 1.1 * reach, 30, dt);
+    // Bande : sort vers l'arrière, disparaît, la neuve glisse depuis l'arrière
+    const out = r < 0.2 ? Math.min(1, r / 0.2) : r < 0.5 ? 1 : Math.max(0, 1 - (r - 0.5) / 0.28);
+    rig.magazine.position.y = MAG_Y + 0.22 * out;
+    rig.magazine.visible = r < 0.2 || r > 0.5;
+    if (r > 0.2 && !rig.dropped.active && rig.dropped.y === 0) {
       rig.dropped.active = true;
       rig.dropped.y = 1;
       rig.magazine.getWorldPosition(rig.droppedMag.position);
@@ -412,32 +650,29 @@ export function animateOperator(rig: OperatorRig, a: OperatorAnimation, dt: numb
   } else {
     rig.dropped.y = 0;
     rig.magazine.visible = true;
-    rig.magazine.position.z = MAG_Z;
+    rig.magazine.position.y = MAG_Y;
     rig.gun.rotation.z = smooth(rig.gun.rotation.z, 0, 14, dt);
     if (a.aiming && !running) {
-      // Posture de visée à deux mains, arme vers l'avant, recul au tir.
-      gunArm.shoulder.rotation.x = smooth(gunArm.shoulder.rotation.x, -1.5 + recoil * 0.6, 24, dt);
-      gunArm.shoulder.rotation.y = smooth(gunArm.shoulder.rotation.y, 0.3, 14, dt);
-      gunArm.shoulder.rotation.z = smooth(gunArm.shoulder.rotation.z, 0, 14, dt);
-      gunArm.elbow.rotation.x = smooth(gunArm.elbow.rotation.x, -0.08 - recoil, 28, dt);
-      supportArm.shoulder.rotation.x = smooth(supportArm.shoulder.rotation.x, -1.3, 14, dt);
-      supportArm.shoulder.rotation.y = smooth(supportArm.shoulder.rotation.y, -0.85, 14, dt);
-      supportArm.shoulder.rotation.z = smooth(supportArm.shoulder.rotation.z, 0, 14, dt);
-      supportArm.elbow.rotation.x = smooth(supportArm.elbow.rotation.x, -0.45, 14, dt);
+      // Visée à deux mains, recul court et sec à chaque clou
+      const k = Math.min(1, Math.max(0, a.shotTime / 0.18));
+      const recoil = k * k * 0.35;
+      setArm(toolArm, -1.5 + recoil * 0.5, 0.3, 0, -0.08 - recoil, 40, dt);
+      rig.gun.rotation.x = smooth(rig.gun.rotation.x, 0, 24, dt);
+      setArm(supportArm, -1.3, -0.85, 0, -0.45, 14, dt);
     } else {
       // Balancier de marche ou de course, bras un peu écartés de la veste rembourrée.
-      const armSwing = moving ? swing * 0.95 : 0;
-      const bend = running ? -1.3 : -0.35;
-      for (const [arm, phase, out] of [[gunArm, s, -0.3], [supportArm, -s, 0.3]] as const) {
-        arm.shoulder.rotation.x = smooth(arm.shoulder.rotation.x, phase * armSwing - (running ? 0.3 : 0.05), 14, dt);
-        arm.shoulder.rotation.y = smooth(arm.shoulder.rotation.y, 0, 14, dt);
-        arm.shoulder.rotation.z = smooth(arm.shoulder.rotation.z, out, 14, dt);
-        arm.elbow.rotation.x = smooth(arm.elbow.rotation.x, bend, 14, dt);
-      }
+      swingArm(toolArm, s, -0.3);
+      // Poignet cassé : buse vers l'avant, carter visible depuis la caméra
+      if (weapon === 1) rig.gun.rotation.x = smooth(rig.gun.rotation.x, running ? -0.5 : -1.15, 14, dt);
+      swingArm(supportArm, -s, 0.3);
     }
   }
+  rig.gun.position.y = -FOREARM - 0.01 + (weapon === 1 && a.shotTime > 0 ? (a.shotTime / 0.18) * 0.03 : 0);
 
-  // Chargeur vide qui tombe au sol
+  // Éblouir : la main gauche brandit la torche à hauteur des yeux (prioritaire sur le reste)
+  if (glare > 0) setArm(supportArm, -1.72, -0.3, 0.1, -0.05, 30, dt);
+
+  // Bande vide qui tombe au sol
   if (rig.dropped.active) {
     rig.dropped.vy -= 9.8 * dt;
     rig.droppedMag.position.y += rig.dropped.vy * dt;

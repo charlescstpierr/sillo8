@@ -1,24 +1,45 @@
 "use client";
+// HUD du bricoleur : vie, charge de la lampe, arme en main, sacoche (compteurs), objectifs.
 import { useEffect, useState } from "react";
 import type { Engine } from "@/game/engine";
+import { NAIL_CAPACITY } from "@/game/state";
 import { useHud } from "./useHud";
 import { useUi } from "./useUi";
+import { hudExtra } from "./compat";
+import { Icon, type IconName } from "./icons";
 import styles from "./hud.module.css";
 
-function Gauge({ value, max, tone }: { value: number; max: number; tone: "health" | "energy" }) {
+function Gauge({ value, max, tone }: { value: number; max: number; tone: "health" | "lamp" }) {
+  const ratio = Math.max(0, Math.min(1, value / max));
   return (
-    <div className={styles.gauge} data-tone={tone}>
-      <div className={styles.gaugeFill} style={{ width: `${Math.max(0, Math.min(100, (value / max) * 100))}%` }} />
+    <div className={styles.gauge} data-tone={tone} data-low={ratio < 0.25}>
+      <div className={styles.gaugeFill} style={{ width: `${ratio * 100}%` }} />
     </div>
   );
 }
 
+const HINT: [string, string][] = [
+  ["Clic", "frapper/tirer"], ["Clic droit", "éblouir"], ["1/2", "arme"], ["R", "recharger"],
+  ["E", "interagir"], ["J", "carnet"], ["Tab", "sac"],
+];
+
 export function Hud({ engine }: { engine: Engine }) {
   const hud = useHud(engine.hud);
   const ui = useUi(engine.ui);
+  const extra = hudExtra(engine, hud);
   const touch = hud.device === "touch";
   const playing = ui.mode === "playing";
   const danger = hud.health <= 15 ? "critical" : hud.health <= 35 ? "low" : null;
+  const nailgun = extra.weapon === 1;
+
+  const counters: [IconName, number, string][] = [
+    ["scrap", hud.components, "Ferraille"],
+    ["cell", extra.cells, "Piles"],
+    ["bandage", extra.bandages, "Bandages"],
+    ["medkit", extra.medkits, "Trousses"],
+    ["can", extra.cans, "Conserves"],
+  ];
+
   return (
     <div className={styles.layer} data-hidden={!playing}>
       <div className={styles.vignette} />
@@ -36,39 +57,67 @@ export function Hud({ engine }: { engine: Engine }) {
         </ul>
       </section>
 
-      <section className={styles.vitals} aria-label="État de l'opérateur">
+      {!touch && hud.device === "keyboard" ? (
+        <p className={styles.hint} aria-label={HINT.map(([k, a]) => `${k} : ${a}`).join(" · ")}>
+          {HINT.map(([key, action]) => (
+            <span key={key}><kbd>{key}</kbd> : {action}</span>
+          ))}
+        </p>
+      ) : null}
+
+      <section className={styles.vitals} aria-label="État du survivant">
         <div className={styles.stamp}>{hud.sector}</div>
-        <div className={styles.row}><span>VIE</span><Gauge value={hud.health} max={100} tone="health" /><b>{hud.health}</b></div>
-        <div className={styles.row}><span>ÉNERGIE</span><Gauge value={hud.energy} max={hud.maxEnergy} tone="energy" /><b>{hud.energy}</b></div>
-        <div className={styles.weapon} data-weapon={hud.weapon}>
-          {hud.weapon === 0 ? (
-            <>
-              <span className={styles.weaponName}>D9</span>
-              <b>{String(hud.ammo).padStart(2, "0")}</b> / {hud.reserve}
-              {hud.reloading ? <em> · rechargement…</em> : null}
-            </>
-          ) : (
-            <>
-              <span className={styles.weaponName}>ARC-3</span>
-              <span>12 ÉNERGIE / DÉCHARGE</span>
-            </>
-          )}
+        <div className={styles.row}>
+          <Icon name="heart" className={styles.rowIcon} />
+          <span>VIE</span>
+          <Gauge value={hud.health} max={100} tone="health" />
+          <b>{hud.health}</b>
         </div>
-        <div className={styles.counts}>
-          <span title="Trousses de soin">✚ {hud.medkits}</span>
-          <span title="Cellules d'énergie">ϟ {hud.cells}</span>
-          <span title="Composants">⚙ {hud.components}</span>
+        <div className={styles.row}>
+          <Icon name="cell" className={styles.rowIcon} />
+          <span>LAMPE</span>
+          <Gauge value={hud.energy} max={hud.maxEnergy} tone="lamp" />
+          <b>{hud.energy}</b>
         </div>
+        <div className={styles.weapon} data-weapon={extra.weapon}>
+          <Icon name={nailgun ? "nailgun" : "wrench"} className={styles.weaponIcon} />
+          <div className={styles.weaponText}>
+            <span className={styles.weaponName}>{nailgun ? "LANCE-CLOUS" : "CLÉ À MOLETTE"}</span>
+            {nailgun ? (
+              <span className={styles.ammo}>
+                <b>{hud.ammo}</b>/{NAIL_CAPACITY} <small>· réserve {hud.reserve}</small>
+                {hud.reloading ? <em> · recharge…</em> : null}
+              </span>
+            ) : (
+              <span className={styles.ammo}><small>corps à corps · silencieuse</small></span>
+            )}
+          </div>
+        </div>
+        <ul className={styles.counts}>
+          {counters.map(([icon, value, label]) => (
+            <li key={icon} title={label} data-empty={value <= 0}>
+              <Icon name={icon} className={styles.countIcon} />
+              <b>{value}</b>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* Version compacte pour les écrans bas (téléphone en paysage) */}
       <section className={styles.mini} aria-hidden>
-        <div className={styles.miniRow}><Gauge value={hud.health} max={100} tone="health" /><b>{hud.health}</b></div>
-        <div className={styles.miniRow}><Gauge value={hud.energy} max={hud.maxEnergy} tone="energy" /><b>{hud.energy}</b></div>
+        <div className={styles.miniRow}><Icon name="heart" className={styles.miniIcon} /><Gauge value={hud.health} max={100} tone="health" /><b>{hud.health}</b></div>
+        <div className={styles.miniRow}><Icon name="cell" className={styles.miniIcon} /><Gauge value={hud.energy} max={hud.maxEnergy} tone="lamp" /><b>{hud.energy}</b></div>
         <div className={styles.miniWeapon}>
-          <i>{hud.weapon === 0 ? <>D9 <b>{String(hud.ammo).padStart(2, "0")}</b>/{hud.reserve}{hud.reloading ? " …" : ""}</> : <>ARC-3 · 12 ÉN.</>}</i>
-          <span>✚{hud.medkits} ϟ{hud.cells} ⚙{hud.components}</span>
+          <Icon name={nailgun ? "nailgun" : "wrench"} className={styles.miniIcon} />
+          {nailgun
+            ? <i>LANCE-CLOUS <b>{hud.ammo}</b>/{NAIL_CAPACITY} · {hud.reserve}{hud.reloading ? " …" : ""}</i>
+            : <i>CLÉ À MOLETTE</i>}
         </div>
+        <ul className={styles.miniCounts}>
+          {counters.map(([icon, value, label]) => (
+            <li key={icon} title={label} data-empty={value <= 0}><Icon name={icon} />{value}</li>
+          ))}
+        </ul>
       </section>
 
       <div ref={(el) => { engine.tooltipEl = el; }} className={styles.tooltip} style={{ opacity: 0 }}>
@@ -95,6 +144,7 @@ export function Notice({ engine }: { engine: Engine }) {
     const timer = setTimeout(() => setExpired(hud.noticeId), 6000);
     return () => clearTimeout(timer);
   }, [hud.noticeId]);
-  if (!hud.notice || expired === hud.noticeId || ui.mode === "dialogue") return null;
+  const mode = ui.mode as string;
+  if (!hud.notice || expired === hud.noticeId || mode === "dialogue" || mode === "note" || mode === "journal") return null;
   return <p key={hud.noticeId} className={styles.notice} data-mode={ui.mode} role="status">{hud.notice}</p>;
 }

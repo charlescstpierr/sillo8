@@ -2,26 +2,29 @@
 // Menu principal de SILLO 8.
 import type { Engine } from "@/game/engine";
 import { PaperButton, Stamp, Tag } from "./Paper";
-import { OperatorPortrait } from "./Portraits";
+import { HeroPortrait } from "./Portraits";
 import styles from "./sheets.module.css";
 
 const DESKTOP: [string, string][] = [
-  ["ZQSD / WASD", "se déplacer"],
-  ["Souris", "viser · clic : tirer"],
-  ["Clic droit", "décharge ARC-3"],
-  ["E", "interagir"],
-  ["Q / A", "SCAN ÉCHO"],
-  ["R", "recharger"],
-  ["Tab", "inventaire"],
+  ["ZQSD / WASD", "se déplacer · Maj : courir"],
+  ["Souris", "viser · clic : frapper / tirer"],
+  ["Clic droit", "éblouir à la lampe"],
+  ["1 / 2", "clé à molette / lance-clous"],
+  ["R", "recharger les clous"],
+  ["E", "interagir · lire"],
+  ["J", "carnet de notes"],
+  ["Tab", "sac"],
+  ["H · B", "se soigner · mettre une pile"],
   ["Échap", "pause"],
 ];
 
 const TOUCH: [string, string][] = [
   ["Stick gauche", "se déplacer (à fond : courir)"],
-  ["TIR", "visée assistée"],
-  ["ARC · ÉCHO", "décharge · scan"],
-  ["✋", "interagir"],
-  ["Sac", "inventaire"],
+  ["FRAPPER / TIRER", "visée assistée"],
+  ["LAMPE", "éblouir les mordus"],
+  ["⇄ · R", "changer d'arme · recharger"],
+  ["✋", "interagir · lire"],
+  ["CARNET · SAC", "notes · inventaire"],
   ["❚❚", "pause"],
 ];
 
@@ -33,9 +36,9 @@ export function MainMenu({ engine, touch }: { engine: Engine; touch: boolean }) 
       <div className={styles.menuBg} aria-hidden />
       <div className={styles.menu}>
         <section className={styles.menuCard} aria-label="Menu principal" data-sheet>
-          <div className={styles.portrait}><OperatorPortrait /></div>
-          <div className={styles.portraitTag}><Tag>OPÉRATRICE 08</Tag></div>
-          <Tag>PROTOCOLE DE CONFINEMENT / 08</Tag>
+          <div className={styles.portrait}><HeroPortrait /></div>
+          <div className={styles.portraitTag}><Tag>LE BRICOLEUR</Tag></div>
+          <Tag>CARNET DE SURVIE / SILLO 8</Tag>
           <h1 className={styles.logo}>SILLO 8</h1>
           <p className={styles.subtitle}>ÉTAGE 1</p>
           <p className={styles.tagline}>
@@ -59,7 +62,7 @@ export function MainMenu({ engine, touch }: { engine: Engine; touch: boolean }) 
               </div>
             ))}
           </dl>
-          <Stamp className={styles.controlsStamp}>CASQUE CONSEILLÉ</Stamp>
+          <Stamp className={styles.controlsStamp}>LAMPE CHARGÉE ?</Stamp>
         </aside>
       </div>
       <p className={styles.version}>Un étage à la fois. {touch ? "" : "· F3 : performances"}</p>

@@ -1,4 +1,4 @@
-/* Interface façon fiche papier usée : cartes crème, encre brune, tampons. */
+/* Interface façon fiche papier usée : cartes crème, encre brune, tampons, toile olive et cuir. */
 .layer {
   position: absolute;
   inset: 0;
@@ -97,8 +97,8 @@
   position: absolute;
   left: max(14px, env(safe-area-inset-left));
   bottom: max(14px, env(safe-area-inset-bottom));
-  width: min(270px, 44vw);
-  padding: 10px 14px 9px;
+  width: min(300px, 44vw);
+  padding: 12px 14px 11px;
   transform: rotate(-0.8deg);
 }
 
@@ -120,82 +120,191 @@
 
 .row {
   display: grid;
-  grid-template-columns: 62px 1fr 30px;
+  grid-template-columns: 20px 50px 1fr 30px;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 6px;
+  font-family: var(--font-title);
+  font-size: 13px;
+  letter-spacing: 0.5px;
   margin: 3px 0;
+}
+
+.rowIcon {
+  width: 20px;
+  height: 20px;
 }
 
 .row b {
   text-align: right;
-  font-family: var(--font-title);
+  font-size: 15px;
 }
 
 .gauge {
-  height: 10px;
+  position: relative;
+  height: 12px;
   border: 2px solid var(--ink);
-  border-radius: 6px;
+  border-radius: 7px;
   background: rgba(58, 42, 28, 0.12);
   overflow: hidden;
 }
 
+/* Graduations */
+.gauge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 calc(20% - 1.5px), rgba(58, 42, 28, 0.28) calc(20% - 1.5px) 20%);
+}
+
 .gaugeFill {
   height: 100%;
-  background: #e0674a;
+  background: linear-gradient(180deg, #ec8a6a, #d4573b);
   transition: width 0.25s ease;
 }
 
-.gauge[data-tone="energy"] .gaugeFill {
-  background: #45bfae;
+.gauge[data-tone="lamp"] .gaugeFill {
+  background: linear-gradient(180deg, #f6d37a, var(--mustard));
 }
 
+.gauge[data-tone="lamp"][data-low="true"] .gaugeFill {
+  background: linear-gradient(180deg, #e3a35a, var(--rust));
+}
+
+/* Arme en main : étiquette de toile cousue */
 .weapon {
-  margin-top: 5px;
-  font-size: 15px;
   display: flex;
-  gap: 5px;
-  align-items: baseline;
+  align-items: center;
+  gap: 9px;
+  margin: 8px 0 7px;
+  padding: 5px 10px 5px 6px;
+  background: var(--olive);
+  color: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 8px 14px 14px 8px;
+  box-shadow: 0 2px 0 rgba(30, 20, 13, 0.4), inset 0 0 0 3px var(--olive), inset 0 0 0 4.5px rgba(233, 220, 192, 0.4);
   white-space: nowrap;
 }
 
-.weapon b {
-  font-family: var(--font-title);
-  font-size: 19px;
-  color: var(--leather-light);
+.weapon[data-weapon="1"] {
+  background: var(--leather-light);
+  box-shadow: 0 2px 0 rgba(30, 20, 13, 0.4), inset 0 0 0 3px var(--leather-light), inset 0 0 0 4.5px rgba(233, 220, 192, 0.4);
 }
 
-.weapon em {
-  color: var(--rust);
+.weaponIcon {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  padding: 3px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+
+.weaponText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.08;
+  min-width: 0;
 }
 
 .weaponName {
-  padding: 0 6px;
+  font-family: var(--font-title);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+}
+
+.ammo {
   font-family: var(--font-title);
   font-size: 13px;
-  color: var(--cream);
-  background: var(--olive);
-  border: 1.5px solid var(--ink);
-  border-radius: 4px;
 }
 
-.weapon[data-weapon="1"] .weaponName {
-  background: var(--teal);
+.ammo b {
+  font-size: 19px;
+  color: #f6d37a;
 }
 
-.weapon[data-weapon="1"] span:last-child {
-  font-family: var(--font-stamp);
-  font-size: 12.5px;
-  color: var(--teal);
+.ammo small {
+  font-family: var(--font-body);
+  font-size: 14px;
+  opacity: 0.9;
 }
 
+.ammo em {
+  font-style: normal;
+  color: #f6d37a;
+}
+
+/* Sacoche : petits compteurs */
 .counts {
   display: flex;
-  gap: 12px;
-  margin-top: 3px;
+  justify-content: space-between;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.counts li {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 1px 6px 1px 2px;
+  background: #fbf4e2;
+  border: 1.5px solid rgba(58, 42, 28, 0.5);
+  border-radius: 8px;
+}
+
+.counts li[data-empty="true"] {
+  opacity: 0.45;
+}
+
+.countIcon {
+  width: 23px;
+  height: 23px;
+}
+
+.counts b {
   font-family: var(--font-title);
-  font-size: 13px;
-  color: rgba(58, 42, 28, 0.8);
+  font-size: 14px;
+}
+
+/* Rappel des commandes au clavier */
+.hint {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  max-width: min(480px, 40vw);
+  margin: 0;
+  padding: 5px 12px 6px 14px;
+  font-size: 14.5px;
+  line-height: 1.35;
+  color: var(--ink);
+  background: rgba(244, 236, 214, 0.88);
+  border: 1.5px solid rgba(58, 42, 28, 0.6);
+  border-left: 6px solid var(--mustard);
+  border-radius: 4px 10px 10px 4px;
+  box-shadow: 0 2px 0 rgba(30, 20, 13, 0.3);
+  transform: rotate(-0.5deg);
+}
+
+.hint span {
+  white-space: nowrap;
+}
+
+.hint kbd {
+  display: inline-block;
+  padding: 0 4px;
+  font-family: var(--font-title);
+  font-size: 11px;
+  line-height: 15px;
+  background: #fffaf0;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  box-shadow: 0 1.5px 0 rgba(58, 42, 28, 0.6);
 }
 
 /* Vignette rouge quand la vie baisse */
@@ -220,15 +329,21 @@
   display: none;
   position: absolute;
   top: max(10px, env(safe-area-inset-top));
-  left: calc(max(14px, env(safe-area-inset-left)) + 54px);
-  width: 158px;
-  padding: 4px 8px 4px;
+  left: calc(max(14px, env(safe-area-inset-left)) + 62px);
+  width: 196px;
+  padding: 4px 8px 5px;
   transform: rotate(-0.6deg);
+}
+
+.miniIcon {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
 }
 
 .miniRow {
   display: grid;
-  grid-template-columns: 1fr 26px;
+  grid-template-columns: 16px 1fr 26px;
   gap: 5px;
   align-items: center;
   font-family: var(--font-title);
@@ -237,13 +352,16 @@
 }
 
 .miniRow .gauge {
-  height: 8px;
+  height: 9px;
 }
 
 .miniWeapon {
   display: flex;
-  justify-content: space-between;
-  font-size: 12px;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  font-family: var(--font-title);
+  font-size: 11.5px;
   line-height: 1.2;
 }
 
@@ -252,15 +370,34 @@
 }
 
 .miniWeapon b {
-  font-family: var(--font-title);
+  font-size: 13px;
   color: var(--leather-light);
 }
 
-.miniWeapon span {
+.miniCounts {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
   font-family: var(--font-title);
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
+.miniCounts li {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.miniCounts li[data-empty="true"] {
+  opacity: 0.45;
+}
+
+.miniCounts svg {
+  width: 15px;
+  height: 15px;
+}
 
 .tooltip {
   composes: card;
@@ -315,7 +452,7 @@
   bottom: max(16px, env(safe-area-inset-bottom));
   transform: translateX(-50%) rotate(-0.4deg);
   margin: 0;
-  max-width: min(560px, 46vw);
+  max-width: min(520px, 40vw);
   padding: 7px 14px;
   font-size: 16px;
   text-align: center;
@@ -350,9 +487,9 @@
   .objectives { width: 220px; padding: 7px 10px; }
   .objectives ul { font-size: 13px; }
   .objectivesTitle { font-size: 14px; }
-  .vitals { display: none; }
+  .vitals, .hint { display: none; }
   .mini { display: block; }
-  .notice { bottom: auto; top: 12px; font-size: 14px; max-width: 36vw; }
+  .notice { bottom: auto; top: 12px; font-size: 14px; max-width: 34vw; }
   /* Hors jeu sur téléphone : bandeau discret en bas, sous les fiches */
   .notice[data-mode]:not([data-mode="playing"]) { top: auto; bottom: 4px; padding: 3px 10px; font-size: 13px; max-width: 60vw; }
 }

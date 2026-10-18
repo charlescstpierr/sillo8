@@ -52,7 +52,7 @@ export function SettingsSheet({ engine, touch }: { engine: Engine; touch: boolea
   return (
     <section className={styles.settings} aria-label="Réglages" data-sheet>
       <Stamp>RÉGLAGES</Stamp>
-      <Tag>CONSOLE OPÉRATEUR</Tag>
+      <Tag>CARNET DE SURVIE</Tag>
       <h1 className={styles.title}>Réglages</h1>
 
       <label className={styles.toggle}>
@@ -61,9 +61,9 @@ export function SettingsSheet({ engine, touch }: { engine: Engine; touch: boolea
         <span>Mode performance · sans ombres portées ni poussière, résolution réduite</span>
       </label>
 
-      <h2 className={styles.section}>IA conversationnelle (facultatif)</h2>
+      <h2 className={styles.section}>Dialogues par IA (facultatif, histoire à venir)</h2>
       <p className={styles.text} style={{ fontSize: 15 }}>
-        Sans serveur, les personnages répondent hors ligne. Pour llama.cpp : http://127.0.0.1:8080.
+        Sans serveur, les survivants répondent hors ligne. Pour llama.cpp : http://127.0.0.1:8080.
         Un service distant doit passer par un proxy HTTPS, sans clé dans le jeu.
       </p>
 

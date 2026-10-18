@@ -1,90 +1,104 @@
 "use client";
-// Inventaire (port de open_inventory de main.gd), icônes papier en SVG.
+// Sac du bricoleur : armes, soins, lampe et matériaux, rangés en poches cousues.
 import type { ReactNode } from "react";
 import type { Engine } from "@/game/engine";
+import { CELL_CHARGE, GENERATOR_PARTS, HEAL, NAIL_CAPACITY, NAILS_PER_SCRAP, RADIO_PARTS, UPGRADE_PARTS } from "@/game/state";
 import { PaperButton, Stamp, Tag } from "./Paper";
 import { useHud } from "./useHud";
+import { eatCan, hudExtra, useBandage, useCell, useMedkit } from "./compat";
+import { Icon, type IconName } from "./icons";
 import styles from "./sheets.module.css";
 
-const INK = "#3a2a1c";
-const line = { stroke: INK, strokeWidth: 3, strokeLinejoin: "round" as const, strokeLinecap: "round" as const };
+function Pocket({ title, area, children }: { title: string; area: string; children: ReactNode }) {
+  return (
+    <section className={styles.pocket} style={{ gridArea: area }} aria-label={title}>
+      <h2 className={styles.pocketTitle}>{title}</h2>
+      {children}
+    </section>
+  );
+}
 
-const ICONS: Record<string, ReactNode> = {
-  components: (
-    <svg viewBox="0 0 48 48" aria-hidden>
-      <path d="M24 6l4 5 6-2 1 6 6 2-2 6 4 4-5 3 1 6-6 1-2 6-6-2-5 4-3-5-6 0 0-6-5-3 3-5-3-5 5-3 0-6 6 0 3-5z" fill="#d8a43a" {...line} />
-      <circle cx="24" cy="25" r="7" fill="#f4ecd6" {...line} />
-    </svg>
-  ),
-  medkits: (
-    <svg viewBox="0 0 48 48" aria-hidden>
-      <rect x="8" y="14" width="32" height="26" rx="6" fill="#f4ecd6" {...line} />
-      <path d="M18 14v-4h12v4" fill="none" {...line} />
-      <path d="M24 20v14M17 27h14" stroke="#c4412a" strokeWidth="5" strokeLinecap="round" />
-    </svg>
-  ),
-  cells: (
-    <svg viewBox="0 0 48 48" aria-hidden>
-      <rect x="14" y="10" width="20" height="32" rx="5" fill="#6b7550" {...line} />
-      <rect x="20" y="5" width="8" height="6" rx="2" fill="#d8a43a" {...line} />
-      <path d="M26 16l-6 10h6l-4 10" fill="none" stroke="#f2d27a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  battery: (
-    <svg viewBox="0 0 48 48" aria-hidden>
-      <rect x="5" y="14" width="34" height="20" rx="5" fill="#f4ecd6" {...line} />
-      <rect x="39" y="20" width="5" height="8" rx="1.5" fill={INK} />
-      <rect x="9" y="18" width="20" height="12" rx="2.5" fill="#45bfae" />
-    </svg>
-  ),
-  reserve: (
-    <svg viewBox="0 0 48 48" aria-hidden>
-      {[10, 20, 30].map((x) => (
-        <g key={x}>
-          <path d={`M${x} 18c0-8 8-8 8 0v22h-8z`} fill="#d8a43a" {...line} />
-          <path d={`M${x} 32h8`} {...line} />
-        </g>
-      ))}
-    </svg>
-  ),
-};
+function Item({ icon, name, count, detail, badge, children }: {
+  icon: IconName; name: string; count?: ReactNode; detail: ReactNode; badge?: string; children?: ReactNode;
+}) {
+  const empty = typeof count === "number" && count <= 0;
+  return (
+    <div className={styles.slot} data-empty={empty}>
+      <Icon name={icon} className={styles.slotIcon} />
+      <div className={styles.slotText}>
+        <b>{name}{count !== undefined ? <span className={styles.slotCount}> ×{count}</span> : null}</b>
+        <small>{detail}</small>
+      </div>
+      {badge ? <span className={styles.slotBadge}>{badge}</span> : null}
+      {children}
+    </div>
+  );
+}
 
 export function InventorySheet({ engine, touch }: { engine: Engine; touch: boolean }) {
   const hud = useHud(engine.hud);
-  const items: [string, ReactNode, string][] = [
-    ["components", hud.components, "composants"],
-    ["medkits", hud.medkits, "trousses"],
-    ["cells", hud.cells, "cellules"],
-    ["battery", `${hud.energy}/${hud.maxEnergy}`, "batterie"],
-    ["reserve", hud.reserve, "réserve D9"],
-  ];
+  const extra = hudExtra(engine, hud);
+  const hurt = hud.health > 0 && hud.health < 100;
+  const lampFull = hud.energy >= hud.maxEnergy;
+  const nailgun = extra.weapon === 1;
+  const use = (label: string, aria: string, disabled: boolean, run: () => void, hotkey?: string) => (
+    <PaperButton className={styles.useBtn} variant="primary" aria-label={aria} hotkey={touch ? undefined : hotkey} disabled={disabled} onClick={run}>{label}</PaperButton>
+  );
+
   return (
-    <section className={styles.inventory} aria-label="Inventaire" data-sheet>
-      <Stamp>INVENTAIRE / OPÉRATEUR</Stamp>
-      <Tag>SAC DE TERRAIN</Tag>
-      <h1 className={styles.title}>Équipement</h1>
-      <ul className={styles.items} style={{ listStyle: "none", padding: 0 }}>
-        {items.map(([key, value, label]) => (
-          <li key={key} className={styles.item}>
-            {ICONS[key]}
-            <b>{value}</b>
-            <span>{label}</span>
-          </li>
-        ))}
-      </ul>
-      <div className={styles.itemButtons}>
-        <PaperButton variant="primary" hotkey={touch ? undefined : "H"} disabled={hud.medkits <= 0} autoFocus={!touch} onClick={() => engine.useMedkit()}>
-          Utiliser une trousse
-        </PaperButton>
-        <PaperButton variant="olive" hotkey={touch ? undefined : "B"} disabled={hud.cells <= 0} onClick={() => engine.useCell()}>
-          Utiliser une cellule
-        </PaperButton>
-        <PaperButton variant="ghost" className={styles.back} hotkey={touch ? undefined : "Tab"} onClick={() => engine.resume()}>Retour au terrain</PaperButton>
+    <section className={styles.inventory} aria-label="Sac" data-sheet>
+      <Stamp>SACOCHE · CUIR</Stamp>
+      <header className={styles.invHead}>
+        <Tag>SAC DE TERRAIN</Tag>
+        <h1 className={styles.title}>Le sac</h1>
+        <p className={styles.invLife}><Icon name="heart" /> Vie <b>{hud.health}</b>/100</p>
+      </header>
+
+      <div className={styles.pockets}>
+        <Pocket title="Armes" area="armes">
+          <Item icon="wrench" name="Clé à molette" detail="Corps à corps · 26 dégâts · silencieuse" badge={nailgun ? undefined : "EN MAIN"} />
+          <Item icon="nailgun" name="Lance-clous" detail={<>Chargeur <b>{hud.ammo}</b>/{NAIL_CAPACITY} · 16 dégâts</>} badge={nailgun ? "EN MAIN" : undefined} />
+          <Item icon="nails" name="Clous" count={hud.reserve} detail="Réserve dans la sacoche · R recharge" />
+        </Pocket>
+
+        <Pocket title="Soins" area="soins">
+          <Item icon="bandage" name="Bandages" count={extra.bandages} detail={`+${HEAL.bandage} vie · égratignures`}>
+            {use("Utiliser", "Utiliser un bandage", extra.bandages <= 0 || !hurt, () => useBandage(engine))}
+          </Item>
+          <Item icon="medkit" name="Trousses" count={extra.medkits} detail={`+${HEAL.medkit} vie · blessures graves`}>
+            {use("Utiliser", "Utiliser une trousse", extra.medkits <= 0 || !hurt, () => useMedkit(engine))}
+          </Item>
+          <Item icon="can" name="Conserves" count={extra.cans} detail={`+${HEAL.can} vie · pêches au sirop`}>
+            {use("Utiliser", "Manger une conserve", extra.cans <= 0 || !hurt, () => eatCan(engine))}
+          </Item>
+        </Pocket>
+
+        <Pocket title="Lampe" area="lampe">
+          <div className={styles.lampGauge} aria-label={`Charge de la lampe ${hud.energy} sur ${hud.maxEnergy}`}>
+            <Icon name="lamp" />
+            <div className={styles.lampBar}><div style={{ width: `${Math.min(100, (hud.energy / hud.maxEnergy) * 100)}%` }} /></div>
+            <b>{hud.energy}/{hud.maxEnergy}</b>
+          </div>
+          <Item icon="cell" name="Piles" count={extra.cells} detail={`+${CELL_CHARGE} charge · éblouir coûte 15`}>
+            {use("Mettre une pile", "Mettre une pile", extra.cells <= 0 || lampFull, () => useCell(engine), "B")}
+          </Item>
+        </Pocket>
+
+        <Pocket title="Matériaux" area="materiaux">
+          <Item icon="scrap" name="Ferraille" count={hud.components} detail="Pièces récupérées, à bricoler" />
+          <ul className={styles.recipes}>
+            <li><span>Génératrice</span><b>{GENERATOR_PARTS}</b></li>
+            <li><span>Module radio</span><b>{RADIO_PARTS}</b></li>
+            <li><span>Presse à clous · 1 → {NAILS_PER_SCRAP} clous</span><b>1</b></li>
+            <li><span>Amélioration de la lampe</span><b>{UPGRADE_PARTS}</b></li>
+          </ul>
+        </Pocket>
       </div>
-      <p className={styles.muted}>
-        La borne de recharge gratuite est au poste de sécurité. L&apos;atelier fabrique et améliore avec des pièces.
-        Amélioration de batterie : 3 composants.
-      </p>
+
+      <div className={styles.invFoot}>
+        <PaperButton variant="ghost" className={styles.back} hotkey={touch ? undefined : "Tab"} autoFocus={!touch} onClick={() => engine.resume()}>Refermer le sac</PaperButton>
+        <p className={styles.muted}>Borne de recharge gratuite au poste de sécurité. {touch ? "" : "H : se soigner au mieux."}</p>
+      </div>
     </section>
   );
 }
