@@ -1,9 +1,10 @@
 // Petites briques de décor low-poly arrondies, toutes en matériaux toon partagés.
 import {
-  BoxGeometry, CapsuleGeometry, CylinderGeometry, DodecahedronGeometry, DoubleSide, Group, Mesh,
+  BoxGeometry, BufferAttribute, BufferGeometry, CapsuleGeometry, Color, CylinderGeometry, DodecahedronGeometry, DoubleSide, Group, Matrix4, Mesh,
   MeshBasicMaterial, Object3D, PlaneGeometry, SphereGeometry, type Material, type Texture,
 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { glow, toon } from "./toon";
 import { PALETTE } from "./palette";
 import { blobTexture, grassTexture, hazardTexture, rng, signTexture } from "./textures";
@@ -12,6 +13,104 @@ const geometryCache = new Map<string, any>();
 function cached<T>(key: string, build: () => T): T {
   if (!geometryCache.has(key)) geometryCache.set(key, build());
   return geometryCache.get(key);
+}
+
+// ——— Fusion du décor statique ———
+
+interface Bucket { material: Material; parts: BufferGeometry[]; renderOrder: number; castShadow: boolean; }
+
+export interface BatchOptions {
+  /** Couleur de sommet (matériaux à `vertexColors`). */
+  color?: Color;
+  castShadow?: boolean;
+  renderOrder?: number;
+  /** UV recalculées dans le monde (mètres ÷ valeur), projetées selon la normale : murs fusionnés. */
+  worldUv?: number;
+}
+
+const KEEP = ["position", "normal", "uv"];
+
+/**
+ * Décor immobile fusionné par matériau et par case de `cell` mètres : quelques appels de dessin au lieu
+ * de milliers, sans perdre l'élagage par la caméra. Les géométries sont recopiées dans le repère de `root`.
+ */
+export class StaticBatch {
+  private buckets = new Map<string, Bucket>();
+  constructor(readonly root: Object3D, readonly cell = 12) {}
+
+  add(geometry: BufferGeometry, matrix: Matrix4, material: Material, options: BatchOptions = {}): void {
+    const g = geometry.index ? geometry.toNonIndexed() : geometry.clone();
+    for (const name of Object.keys(g.attributes)) if (!KEEP.includes(name)) g.deleteAttribute(name);
+    g.morphAttributes = {};
+    g.clearGroups();
+    g.applyMatrix4(matrix);
+    const pos = g.getAttribute("position") as BufferAttribute;
+    if (!g.getAttribute("normal")) g.computeVertexNormals();
+    if (!g.getAttribute("uv") || options.worldUv) {
+      const nrm = g.getAttribute("normal") as BufferAttribute;
+      const uv = new Float32Array(pos.count * 2);
+      const s = 1 / (options.worldUv ?? 1);
+      for (let i = 0; i < pos.count; i++) {
+        const nx = Math.abs(nrm.getX(i)), nz = Math.abs(nrm.getZ(i)), ny = Math.abs(nrm.getY(i));
+        const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+        const [u, v] = ny > nx && ny > nz ? [x, z] : nx > nz ? [z, y] : [x, y];
+        uv[i * 2] = u * s;
+        uv[i * 2 + 1] = v * s;
+      }
+      g.setAttribute("uv", new BufferAttribute(uv, 2));
+    }
+    if ((material as { vertexColors?: boolean }).vertexColors) {
+      const c = options.color ?? new Color(1, 1, 1);
+      const colors = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) { colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b; }
+      g.setAttribute("color", new BufferAttribute(colors, 3));
+    }
+    const cx = Math.floor(matrix.elements[12] / this.cell), cz = Math.floor(matrix.elements[14] / this.cell);
+    const order = options.renderOrder ?? 0;
+    const cast = options.castShadow ?? true;
+    const key = `${material.uuid}:${order}:${cast ? 1 : 0}:${cx}:${cz}`;
+    let bucket = this.buckets.get(key);
+    if (!bucket) this.buckets.set(key, (bucket = { material, parts: [], renderOrder: order, castShadow: cast }));
+    bucket.parts.push(g);
+  }
+
+  /** Retire un maillage de la scène et le fond dans le lot (s'il est fusionnable). */
+  absorb(m: Mesh): void {
+    m.updateMatrix();
+    if (Array.isArray(m.material) || m.matrix.determinant() < 0 || !m.visible) return;
+    m.removeFromParent();
+    this.add(m.geometry, m.matrix, m.material, { castShadow: m.castShadow, renderOrder: m.renderOrder });
+  }
+
+  /** Crée les maillages fusionnés ; renvoie leur nombre. */
+  flush(): number {
+    let count = 0;
+    for (const b of this.buckets.values()) {
+      const merged = b.parts.length === 1 ? b.parts[0] : mergeGeometries(b.parts, false);
+      if (!merged) continue;
+      merged.computeBoundingSphere();
+      const m = new Mesh(merged, b.material);
+      m.castShadow = b.castShadow;
+      m.receiveShadow = true;
+      m.renderOrder = b.renderOrder;
+      m.matrixAutoUpdate = false;
+      m.userData.batched = true;
+      this.root.add(m);
+      for (const part of b.parts) if (part !== merged) part.dispose();
+      count++;
+    }
+    this.buckets.clear();
+    return count;
+  }
+}
+
+let sink: StaticBatch | null = null;
+/** Pendant la construction du monde, les petits décors anonymes posés sur `batch.root` y sont fondus. */
+export function setStaticSink(batch: StaticBatch | null): void {
+  sink = batch;
+}
+function settle(parent: Object3D, m: Mesh): void {
+  if (sink && parent === sink.root) sink.absorb(m);
 }
 
 export function mesh(geometry: ConstructorParameters<typeof Mesh>[0], material: Material, x = 0, y = 0, z = 0, shadows = true): Mesh {
@@ -73,13 +172,14 @@ export function grass(parent: Object3D, x: number, z: number, size = 0.5): void 
     m.rotation.y = angle;
     m.scale.set(size, size, 1);
     parent.add(m);
+    settle(parent, m);
   }
 }
 
 /** Cluster d'herbe et de mousse dans une fissure. */
 export function overgrowth(parent: Object3D, x: number, z: number, spread = 0.8, seed = 1): void {
   const r = rng(seed);
-  decal(parent, blobTexture("moss"), x, z, spread * 2, spread * 1.6, r() * 3);
+  settle(parent, decal(parent, blobTexture("moss"), x, z, spread * 2, spread * 1.6, r() * 3));
   const tufts = 3 + Math.floor(r() * 4);
   for (let i = 0; i < tufts; i++) grass(parent, x + (r() - 0.5) * spread * 1.6, z + (r() - 0.5) * spread * 1.2, 0.35 + r() * 0.35);
 }
@@ -94,15 +194,22 @@ export function rubble(parent: Object3D, x: number, z: number, count = 7, seed =
     m.scale.setScalar(size);
     m.rotation.set(r() * 3, r() * 3, r() * 3);
     parent.add(m);
+    settle(parent, m);
   }
 }
 
 /** Ruban de bandes de sécurité au sol. */
 export function hazardStrip(parent: Object3D, x: number, z: number, length: number, width = 0.22, rotation = 0): void {
-  const texture = hazardTexture().clone();
-  texture.needsUpdate = true;
-  texture.repeat.set(length / 0.9, 1);
-  decal(parent, texture, x, z, length, width, rotation, 0.014);
+  // Texture partagée, répétition inscrite dans les UV : toutes les bandes se fondent en un lot.
+  const m = decal(parent, hazardTexture(), x, z, length, width, rotation, 0.014);
+  const repeat = Math.max(1, Math.round(length / 0.9 * 4) / 4);
+  m.geometry = cached(`hazard-plane:${repeat}`, () => {
+    const g = new PlaneGeometry(1, 1);
+    const uv = g.getAttribute("uv") as BufferAttribute;
+    for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * repeat);
+    return g;
+  });
+  settle(parent, m);
 }
 
 /** Boîte de conserve. */
@@ -112,6 +219,7 @@ export function can(parent: Object3D, x: number, z: number, color: string = PALE
     m.rotation.z = Math.PI / 2;
     m.position.y = 0.06;
   }
+  settle(parent, m);
 }
 
 /** Caisse en bois. */
@@ -137,6 +245,7 @@ export function stringLights(parent: Object3D, ax: number, az: number, bx: numbe
     const sag = Math.sin(t * Math.PI) * 0.35;
     const m = mesh(bulb, glow(colors[i % colors.length]), ax + (bx - ax) * t, y - sag, az + (bz - az) * t, false);
     parent.add(m);
+    settle(parent, m);
   }
   const cable = cached("cable", () => new CylinderGeometry(0.008, 0.008, 1, 4));
   for (let i = 0; i < count; i++) {
@@ -150,6 +259,7 @@ export function stringLights(parent: Object3D, ax: number, az: number, bx: numbe
     m.lookAt(x1, y1, z1);
     m.rotateX(Math.PI / 2);
     parent.add(m);
+    settle(parent, m);
   }
 }
 
@@ -159,6 +269,7 @@ export function cable(parent: Object3D, x: number, z: number, height: number, co
   const m = mesh(geometry, toon(color), x, height / 2 + 0.3, z);
   m.rotation.z = 0.15;
   parent.add(m);
+  settle(parent, m);
 }
 
 export function signBoard(parent: Object3D, text: string, x: number, y: number, z: number, w: number, h: number, facing: number, colors: { bg?: string; fg?: string; border?: string } = {}): Mesh {
