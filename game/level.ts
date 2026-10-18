@@ -35,14 +35,14 @@ export interface Door {
   rooms: [RoomId, RoomId];
   /**
    * "power" : s'ouvre quand la génératrice tourne ; "key" : clé d'accès de l'étage 2 ;
-   * "secret" : mur dérobé révélé par le SCAN ÉCHO ; "arc" : verrou électrique (ARC-3).
+   * "secret" : mur creux, ouvert en le poussant après avoir lu l'indice ; "arc" : verrou électrique (inutilisé).
    */
   lock?: LockKind;
   /** Passage large sans encadrement (entre deux zones extérieures, verrière brisée…). */
   open?: boolean;
 }
 
-export type InteractableKind = "components" | "ammo" | "cell" | "medkit";
+export type InteractableKind = "components" | "ammo" | "cell" | "medkit" | "bandage" | "can";
 
 export interface InteractableDef {
   id: string;
@@ -53,8 +53,10 @@ export interface InteractableDef {
   radius: number;
   kind?: InteractableKind;
   amount?: number;
-  /** Les objets massifs bloquent le passage. Par défaut : tout sauf les ressources. */
+  /** Les objets massifs bloquent le passage. Par défaut : tout sauf les ressources et les notes. */
   solid?: boolean;
+  /** Note de survivant à lire (identifiant dans game/notes.ts). */
+  note?: string;
 }
 
 export interface EnemySpawn {
@@ -112,13 +114,11 @@ export const DOORS: Door[] = [
   // Aile est
   { id: "east_infirmary", x: 10, z: 0, axis: "z", width: 2.2, label: "INFIRMERIE", rooms: ["east", "infirmary"] },
   { id: "east_control", x: 8.5, z: -8, axis: "x", width: 2.2, label: "SALLE DE CONTRÔLE", rooms: ["east", "control"] },
-  { id: "infirmary_workshop", x: 22, z: 0, axis: "z", width: 2.2, label: "ATELIER", rooms: ["infirmary", "workshop"], lock: "arc" },
+  { id: "infirmary_workshop", x: 22, z: 0, axis: "z", width: 2.2, label: "ATELIER", rooms: ["infirmary", "workshop"] },
 ];
 
-/** Mur dérobé des dortoirs : le SCAN ÉCHO le révèle à moins de SCAN_RADIUS. */
+/** Mur creux des dortoirs, devant la pièce cachée. */
 export const SECRET = { x: -32, z: -14 };
-export const SCAN_RADIUS = 18;
-export const SCAN_NOISE = 24;
 /** On a « exploré l'entrée » en approchant de la porte de sécurité. */
 export const ENTRANCE_TRIGGER = { x: 0, z: 27, radius: 6 };
 
@@ -126,32 +126,44 @@ export const INTERACTABLES: InteractableDef[] = [
   // Objectifs
   { id: "security_door", name: "Porte de sécurité", action: "Hors tension · trouver la génératrice", x: 0, z: 23.4, radius: 0.5, solid: false },
   { id: "generator", name: "Génératrice", action: "Alimenter · 3 pièces", x: -22, z: 26, radius: 1.4 },
-  { id: "workbench", name: "Établi", action: "Fabriquer un module radio · 2 pièces", x: 29, z: -6, radius: 0.9 },
-  { id: "upgrade", name: "Banc de batteries", action: "Améliorer la batterie · 3 pièces", x: 33.5, z: 4, radius: 0.7 },
+  { id: "workbench", name: "Établi", action: "Fabriquer un module radio · 2 ferrailles", x: 29, z: -6, radius: 0.9 },
+  { id: "nail_press", name: "Presse à clous", action: "1 ferraille → 16 clous", x: 25, z: -6.5, radius: 0.6 },
+  { id: "upgrade", name: "Banc de batteries", action: "Améliorer la lampe · 3 ferrailles", x: 33.5, z: 4, radius: 0.7 },
   { id: "comms", name: "Console radio", action: "Réparer la communication", x: 18, z: -19.5, radius: 0.9 },
+  { id: "secret_wall", name: "Mur creux", action: "Pousser", x: -31.4, z: -14, radius: 0.4, solid: false },
   { id: "keycard", name: "Clé d'accès", action: "Prendre", x: -35, z: -14, radius: 0.4, solid: false },
   { id: "stairs", name: "Accès étage 2", action: "Descendre", x: 0, z: -19, radius: 0.9 },
-  { id: "device", name: "Verrou électrique", action: "Couper à l'ARC-3 (clic droit)", x: 21.2, z: -2.2, radius: 0.4 },
-  { id: "recharge", name: "Borne de recharge", action: "Recharger · gratuit", x: 3.6, z: 11, radius: 0.5 },
+  { id: "recharge", name: "Borne de recharge", action: "Recharger la lampe · gratuit", x: 3.6, z: 11, radius: 0.5 },
+  // Notes des survivants (carnet d'indices)
+  { id: "note_entrance", name: "Note", action: "Lire", x: -8, z: 30, radius: 0.35, solid: false, note: "note_entrance" },
+  { id: "note_generator", name: "Note", action: "Lire", x: -29, z: 23.5, radius: 0.35, solid: false, note: "note_generator" },
+  { id: "note_cafeteria", name: "Note", action: "Lire", x: -15, z: 9, radius: 0.35, solid: false, note: "note_cafeteria" },
+  { id: "note_infirmary", name: "Note", action: "Lire", x: 13, z: -6, radius: 0.35, solid: false, note: "note_infirmary" },
+  { id: "note_control", name: "Note", action: "Lire", x: 25, z: -12, radius: 0.35, solid: false, note: "note_control" },
+  { id: "note_storage", name: "Note", action: "Lire", x: -29, z: -4, radius: 0.35, solid: false, note: "note_storage" },
+  { id: "note_secret", name: "Note", action: "Lire", x: -36, z: -11, radius: 0.35, solid: false, note: "note_secret" },
   // Pièces (3 dehors pour la génératrice, puis à l'intérieur)
-  { id: "part_0", name: "Pièce détachée", action: "Ramasser", x: -6, z: 36, radius: 0.35, kind: "components" },
-  { id: "part_1", name: "Pièce détachée", action: "Ramasser", x: 25, z: 35, radius: 0.35, kind: "components" },
-  { id: "part_2", name: "Pièce détachée", action: "Ramasser", x: 41, z: 28, radius: 0.35, kind: "components" },
-  { id: "part_3", name: "Pièce détachée", action: "Ramasser", x: 18, z: 14, radius: 0.35, kind: "components" },
-  { id: "part_4", name: "Pièce détachée", action: "Ramasser", x: -27, z: 10, radius: 0.35, kind: "components" },
-  { id: "part_5", name: "Pièce détachée", action: "Ramasser", x: -24, z: -2, radius: 0.35, kind: "components" },
-  { id: "part_6", name: "Pièce détachée", action: "Ramasser", x: 26, z: 5, radius: 0.35, kind: "components" },
-  { id: "part_7", name: "Pièce détachée", action: "Ramasser", x: -16, z: -17, radius: 0.35, kind: "components" },
+  { id: "part_0", name: "Ferraille", action: "Ramasser", x: -6, z: 36, radius: 0.35, kind: "components" },
+  { id: "part_1", name: "Ferraille", action: "Ramasser", x: 25, z: 35, radius: 0.35, kind: "components" },
+  { id: "part_2", name: "Ferraille", action: "Ramasser", x: 41, z: 28, radius: 0.35, kind: "components" },
+  { id: "part_3", name: "Ferraille", action: "Ramasser", x: 18, z: 14, radius: 0.35, kind: "components" },
+  { id: "part_4", name: "Ferraille", action: "Ramasser", x: -27, z: 10, radius: 0.35, kind: "components" },
+  { id: "part_5", name: "Ferraille", action: "Ramasser", x: -24, z: -2, radius: 0.35, kind: "components" },
+  { id: "part_6", name: "Ferraille", action: "Ramasser", x: 26, z: 5, radius: 0.35, kind: "components" },
+  { id: "part_7", name: "Ferraille", action: "Ramasser", x: -16, z: -17, radius: 0.35, kind: "components" },
   // Ressources
-  { id: "ammo_1", name: "Munitions D9", action: "Ramasser", x: 8, z: 39, radius: 0.35, kind: "ammo", amount: 24 },
-  { id: "ammo_2", name: "Munitions D9", action: "Ramasser", x: -3, z: 18, radius: 0.35, kind: "ammo", amount: 24 },
-  { id: "ammo_3", name: "Munitions D9", action: "Ramasser", x: -15, z: 3, radius: 0.35, kind: "ammo", amount: 24 },
-  { id: "cell_1", name: "Cellule d'énergie", action: "Ramasser", x: -28, z: 30, radius: 0.35, kind: "cell", amount: 1 },
-  { id: "cell_2", name: "Cellule d'énergie", action: "Ramasser", x: -20, z: 15, radius: 0.35, kind: "cell", amount: 1 },
-  { id: "cell_3", name: "Cellule d'énergie", action: "Ramasser", x: 19, z: 4, radius: 0.35, kind: "cell", amount: 1 },
-  { id: "med_1", name: "Trousse de soins", action: "Ramasser", x: 12, z: 18, radius: 0.35, kind: "medkit", amount: 1 },
+  { id: "ammo_1", name: "Boîte de clous", action: "Ramasser", x: 8, z: 39, radius: 0.35, kind: "ammo", amount: 16 },
+  { id: "ammo_2", name: "Boîte de clous", action: "Ramasser", x: -3, z: 18, radius: 0.35, kind: "ammo", amount: 16 },
+  { id: "ammo_3", name: "Boîte de clous", action: "Ramasser", x: -15, z: 3, radius: 0.35, kind: "ammo", amount: 16 },
+  { id: "cell_1", name: "Pile", action: "Ramasser", x: -28, z: 30, radius: 0.35, kind: "cell", amount: 1 },
+  { id: "cell_2", name: "Pile", action: "Ramasser", x: -20, z: 15, radius: 0.35, kind: "cell", amount: 1 },
+  { id: "cell_3", name: "Pile", action: "Ramasser", x: 19, z: 4, radius: 0.35, kind: "cell", amount: 1 },
+  { id: "med_1", name: "Bandage", action: "Ramasser", x: 12, z: 18, radius: 0.35, kind: "bandage", amount: 1 },
   { id: "med_2", name: "Trousse de soins", action: "Ramasser", x: 15, z: -4, radius: 0.35, kind: "medkit", amount: 1 },
-  { id: "med_3", name: "Trousse de soins", action: "Ramasser", x: -21, z: -17, radius: 0.35, kind: "medkit", amount: 1 },
+  { id: "med_3", name: "Bandage", action: "Ramasser", x: -21, z: -17, radius: 0.35, kind: "bandage", amount: 1 },
+  { id: "can_1", name: "Conserve", action: "Ramasser", x: -24, z: 17, radius: 0.35, kind: "can", amount: 1 },
+  { id: "can_2", name: "Conserve", action: "Ramasser", x: -2, z: 33, radius: 0.35, kind: "can", amount: 1 },
+  { id: "can_3", name: "Conserve", action: "Ramasser", x: -27, z: 4, radius: 0.35, kind: "can", amount: 1 },
 ];
 
 export const ENEMIES: EnemySpawn[] = [

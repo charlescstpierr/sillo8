@@ -29,13 +29,19 @@ describe("ressources", () => {
     expect(s.health).toBe(65);
     s.damage(-100);
     expect(s.health).toBe(65);
-    expect(s.heal() && s.medkits === 0 && s.health === 100).toBe(true);
-    expect(s.heal()).toBe(false);
+    // Bandage (+30) pour une blessure légère, trousse (+60) quand il n'y a plus de bandage.
+    expect(s.heal() && s.bandages === 1 && s.health === 95).toBe(true);
+    s.damage(60);
+    s.collect("m", "medkit", 1);
+    expect(s.useMedkit() && s.health === 95).toBe(true);
+    expect(s.collect("c", "can", 1) && s.eatCan() && s.health === 100).toBe(true);
+    expect(s.eatCan()).toBe(false);
     s.spendEnergy(100);
-    expect(s.useCell() && s.cells === 0 && s.energy === 110).toBe(true);
-    expect(s.fireRound() && s.ammo === 11).toBe(true);
+    expect(s.useCell() && s.cells === 0 && s.energy === 90).toBe(true);
+    expect(s.fireRound() && s.ammo === 15).toBe(true);
     expect(s.reloadRounds()).toBe(1);
-    expect([s.reserve, s.ammo]).toEqual([35, 12]);
+    expect([s.reserve, s.ammo]).toEqual([15, 16]);
+    expect(s.craftNails() && s.reserve === 31 && s.components === 3).toBe(true);
     s.markDefeated("z");
     s.markDefeated("z");
     expect(s.defeated).toEqual(["z"]);
@@ -63,7 +69,9 @@ describe("objectifs de l'étage 1", () => {
     expect(s.components).toBe(0);
     expect(s.repairComms()).toBe(true);
     expect(s.takeKeycard()).toBe(false);
-    expect(s.revealSecret()).toBe(true);
+    expect(s.openSecretWall()).toBe(false);
+    expect(s.readNote("note_storage", true)).toBe(true);
+    expect(s.openSecretWall()).toBe(true);
     expect(s.takeKeycard()).toBe(true);
     expect(s.objectiveChecklist().steps.every((x) => x.done)).toBe(true);
     expect(s.phase).toBe(5);
@@ -92,7 +100,7 @@ describe("sauvegarde", () => {
     expect(restored.facts).toEqual(s.facts);
     const valid = JSON.parse(store.getItem("sillo8-save")!);
     const mutations: Record<string, unknown>[] = [
-      { energy: -1 }, { ammo: 13 }, { health: "100" }, { player_position: [0, 0] }, { collected: ["a", "a"] },
+      { energy: -1 }, { ammo: 17 }, { health: "100" }, { player_position: [0, 0] }, { collected: ["a", "a"] },
       { facts: ["hub_reached"] }, { facts: ["keycard"] }, { facts: ["invented"] }, { game: "silo9" }, { extra: true }, { ammo: 1.5 },
     ];
     for (const mutation of mutations) {

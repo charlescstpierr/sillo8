@@ -1,5 +1,6 @@
-// État d'une partie de SILLO 8 : ressources, objectifs de l'étage 1, sauvegarde validée.
-// Les règles de ressources viennent de SILO 9 (batterie partagée scan / ARC-3, trousses, cellules, D9).
+// État d'une partie de SILLO 8 : ressources du bricoleur, carnet de notes, objectifs de l'étage 1, sauvegarde.
+// Ressources : ferraille (`components`), clous (`ammo` dans le lance-clous, `reserve` dans la sacoche),
+// charge des piles de la lampe (`energy`), piles de rechange (`cells`), bandages, trousses, conserves.
 
 export type Character = string;
 export type Ending = string;
@@ -11,6 +12,7 @@ export const FACT_IDS = [
   "hub_reached",
   "radio_module",
   "comms_repaired",
+  "secret_clue",
   "secret_revealed",
   "keycard",
   "floor2",
@@ -22,6 +24,12 @@ export type FactId = (typeof FACT_IDS)[number];
 export const GENERATOR_PARTS = 3;
 export const RADIO_PARTS = 2;
 export const UPGRADE_PARTS = 3;
+/** Contenance du lance-clous, et clous fabriqués avec une ferraille. */
+export const NAIL_CAPACITY = 16;
+export const NAILS_PER_SCRAP = 16;
+export const HEAL = { bandage: 30, medkit: 60, can: 15 } as const;
+/** Charge rendue par une pile de rechange. */
+export const CELL_CHARGE = 40;
 
 /** Nombre d'objectifs accomplis (0 → 5), compatible avec l'ancien « phase ». */
 export const Phase = { START: 0, COMPLETE: 5 } as const;
@@ -45,11 +53,14 @@ type Listener = () => void;
 export class SiloState {
   health = 100;
   energy = 100;
-  ammo = 12;
-  reserve = 36;
+  ammo = NAIL_CAPACITY;
+  reserve = 16;
   components = 0;
-  medkits = 1;
+  medkits = 0;
+  bandages = 2;
+  cans = 1;
   cells = 1;
+  notes: string[] = [];
   upgraded = false;
   ending: Ending = "";
   collected: string[] = [];
@@ -110,20 +121,63 @@ export class SiloState {
     this.changed();
   }
 
+  /** Soigne avec le meilleur objet adapté : bandage pour une égratignure, trousse sinon. */
   heal(): boolean {
-    if (this.medkits <= 0 || this.health >= 100 || this.health <= 0) return false;
-    this.medkits -= 1;
-    this.health = Math.min(100, this.health + 45);
+    if (this.health >= 100 || this.health <= 0) return false;
+    if (this.bandages > 0 && (this.health > 55 || this.medkits === 0)) return this.useBandage();
+    return this.useMedkit();
+  }
+
+  useBandage(): boolean {
+    if (this.bandages <= 0 || this.health >= 100 || this.health <= 0) return false;
+    this.bandages -= 1;
+    this.health = Math.min(100, this.health + HEAL.bandage);
     this.changed();
     return true;
   }
 
+  useMedkit(): boolean {
+    if (this.medkits <= 0 || this.health >= 100 || this.health <= 0) return false;
+    this.medkits -= 1;
+    this.health = Math.min(100, this.health + HEAL.medkit);
+    this.changed();
+    return true;
+  }
+
+  eatCan(): boolean {
+    if (this.cans <= 0 || this.health >= 100 || this.health <= 0) return false;
+    this.cans -= 1;
+    this.health = Math.min(100, this.health + HEAL.can);
+    this.changed();
+    return true;
+  }
+
+  /** Pile de rechange dans la lampe. */
   useCell(): boolean {
     if (this.cells <= 0 || this.energy >= this.maxEnergy()) return false;
     this.cells -= 1;
-    this.energy = Math.min(this.maxEnergy(), this.energy + 60);
+    this.energy = Math.min(this.maxEnergy(), this.energy + CELL_CHARGE);
     this.changed();
     return true;
+  }
+
+  /** Atelier : une ferraille donne une poignée de clous. */
+  craftNails(): boolean {
+    if (this.components < 1 || this.reserve + NAILS_PER_SCRAP > 999) return false;
+    this.components -= 1;
+    this.reserve += NAILS_PER_SCRAP;
+    this.changed();
+    return true;
+  }
+
+  /** Lit une note de survivant ; `clue` débloque le mur creux des dortoirs. */
+  readNote(id: string, clue = false): boolean {
+    if (!validId(id)) return false;
+    const fresh = !this.notes.includes(id);
+    if (fresh && this.notes.length < 64) this.notes.push(id);
+    if (clue) this.grant("secret_clue", "Une note parle d'un mur creux derrière les dortoirs.");
+    if (fresh) this.changed();
+    return fresh;
   }
 
   collect(id: string, kind: string, amount = 1): boolean {
@@ -141,6 +195,14 @@ export class SiloState {
       case "medkits":
         if (this.medkits + amount > 99) return false;
         this.medkits += amount;
+        break;
+      case "bandage":
+        if (this.bandages + amount > 99) return false;
+        this.bandages += amount;
+        break;
+      case "can":
+        if (this.cans + amount > 99) return false;
+        this.cans += amount;
         break;
       case "cell":
       case "cells":
@@ -183,8 +245,10 @@ export class SiloState {
     return this.grant("comms_repaired", "La communication est rétablie depuis la salle de contrôle.");
   }
 
-  revealSecret(): boolean {
-    return this.grant("secret_revealed", "SCAN ÉCHO a révélé une pièce cachée derrière les dortoirs.");
+  /** Pousse le mur creux des dortoirs : il faut avoir lu l'indice. */
+  openSecretWall(): boolean {
+    if (!this.has("secret_clue")) return false;
+    return this.grant("secret_revealed", "Le mur creux des dortoirs a cédé sur une pièce cachée.");
   }
 
   takeKeycard(): boolean {
@@ -223,6 +287,7 @@ export class SiloState {
     return this.upgraded ? 150 : 100;
   }
 
+  /** Un clou tiré. */
   fireRound(): boolean {
     if (this.ammo <= 0) return false;
     this.ammo -= 1;
@@ -230,8 +295,8 @@ export class SiloState {
     return true;
   }
 
-  reloadRounds(capacity = 12): number {
-    if (capacity <= 0 || capacity > 12) return 0;
+  reloadRounds(capacity = NAIL_CAPACITY): number {
+    if (capacity <= 0 || capacity > NAIL_CAPACITY) return 0;
     const loaded = Math.min(Math.max(capacity - this.ammo, 0), this.reserve);
     this.ammo += loaded;
     this.reserve -= loaded;
@@ -267,7 +332,7 @@ export class SiloState {
     if (!this.has("generator_powered")) return `Alimenter la génératrice · ${Math.min(this.components, GENERATOR_PARTS)}/${GENERATOR_PARTS} pièces.`;
     if (!this.has("hub_reached")) return "Passer la sécurité et atteindre le hub central.";
     if (!this.has("comms_repaired")) return this.has("radio_module") ? "Installer le module radio dans la salle de contrôle." : `Fabriquer un module radio à l'atelier · ${Math.min(this.components, RADIO_PARTS)}/${RADIO_PARTS} pièces.`;
-    if (!this.has("keycard")) return this.has("secret_revealed") ? "Récupérer la clé d'accès dans la pièce cachée." : "Trouver la clé d'accès. Le SCAN ÉCHO révèle les zones secrètes.";
+    if (!this.has("keycard")) return this.has("secret_revealed") ? "Récupérer la clé d'accès dans la pièce cachée." : this.has("secret_clue") ? "Trouver le mur creux derrière les dortoirs." : "Trouver la clé d'accès. Lisez les notes des survivants.";
     if (!this.has("floor2")) return "Ouvrir l'accès à l'étage 2.";
     return "Étage 1 terminé.";
   }
@@ -320,7 +385,10 @@ export class SiloState {
     this.reserve = data.reserve;
     this.components = data.components;
     this.medkits = data.medkits;
+    this.bandages = data.bandages;
+    this.cans = data.cans;
     this.cells = data.cells;
+    this.notes = [...data.notes];
     this.upgraded = data.upgraded;
     this.collected = [...data.collected];
     this.defeated = [...data.defeated];
@@ -337,14 +405,17 @@ export class SiloState {
   snapshot(): Snapshot {
     return {
       game: "sillo8",
-      schema: 1,
+      schema: 2,
       health: this.health,
       energy: this.energy,
       ammo: this.ammo,
       reserve: this.reserve,
       components: this.components,
       medkits: this.medkits,
+      bandages: this.bandages,
+      cans: this.cans,
       cells: this.cells,
+      notes: [...this.notes],
       upgraded: this.upgraded,
       collected: [...this.collected],
       defeated: [...this.defeated],
@@ -366,7 +437,10 @@ export interface Snapshot {
   reserve: number;
   components: number;
   medkits: number;
+  bandages: number;
+  cans: number;
   cells: number;
+  notes: string[];
   upgraded: boolean;
   collected: string[];
   defeated: string[];
@@ -383,6 +457,7 @@ const SNAPSHOT_KEYS = Object.keys(new SiloState().snapshot());
 const REQUIRES: Partial<Record<FactId, FactId>> = {
   hub_reached: "generator_powered",
   comms_repaired: "radio_module",
+  secret_revealed: "secret_clue",
   keycard: "secret_revealed",
   floor2: "keycard",
 };
@@ -391,11 +466,12 @@ export function validSnapshot(data: Record<string, unknown>): boolean {
   if (Object.keys(data).length !== SNAPSHOT_KEYS.length) return false;
   for (const key of SNAPSHOT_KEYS) if (!(key in data)) return false;
   const d = data as Record<string, any>;
-  if (d.game !== "sillo8" || !num(d.schema, 1, 1) || typeof d.upgraded !== "boolean") return false;
-  for (const key of ["ammo", "reserve", "components", "medkits", "cells"]) {
+  if (d.game !== "sillo8" || !num(d.schema, 2, 2) || typeof d.upgraded !== "boolean") return false;
+  for (const key of ["ammo", "reserve", "components", "medkits", "bandages", "cans", "cells"]) {
     if (!num(d[key], 0, 999) || !Number.isInteger(d[key])) return false;
   }
-  if (d.ammo > 12 || d.medkits > 99 || d.cells > 99) return false;
+  if (d.ammo > NAIL_CAPACITY || d.medkits > 99 || d.bandages > 99 || d.cans > 99 || d.cells > 99) return false;
+  if (!strings(d.notes, 64, 80, true)) return false;
   if (!num(d.health, 0, 100) || !num(d.energy, 0, d.upgraded ? 150 : 100)) return false;
   if (!num(d.elapsed, 0, 31536000) || !num(d.player_yaw, -100000, 100000)) return false;
   if (!Array.isArray(d.player_position) || d.player_position.length !== 3) return false;

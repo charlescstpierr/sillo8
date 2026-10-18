@@ -7,7 +7,11 @@ import { D9, type PlayerController } from "./player";
 import type { SiloState } from "./state";
 import type { Horde } from "./types";
 import { rayDistance } from "./collision";
-import { SCAN_NOISE, SCAN_RADIUS, SECRET } from "./level";
+import { SECRET } from "./level";
+
+// Valeurs héritées, en attendant le combat du bricoleur.
+const SCAN_RADIUS = 18;
+const SCAN_NOISE = 24;
 import type { WorldView } from "./render/world";
 import type { OperatorRig } from "./render/operator";
 import { CombatFx } from "./render/fx";
@@ -251,7 +255,7 @@ export class Combat {
     }
     this.scanCooldown = SCAN.cooldown;
     this.host.notify("SCAN ÉCHO · signatures révélées");
-    if (Math.hypot(player.x - SECRET.x, player.z - SECRET.z) <= SCAN.radius && state.revealSecret()) {
+    if (Math.hypot(player.x - SECRET.x, player.z - SECRET.z) <= SCAN.radius && state.openSecretWall()) {
       this.host.notify("ÉCHO : un mur creux derrière les dortoirs. Une pièce cachée s'ouvre.");
     }
     this.host.noise(player.x, player.z, SCAN.noise);
