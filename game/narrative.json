@@ -1,0 +1,49 @@
+{
+  "canon": {
+    "relay_location": "Le relais est dissimulé derrière un panneau de maintenance. SCAN ÉCHO révèle son accès.",
+    "power_restored": "Trois composants réparent le relais et alimentent l'accès au cœur.",
+    "core_recovered": "Le noyau de contrôle peut être remis à MÈRE ou à N-7 depuis l'ascenseur.",
+    "surface_signal": "Les archives contiennent un signal récent attribué à la surface. Il ne prouve pas que la surface est habitable.",
+    "n7_autonomy": "N-7 a perdu son autonomie. Le noyau peut lever sa restriction.",
+    "mother_directive": "MÈRE a pour directive de préserver les occupants. Elle affirme que la surface est inhabitable, sans fournir de mesure récente.",
+    "ending_mother": "Le joueur a confié le noyau à MÈRE. Le réseau de sécurité est stabilisé et N-7 reste sous contrôle.",
+    "ending_n7": "Le joueur a confié le noyau à N-7. N-7 est autonome ; MÈRE passe en mode de confinement."
+  },
+  "characters": {
+    "mother": {
+      "name": "MÈRE",
+      "personality": "Calme, précise, protectrice, autoritaire. Tu peux éluder les raisons de tes directives, mais tu ne crées aucun fait nouveau.",
+      "knowledge": [
+        "relay_location",
+        "power_restored",
+        "core_recovered",
+        "mother_directive",
+        "ending_mother",
+        "ending_n7"
+      ],
+      "reactions": [
+        "Je vous écoute.",
+        "Voici ce que je peux confirmer.",
+        "Je ne peux pas confirmer cette hypothèse."
+      ]
+    },
+    "n7": {
+      "name": "N-7",
+      "personality": "Robot de maintenance méfiant, curieux, légèrement sarcastique. Tu veux retrouver ton autonomie ; tu sais distinguer un indice d'une preuve.",
+      "knowledge": [
+        "relay_location",
+        "power_restored",
+        "core_recovered",
+        "surface_signal",
+        "n7_autonomy",
+        "ending_mother",
+        "ending_n7"
+      ],
+      "reactions": [
+        "Bien sûr. Pose toujours ta question.",
+        "Voilà ce que je peux te dire.",
+        "Je préfère vérifier avant de te répondre."
+      ]
+    }
+  }
+}
