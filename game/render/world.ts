@@ -349,8 +349,17 @@ function interactableModel(def: InteractableDef): { group: Group; height: number
       break;
     }
     default: {
-      if (def.kind === "components") {
-        // Composant : engrenage + bobine de cuivre, posé de travers.
+      if (def.note) {
+        // Note de survivant : feuille froissée posée au sol, punaise rouge, coin replié.
+        const sheet = block(g, 0.34, 0.015, 0.44, PALETTE.paper, 0, 0, 0, 0.004);
+        sheet.rotation.y = def.x * 0.7;
+        const fold = block(g, 0.12, 0.012, 0.12, "#d9cdb0", 0.12, 0.012, -0.16, 0.003);
+        fold.rotation.y = def.x * 0.7;
+        for (let i = 0; i < 4; i++) block(g, 0.22 - i * 0.03, 0.004, 0.018, "#6b5b49", -0.02, 0.016, -0.12 + i * 0.07, 0.001).rotation.y = def.x * 0.7;
+        g.add(mesh(new SphereGeometry(0.035, 8, 6), toon(PALETTE.danger), 0, 0.03, 0.15, false));
+        height = 0.6;
+      } else if (def.kind === "components") {
+        // Ferraille : plaque tordue, engrenage et ressort, posés de travers.
         const gear = mesh(new CylinderGeometry(0.17, 0.17, 0.06, 8), toon(PALETTE.amber, { emissive: PALETTE.amber, emissiveIntensity: 0.25 }), 0, 0.05, 0);
         g.add(gear);
         const hub = mesh(new CylinderGeometry(0.06, 0.06, 0.1, 10), toon(PALETTE.steelDark), 0, 0.07, 0);
@@ -358,13 +367,44 @@ function interactableModel(def: InteractableDef): { group: Group; height: number
         const coil = mesh(new TorusGeometry(0.08, 0.035, 6, 12), toon(PALETTE.rustLight), 0.18, 0.06, 0.08);
         coil.rotation.x = Math.PI / 2;
         g.add(coil);
+        block(g, 0.26, 0.03, 0.14, PALETTE.steel, -0.16, 0.02, 0.1, 0.01).rotation.set(0.2, 0.6, 0.1);
         g.rotation.y = def.x * 1.3;
         height = 0.7;
       } else if (def.kind === "ammo") {
-        block(g, 0.5, 0.26, 0.32, PALETTE.leaf, 0, 0, 0, 0.04);
-        block(g, 0.52, 0.06, 0.34, PALETTE.woodDark, 0, 0.26, 0, 0.02);
-        panel(g, signTexture("D9", { bg: PALETTE.yellow, fg: PALETTE.outline, width: 128, height: 64 }), 0, 0.15, 0.165, 0.22, 0.11, 0);
+        // Boîte de clous en carton, étiquette moutarde.
+        block(g, 0.42, 0.22, 0.28, "#b08a5a", 0, 0, 0, 0.03);
+        block(g, 0.44, 0.04, 0.3, "#8f6d44", 0, 0.22, 0, 0.01);
+        panel(g, signTexture("CLOUS", { bg: "#d8a43a", fg: PALETTE.outline, width: 160, height: 64 }), 0, 0.12, 0.145, 0.3, 0.12, 0);
         g.rotation.y = 0.5;
+        height = 0.8;
+      } else if (def.kind === "cell") {
+        // Pile : gros cylindre olive à capuchon cuivré.
+        const body = cylinder(g, 0.08, 0.26, "#6b7550", 0, 0.08, 0);
+        body.rotation.z = Math.PI / 2;
+        body.position.set(0, 0.09, 0);
+        const cap = cylinder(g, 0.05, 0.05, "#d8a43a", 0, 0.08, 0);
+        cap.rotation.z = Math.PI / 2;
+        cap.position.set(0.15, 0.09, 0);
+        g.rotation.y = def.z;
+        height = 0.7;
+      } else if (def.kind === "bandage") {
+        // Rouleau de bandage crème avec une croix rouge.
+        const roll = cylinder(g, 0.11, 0.12, "#efe4cc", 0, 0, 0, 14);
+        roll.rotation.x = Math.PI / 2;
+        roll.position.y = 0.11;
+        block(g, 0.12, 0.01, 0.035, PALETTE.danger, 0, 0.22, 0, 0.004);
+        block(g, 0.035, 0.01, 0.12, PALETTE.danger, 0, 0.22, 0, 0.004);
+        height = 0.7;
+      } else if (def.kind === "can") {
+        // Conserve de pêches, étiquette moutarde.
+        cylinder(g, 0.08, 0.15, "#b9c0c2", 0, 0, 0, 12);
+        cylinder(g, 0.082, 0.09, "#d8a43a", 0, 0.03, 0, 12);
+        height = 0.6;
+      } else if (def.kind === "medkit") {
+        // Trousse : boîte crème arrondie, croix rouge, poignée.
+        block(g, 0.4, 0.2, 0.28, "#efe4cc", 0, 0, 0, 0.06);
+        block(g, 0.16, 0.012, 0.05, PALETTE.danger, 0, 0.2, 0, 0.004);
+        block(g, 0.05, 0.012, 0.16, PALETTE.danger, 0, 0.2, 0, 0.004);
         height = 0.8;
       } else {
         block(g, 0.4, 0.3, 0.3, PALETTE.paper, 0, 0, 0, 0.05);
