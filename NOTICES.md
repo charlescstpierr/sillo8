@@ -12,5 +12,5 @@ Les modèles, textures et sons du jeu sont créés pour ce projet (géométrie p
 textures dessinées par code). Aucun modèle Kenney ou Quaternius n'est encore intégré ;
 leurs licences CC0 seront ajoutées ici s'ils le sont.
 
-L'histoire, les personnages et le texte (`game/narrative.json`) viennent du projet
-SILO 9 : La Descente d'origine.
+Le module de dialogue (`game/dialogue.ts`, `game/narrative.json`) est conservé pour l'histoire
+à venir de SILLO 8 ; son contenu actuel est provisoire et n'est pas affiché en jeu.
