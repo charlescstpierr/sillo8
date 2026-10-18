@@ -1,5 +1,6 @@
 // Caméra en plongée qui suit le joueur, avec lissage et zoom.
 import { PerspectiveCamera, Vector3 } from "three";
+import { COMFORT } from "./comfort";
 
 export const CAMERA = {
   pitchDeg: 56,
@@ -65,6 +66,8 @@ export class CameraRig {
 
   /** Tremblement (m) qui s'éteint en `duration` s ; le plus fort des tremblements en cours l'emporte. */
   addShake(strength: number, duration: number): void {
+    // Confort (réduire les animations, moins effrayant) : simple multiplicateur, 0 = aucun tremblement.
+    strength *= COMFORT.shake;
     const left = this.shakeTime > 0 ? this.shakeStrength * (this.shakeTime / this.shakeDuration) : 0;
     if (strength <= left || duration <= 0) return;
     this.shakeStrength = Math.min(CAMERA.shakeMax, strength);
@@ -73,8 +76,9 @@ export class CameraRig {
 
   /** Petit à-coup de la caméra dans la direction (dirX, dirZ), qui revient tout seul. */
   kick(dirX: number, dirZ: number, amount: number): void {
+    amount *= COMFORT.kick;
     const length = Math.hypot(dirX, dirZ);
-    if (length < 1e-6) return;
+    if (length < 1e-6 || amount === 0) return;
     this.kickX += (dirX / length) * amount;
     this.kickZ += (dirZ / length) * amount;
     const total = Math.hypot(this.kickX, this.kickZ);

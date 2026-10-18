@@ -7,6 +7,7 @@ import {
   ShaderMaterial, Sprite, SpriteMaterial, Vector3, type ColorRepresentation, type Texture,
 } from "three";
 import { CAMERA } from "../camera";
+import { COMFORT } from "../comfort";
 
 export type ImpactKind = "zombie" | "wall";
 
@@ -438,7 +439,7 @@ export class CombatFx {
   flash(at: Vector3, color: ColorRepresentation, strength: number, life = 0.07): void {
     this.light.position.copy(at);
     this.light.color.set(color);
-    this.light.intensity = strength;
+    this.light.intensity = strength * COMFORT.flash;
     this.lightLife = life;
   }
 
@@ -568,7 +569,7 @@ export class CombatFx {
     this.cone.position.set(x + sx * 0.35, height, z + cz * 0.35);
     this.cone.rotation.set(0, yaw, 0);
     this.cone.visible = true;
-    this.coneMaterial.uniforms.opacity.value = BEAM_OPACITY;
+    this.coneMaterial.uniforms.opacity.value = BEAM_OPACITY * (0.5 + 0.5 * COMFORT.flash);
     this.poolLife = POOL_LIFE;
     this.pool.position.set(x + sx * 0.35, 0.03, z + cz * 0.35);
     this.pool.rotation.set(0, yaw, 0);

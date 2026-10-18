@@ -26,6 +26,7 @@ import {
   StaticBatch, block, can, cylinder, decal, grass, hazardStrip, mesh, panel, rubble, setStaticSink,
 } from "./props";
 import { addHighlight, type Highlight } from "./highlight";
+import { COMFORT } from "../comfort";
 
 export interface InteractableView {
   def: InteractableDef;
@@ -948,9 +949,10 @@ export function buildWorld(scene: Scene): WorldView {
     const dim = shudderTime > 0 ? (shudderTime > 0.85 ? 0.05 : 1 - shudderTime * 0.8) : 1;
     for (const f of flickers) {
       // Bruit pseudo-aléatoire : variations douces + coupures brèves pour les lampes nerveuses.
+      const nervous = f.nervous * COMFORT.flicker;
       const wobble = Math.sin(time * 9 + f.seed * 7) * 0.5 + Math.sin(time * 23 + f.seed * 3) * 0.5;
-      const cut = Math.sin(time * 1.7 + f.seed * 11) > 0.93 - f.nervous * 0.1 && Math.sin(time * 41 + f.seed) > 0 ? 0.15 : 1;
-      f.level = (1 - f.nervous * 0.25 + wobble * f.nervous * 0.2) * (f.nervous > 0.3 ? cut : 1) * dim;
+      const cut = Math.sin(time * 1.7 + f.seed * 11) > 0.93 - nervous * 0.1 && Math.sin(time * 41 + f.seed) > 0 ? 0.15 : 1;
+      f.level = (1 - nervous * 0.25 + wobble * nervous * 0.2) * (nervous > 0.3 ? cut : 1) * dim;
       if (f.bulb) (f.bulb.material as MeshBasicMaterial).color.set(tint ?? f.color).multiplyScalar(0.4 + f.level * 0.6);
     }
     // Les lampes les plus proches du joueur occupent les places de lumière (coût constant).

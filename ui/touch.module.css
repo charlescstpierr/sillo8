@@ -27,7 +27,7 @@
   display: grid;
   place-items: center;
   color: rgba(244, 236, 214, 0.75);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
 }
 
 .stickBase {
@@ -100,7 +100,7 @@
   bottom: 0;
   width: 98px;
   height: 98px;
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   letter-spacing: 0.5px;
   background: var(--mustard) !important;
 }
@@ -119,7 +119,7 @@
 .small {
   width: 52px;
   height: 52px;
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
 }
 
 .small[data-slot="lamp"] {
@@ -127,7 +127,7 @@
   bottom: 2px;
   width: 64px;
   height: 64px;
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale, 1));
   background: #f6dc8c !important;
 }
 
@@ -141,15 +141,15 @@
   bottom: 80px;
   width: 46px;
   height: 46px;
-  font-size: 22px;
+  font-size: calc(22px * var(--text-scale, 1));
   color: var(--cream) !important;
   background: var(--olive) !important;
 }
 
-.small[data-slot="use"] { right: 22px; bottom: 112px; width: 56px; height: 56px; font-size: 24px; }
+.small[data-slot="use"] { right: 22px; bottom: 112px; width: 56px; height: 56px; font-size: calc(24px * var(--text-scale, 1)); }
 .small[data-slot="use"][data-ready="true"] { background: #ffe39a !important; animation: pulse 0.9s ease-in-out infinite; }
-.small[data-slot="reload"] { right: 152px; bottom: 132px; width: 44px; height: 44px; font-size: 17px; }
-.small[data-slot="crouch"] { right: 184px; bottom: 76px; width: 44px; height: 44px; font-size: 18px; }
+.small[data-slot="reload"] { right: 152px; bottom: 132px; width: 44px; height: 44px; font-size: calc(17px * var(--text-scale, 1)); }
+.small[data-slot="crouch"] { right: 184px; bottom: 76px; width: 44px; height: 44px; font-size: calc(18px * var(--text-scale, 1)); }
 .small[data-slot="crouch"][data-ready="true"] { background: var(--mustard) !important; }
 
 @keyframes pulse {
@@ -183,7 +183,7 @@
   color: var(--ink);
   font-family: var(--font-title);
   font-weight: 700;
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--text-scale, 1));
   line-height: 1;
   letter-spacing: 0.3px;
   box-shadow: 0 3px 0 rgba(30, 20, 13, 0.5);
@@ -199,7 +199,7 @@
 }
 
 .pause {
-  font-size: 15px !important;
+  font-size: calc(15px * var(--text-scale, 1)) !important;
 }
 
 .bag {

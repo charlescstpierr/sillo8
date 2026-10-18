@@ -61,7 +61,9 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  margin: 0 0 6px;
+  /* Cible tactile d'au moins 44 px, sans grossir le panneau (marges négatives). */
+  min-height: 44px;
+  margin: -8px 0 2px;
   padding: 0 0 4px;
   border: 0;
   border-bottom: 1.5px dashed rgba(58, 42, 28, 0.35);
@@ -86,8 +88,8 @@
 .objectivesCount {
   margin-left: auto;
   font-family: var(--font-title);
-  font-size: 13px;
-  color: var(--rust);
+  font-size: calc(13px * var(--text-scale, 1));
+  color: var(--rust-ink);
 }
 
 .chevron {
@@ -95,8 +97,8 @@
   height: 22px;
   border: 1.5px solid var(--ink);
   border-radius: 50%;
-  font-size: 12px;
-  line-height: 19px;
+  font-size: calc(12px * var(--text-scale, 1));
+  line-height: calc(19px * var(--text-scale, 1));
   text-align: center;
 }
 
@@ -105,7 +107,7 @@
   gap: 8px;
   align-items: flex-start;
   margin: 0;
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
   line-height: 1.25;
 }
 
@@ -125,7 +127,7 @@
   margin: 0;
   font-family: var(--font-title);
   font-weight: 700;
-  font-size: 17px;
+  font-size: calc(17px * var(--text-scale, 1));
   color: var(--leather-light);
 }
 
@@ -133,7 +135,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   line-height: 1.25;
 }
 
@@ -145,7 +147,7 @@
 }
 
 .objectives li[data-done="true"] {
-  color: rgba(58, 42, 28, 0.5);
+  color: rgba(58, 42, 28, 0.7);
   text-decoration: line-through;
   text-decoration-color: var(--rust);
 }
@@ -156,10 +158,10 @@
   margin-top: 2px;
   border: 2px solid var(--ink);
   border-radius: 3px;
-  font-size: 13px;
-  line-height: 11px;
+  font-size: calc(13px * var(--text-scale, 1));
+  line-height: calc(11px * var(--text-scale, 1));
   text-align: center;
-  color: var(--rust);
+  color: var(--rust-ink);
   font-weight: 700;
 }
 
@@ -179,8 +181,8 @@
   right: -8px;
   padding: 2px 8px;
   font-family: var(--font-stamp);
-  font-size: 12px;
-  color: var(--danger);
+  font-size: calc(12px * var(--text-scale, 1));
+  color: var(--red-ink);
   border: 2px solid var(--danger);
   border-radius: 4px;
   background: rgba(244, 236, 214, 0.92);
@@ -195,7 +197,7 @@
   align-items: center;
   gap: 6px;
   font-family: var(--font-title);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   letter-spacing: 0.5px;
   margin: 3px 0;
 }
@@ -207,7 +209,7 @@
 
 .row b {
   text-align: right;
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
 }
 
 .gauge {
@@ -280,24 +282,24 @@
 
 .weaponName {
   font-family: var(--font-title);
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.6px;
 }
 
 .ammo {
   font-family: var(--font-title);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
 }
 
 .ammo b {
-  font-size: 19px;
+  font-size: calc(19px * var(--text-scale, 1));
   color: #f6d37a;
 }
 
 .ammo small {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   opacity: 0.9;
 }
 
@@ -337,7 +339,7 @@
 
 .counts b {
   font-family: var(--font-title);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
 }
 
 /* Rappel des commandes au clavier */
@@ -351,7 +353,7 @@
   max-width: min(480px, 40vw);
   margin: 0;
   padding: 5px 12px 6px 14px;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--text-scale, 1));
   line-height: 1.35;
   color: var(--ink);
   background: rgba(244, 236, 214, 0.88);
@@ -370,8 +372,8 @@
   display: inline-block;
   padding: 0 4px;
   font-family: var(--font-title);
-  font-size: 11px;
-  line-height: 15px;
+  font-size: calc(11px * var(--text-scale, 1));
+  line-height: calc(15px * var(--text-scale, 1));
   background: #fffaf0;
   border: 1.5px solid var(--ink);
   border-radius: 4px;
@@ -418,7 +420,7 @@
   gap: 5px;
   align-items: center;
   font-family: var(--font-title);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   text-align: right;
 }
 
@@ -432,7 +434,7 @@
   gap: 5px;
   margin-top: 2px;
   font-family: var(--font-title);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale, 1));
   line-height: 1.2;
 }
 
@@ -441,7 +443,7 @@
 }
 
 .miniWeapon b {
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   color: var(--leather-light);
 }
 
@@ -452,7 +454,7 @@
   padding: 0;
   list-style: none;
   font-family: var(--font-title);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
 }
 
 .miniCounts li {
@@ -488,14 +490,14 @@
 
 .tooltip strong {
   font-family: var(--font-title);
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   font-weight: 700;
   line-height: 1.1;
 }
 
 .tooltip span {
-  font-size: 14px;
-  color: var(--rust);
+  font-size: calc(14px * var(--text-scale, 1));
+  color: var(--rust-ink);
 }
 
 .tooltip kbd {
@@ -506,7 +508,7 @@
   border: 1.5px solid var(--ink);
   border-radius: 4px;
   font-family: var(--font-title);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   text-align: center;
   color: var(--ink);
   background: #fff9ea;
@@ -525,7 +527,7 @@
   margin: 0;
   max-width: min(520px, 40vw);
   padding: 7px 14px;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   text-align: center;
   animation: drop 0.25s ease-out;
 }
@@ -540,7 +542,7 @@
   left: 50%;
   margin: 0;
   color: var(--paper);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
 }
 
 /* Hors jeu, l'avis passe en haut pour ne pas couvrir les fiches. */
@@ -556,23 +558,23 @@
 
 @media (max-width: 600px) and (orientation: portrait) {
   .objectives { width: min(230px, 56vw); padding: 7px 10px; }
-  .objectives ul, .objectivesNext { font-size: 13px; }
-  .objectivesTitle { font-size: 14px; }
+  .objectives ul, .objectivesNext { font-size: calc(13px * var(--text-scale, 1)); }
+  .objectivesTitle { font-size: calc(14px * var(--text-scale, 1)); }
   .vitals, .hint { display: none; }
   /* Sous la colonne pause / sac / carnet, à gauche ; les objectifs restent en haut à droite. */
   .mini { display: block; top: calc(max(10px, env(safe-area-inset-top)) + 186px); left: max(14px, env(safe-area-inset-left)); width: 180px; }
-  .notice { bottom: auto; top: calc(max(10px, env(safe-area-inset-top)) + 186px); left: auto; right: max(14px, env(safe-area-inset-right)); transform: none; font-size: 14px; max-width: calc(100vw - 230px); }
+  .notice { bottom: auto; top: calc(max(10px, env(safe-area-inset-top)) + 186px + (var(--text-scale, 1) - 1) * 240px); left: auto; right: max(14px, env(safe-area-inset-right)); transform: none; font-size: calc(14px * var(--text-scale, 1)); max-width: calc(100vw - 230px); }
 }
 
 @media (max-height: 480px) {
   .objectives { width: 220px; padding: 7px 10px; }
-  .objectives ul { font-size: 13px; }
-  .objectivesTitle { font-size: 14px; }
+  .objectives ul { font-size: calc(13px * var(--text-scale, 1)); }
+  .objectivesTitle { font-size: calc(14px * var(--text-scale, 1)); }
   .vitals, .hint { display: none; }
   .mini { display: block; }
-  .notice { bottom: auto; top: 12px; font-size: 14px; max-width: 34vw; }
+  .notice { bottom: auto; top: 12px; font-size: calc(14px * var(--text-scale, 1)); max-width: 34vw; }
   /* Hors jeu sur téléphone : bandeau discret en bas, sous les fiches */
-  .notice[data-mode]:not([data-mode="playing"]) { top: auto; bottom: 4px; padding: 3px 10px; font-size: 13px; max-width: 60vw; }
+  .notice[data-mode]:not([data-mode="playing"]) { top: auto; bottom: 4px; padding: 3px 10px; font-size: calc(13px * var(--text-scale, 1)); max-width: 60vw; }
 }
 
 /* Petit tampon discret après chaque sauvegarde automatique, en bas au centre. */
@@ -583,10 +585,10 @@
   transform: translateX(-50%) rotate(-3deg);
   padding: 2px 10px;
   font-family: var(--font-stamp);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--rust);
+  color: var(--rust-ink);
   border: 2px solid var(--rust);
   border-radius: 4px;
   background: rgba(244, 236, 214, 0.85);
@@ -685,11 +687,11 @@
 .railAmmo {
   margin-top: -4px;
   font-family: var(--font-title);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
 }
 
 .railChevron {
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   line-height: 1;
   opacity: 0.7;
 }
@@ -709,7 +711,7 @@
   left: 52px;
   width: 188px;
   padding: 6px 9px 7px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   animation: railOpen 0.16s ease-out;
 }
 
@@ -727,7 +729,7 @@
 .railWeaponName {
   margin: 0 0 4px;
   font-family: var(--font-title);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -759,7 +761,7 @@
   max-width: min(380px, 40vw);
   margin: 0;
   padding: 6px 12px 7px;
-  font-size: 15.5px;
+  font-size: calc(15.5px * var(--text-scale, 1));
   line-height: 1.3;
   text-align: center;
   border-left: 6px solid var(--mustard);
@@ -772,8 +774,8 @@
   display: inline-block;
   padding: 0 5px;
   font-family: var(--font-title);
-  font-size: 12.5px;
-  line-height: 17px;
+  font-size: calc(12.5px * var(--text-scale, 1));
+  line-height: calc(17px * var(--text-scale, 1));
   background: #fffaf0;
   border: 1.5px solid var(--ink);
   border-radius: 4px;
@@ -783,10 +785,10 @@
 .tutorialLabel {
   font-family: var(--font-stamp);
   font-weight: 400;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: var(--rust);
+  color: var(--rust-ink);
 }
 
 .tutorial[data-step="hint"] {
@@ -821,7 +823,7 @@
   .tutorial {
     bottom: calc(max(14px, env(safe-area-inset-bottom)) + 230px);
     max-width: min(320px, calc(100vw - 32px));
-    font-size: 14px;
+    font-size: calc(14px * var(--text-scale, 1));
   }
   .tutorial[data-target]::after { display: block; }
   .tutorial[data-target="stick"]::after { left: 24%; }
@@ -837,9 +839,101 @@
   .tutorial {
     bottom: max(10px, env(safe-area-inset-bottom));
     max-width: max(200px, calc(100vw - 2 * 268px));
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--text-scale, 1));
     padding: 4px 10px 5px;
   }
   .tutorial[data-target="journal"]::after,
   .tutorial[data-target="stick"]::after { display: none; }
+}
+
+/* ——— Sous-titres des sons : petite ligne discrète en bas de l'écran ——— */
+.captions {
+  position: absolute;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.caption {
+  margin: 0;
+  padding: 2px 10px 3px;
+  font-family: var(--font-body);
+  font-size: calc(16px * var(--text-scale, 1));
+  line-height: 1.25;
+  text-align: center;
+  color: #fff6e2;
+  background: rgba(20, 14, 9, 0.8);
+  border-radius: 6px;
+  animation: captionIn 0.18s ease-out;
+}
+
+/* Menace : trait épais à gauche (pas seulement une couleur). */
+.caption[data-danger] {
+  border-left: 4px solid #ffb199;
+  font-weight: 700;
+}
+
+@keyframes captionIn {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+/* Téléphone en portrait : au-dessus du stick et des boutons. */
+@media (max-width: 600px) and (orientation: portrait) {
+  .captions { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 232px); }
+  .caption { font-size: calc(14.5px * var(--text-scale, 1)); }
+}
+
+/* Téléphone en paysage : entre le stick et les boutons. */
+@media (max-height: 480px) {
+  .captions { bottom: max(8px, env(safe-area-inset-bottom)); max-width: 46vw; }
+  .caption { font-size: calc(14px * var(--text-scale, 1)); }
+}
+
+/* ——— Indices jamais portés par la seule couleur ———
+   Jauge presque vide : hachures en plus du changement de teinte. */
+.gauge[data-low="true"] .gaugeFill {
+  background-image: var(--hatch), linear-gradient(180deg, #ec8a6a, #d4573b);
+}
+
+.gauge[data-tone="lamp"][data-low="true"] .gaugeFill {
+  background-image: var(--hatch), linear-gradient(180deg, #e3a35a, var(--rust));
+}
+
+.vgauge[data-low="true"] .vgaugeFill {
+  background-image: var(--hatch);
+}
+
+.gauge,
+.vgauge {
+  --hatch: repeating-linear-gradient(135deg, rgba(255, 246, 226, 0.6) 0 3px, transparent 3px 7px);
+}
+
+/* Couleurs adaptées (daltonisme) : vie vermillon, lampe bleu ciel, bien distinctes en teinte et en clarté. */
+:global(:root[data-palette="safe"]) .gauge[data-tone="health"] .gaugeFill,
+:global(:root[data-palette="safe"]) .vgauge[data-tone="health"] .vgaugeFill {
+  background: #d55e00;
+}
+
+:global(:root[data-palette="safe"]) .gauge[data-tone="lamp"] .gaugeFill,
+:global(:root[data-palette="safe"]) .vgauge[data-tone="lamp"] .vgaugeFill {
+  background: #56b4e9;
+}
+
+:global(:root[data-palette="safe"]) .gauge[data-low="true"] .gaugeFill,
+:global(:root[data-palette="safe"]) .vgauge[data-low="true"] .vgaugeFill {
+  background-image: var(--hatch);
+}
+
+/* Mode moins effrayant : vignette de blessure adoucie, sans battement. */
+:global(:root[data-gentle="true"]) .hurt {
+  opacity: 0.55;
+  animation: none;
 }

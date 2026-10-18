@@ -9,6 +9,7 @@ import {
   type BedLayer, type MixMode, type SoundSettings, type Threat,
 } from "./mix";
 import { Music } from "./music";
+import { COMFORT, SCARY_SOUNDS } from "./comfort";
 import { midiToHz, noiseBuffer, Voice, VoicePool } from "./synth";
 
 /** Ce que le moteur donne au son à chaque image. */
@@ -50,6 +51,21 @@ interface Resolved {
 }
 
 type Recipe = (v: Voice, t: number, d: AudioNode, o: Resolved) => void;
+
+/**
+ * Ce que l'interface apprend d'un son demandé (sous-titres des sons), même quand le son est coupé ou que
+ * Web Audio est indisponible : nom, côté (−1 gauche → 1 droite), distance (m) et options d'origine.
+ */
+export interface HeardSound {
+  name: string;
+  pan: number;
+  distance: number;
+  /** Placé dans le monde (x, z donnés). */
+  placed: boolean;
+  far: boolean;
+  intensity: number;
+}
+export type SoundListener = (sound: HeardSound) => void;
 
 interface SoundDef {
   recipe: Recipe;
@@ -537,6 +553,7 @@ export class GameAudio {
   private mysteryClock = 40;
   private last = new Map<string, number>();
   private detach: (() => void)[] = [];
+  private listeners: SoundListener[] = [];
 
   constructor(options: { attach?: boolean } = {}) {
     this.supported = audioContextClass() !== null;
@@ -792,11 +809,35 @@ export class GameAudio {
     return true;
   }
 
+  /** Écoute les sons demandés (sous-titres). Retourne la fonction de désabonnement. */
+  listen(listener: SoundListener): () => void {
+    this.listeners.push(listener);
+    return () => { this.listeners = this.listeners.filter((l) => l !== listener); };
+  }
+
+  /** Prévient les auditeurs (sous-titres) ; n'influe jamais sur le son lui-même. */
+  private announce(name: string, options: PlayOptions): void {
+    if (this.listeners.length === 0) return;
+    let pan = options.pan ?? 0;
+    let distance = 0;
+    const placed = options.x !== undefined && options.z !== undefined;
+    if (placed) {
+      const dx = options.x! - this.listenerX;
+      distance = Math.hypot(dx, options.z! - this.listenerZ);
+      pan = panFor(dx, distance);
+    }
+    const heard: HeardSound = { name, pan, distance, placed, far: options.far === true, intensity: options.intensity ?? 0.5 };
+    for (const listener of this.listeners) {
+      try { listener(heard); } catch { /* un sous-titre fautif ne coupe jamais le son */ }
+    }
+  }
+
   /** Joue un son par nom. Vrai s'il a été programmé. */
   play(name: string, options: PlayOptions = {}): boolean {
     const def = SOUNDS[name];
     if (!def) return false;
     this.requested[name] = (this.requested[name] ?? 0) + 1;
+    this.announce(name, options);
     const ctx = this.ctx;
     if (!ctx || ctx.state !== "running" || this.hidden) return false;
     const now = ctx.currentTime;
@@ -806,7 +847,8 @@ export class GameAudio {
       this.dropped += 1;
       return false;
     }
-    let gain = def.gain * (options.gain ?? 1);
+    // Mode moins effrayant : les sons qui font sursauter sont atténués (multiplicateur, 1 par défaut).
+    let gain = def.gain * (options.gain ?? 1) * (SCARY_SOUNDS.has(name) ? COMFORT.scare : 1);
     let pan = options.pan ?? 0;
     let distance = 0;
     if (options.x !== undefined && options.z !== undefined) {
@@ -842,7 +884,7 @@ export class GameAudio {
   }
 
   vibrate(pattern: number | number[]): boolean {
-    if (!this.settings.vibration || typeof navigator === "undefined") return false;
+    if (!this.settings.vibration || !COMFORT.vibration || typeof navigator === "undefined") return false;
     try {
       return typeof navigator.vibrate === "function" ? navigator.vibrate(pattern) : false;
     } catch {

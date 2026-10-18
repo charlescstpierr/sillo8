@@ -7,6 +7,7 @@ import { useHud } from "./useHud";
 import { useUi } from "./useUi";
 import { hudExtra } from "./compat";
 import { Icon, type IconName } from "./icons";
+import { Captions } from "./Captions";
 import styles from "./hud.module.css";
 
 function Gauge({ value, max, tone }: { value: number; max: number; tone: "health" | "lamp" }) {
@@ -150,14 +151,14 @@ function TutorialBubble({ hud }: { hud: ReturnType<typeof useHud> }) {
   const bubble = hud.tutorial;
   if (bubble) {
     return (
-      <p className={styles.tutorial} role="note" aria-label="Conseil" data-step={bubble.step} data-target={bubble.target} key={bubble.step}>
+      <p className={styles.tutorial} role="note" aria-label="Conseil" data-avoid-captions data-step={bubble.step} data-target={bubble.target} key={bubble.step}>
         <kbd>{bubble.key}</kbd> {bubble.text}
       </p>
     );
   }
   if (!hud.hint) return null;
   return (
-    <p className={styles.tutorial} role="note" aria-label="Astuce" data-step="hint" key={hud.hint}>
+    <p className={styles.tutorial} role="note" aria-label="Astuce" data-avoid-captions data-step="hint" key={hud.hint}>
       <b className={styles.tutorialLabel}>Astuce</b> {hud.hint}
     </p>
   );
@@ -192,7 +193,7 @@ export function Hud({ engine }: { engine: Engine }) {
 
       <Objectives hud={hud} touch={touch} />
 
-      {hud.autosaved ? <div className={styles.autosave} role="status">Sauvegardé</div> : null}
+      {hud.autosaved ? <div className={styles.autosave} role="status" data-avoid-captions>Sauvegardé</div> : null}
 
       {!touch && hud.device === "keyboard" ? (
         <p className={styles.hint} aria-label={HINT.map(([k, a]) => `${k} : ${a}`).join(" · ")}>
@@ -242,6 +243,9 @@ export function Hud({ engine }: { engine: Engine }) {
 
       <TutorialBubble hud={hud} />
 
+      {/* Sous-titres des sons (réglage Accessibilité) */}
+      <Captions engine={engine} touch={touch} />
+
       {/* Téléphone : barre verticale rétractable au bord gauche (vie, lampe, arme) */}
       <VitalsRail hud={hud} nailgun={nailgun} counters={counters} danger={danger} />
 
@@ -271,5 +275,5 @@ export function Notice({ engine }: { engine: Engine }) {
   }, [hud.noticeId]);
   const mode = ui.mode as string;
   if (!hud.notice || expired === hud.noticeId || mode === "dialogue" || mode === "note" || mode === "journal") return null;
-  return <p key={hud.noticeId} className={styles.notice} data-mode={ui.mode} role="status">{hud.notice}</p>;
+  return <p key={hud.noticeId} className={styles.notice} data-mode={ui.mode} role="status" data-avoid-captions>{hud.notice}</p>;
 }

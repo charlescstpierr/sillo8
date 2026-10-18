@@ -6,6 +6,7 @@ import { DOORS, ENEMIES, ROOMS, type Door, type EnemySpawn } from "./level";
 import type { AimCandidate } from "./aim";
 import type { Horde, HordeContext, RayHit } from "./types";
 import type { SiloState } from "./state";
+import { COMFORT } from "./comfort";
 import { blobTexture } from "./render/textures";
 import { decal } from "./render/props";
 import { animateZombie, buildZombie, setZombieQuality, type ZombieAnimation, type ZombieKind, type ZombieRig } from "./render/zombie";
@@ -159,7 +160,7 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
   // Dernière position connue du joueur (pour « ils savent où vous êtes » après un impact).
   let playerX = state.playerPosition[0];
   let playerZ = state.playerPosition[2];
-  const anim: ZombieAnimation = { speed: 0, stride: 0, eye: "calm", attack: 0, hit: 0, stunned: false, dormant: false, dead: -1, time: 0 };
+  const anim: ZombieAnimation = { speed: 0, stride: 0, eye: "calm", alert: false, attack: 0, hit: 0, stunned: false, dormant: false, dead: -1, time: 0 };
   const candidates: AimCandidate[] = [];
 
   const zombies: Zombie[] = ENEMIES.map((spawn, i) => {
@@ -400,7 +401,8 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
         z.senseRemaining = SENSE_PERIOD;
         sense(z, ctx);
       }
-      speed = brain(z, ctx, dt);
+      // Mode moins effrayant : mordus plus lents (simple multiplicateur, 1 par défaut).
+      speed = brain(z, ctx, dt) * COMFORT.zombiePace;
     }
     if (speed > 0 && route(z, ctx)) {
       const dx = z.waypointX - z.x;
@@ -510,6 +512,7 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
     anim.speed = z.speed;
     anim.stride = z.stride;
     anim.eye = z.mode === "chase" ? "chase" : "calm";
+    anim.alert = z.mode === "investigate" || z.mode === "search";
     anim.attack = z.attackVisual;
     anim.hit = z.hit;
     anim.stunned = z.alive && z.stunned > 0;
