@@ -6,6 +6,7 @@ import type { Engine } from "@/game/engine";
 import { ConversationRun, speakerStatus, type Line } from "@/game/conversation";
 import { PaperButton, Tag } from "./Paper";
 import { SpeakerPortrait } from "./Portraits";
+import { frenchSpaces } from "./typo";
 import styles from "./sheets.module.css";
 
 interface Shown extends Line {
@@ -83,7 +84,7 @@ export function DialogueSheet({ engine, conversation, touch }: { engine: Engine;
         {log.map((line) => (
           <p key={line.key} className={styles.line} data-who={line.who === "lou" ? "you" : line.who === "narration" ? "system" : "char"}>
             {line.who === "lou" ? <b>LOU · </b> : line.who === "speaker" ? <b>{speaker.name} · </b> : null}
-            {line.text}
+            {frenchSpaces(line.text)}
           </p>
         ))}
       </div>

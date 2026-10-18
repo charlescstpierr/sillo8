@@ -174,7 +174,11 @@ export class PeopleDirector {
     switch (def.talk) {
       case "cuisine": return this.talkToCook();
       case "operatrice": return this.talkToOperator();
-      case "radio_guerite": return this.open("radio_guerite");
+      case "radio_guerite":
+        if (!this.open("radio_guerite")) return false;
+        // Même carte que l'accroche automatique d1, une seule fois (grantCard ignore une carte déjà rangée).
+        this.host.inquiry.grantCard("audio_gate");
+        return true;
       case "loquet":
         s.setFlag("porte_refermee");
         this.host.notify("Tu refermes la porte de service. Le loquet claque.");

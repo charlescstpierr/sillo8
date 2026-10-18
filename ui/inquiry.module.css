@@ -465,6 +465,38 @@
   margin-left: auto;
 }
 
+/* Avis du jeu arrivé pendant le gros plan (disjoncteur, bruit…) : petite ligne au-dessus des boutons. */
+.closeupNotice {
+  flex: 1 1 100%;
+  margin: 0;
+  padding: 4px 10px;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--cream);
+  background: rgba(20, 12, 6, 0.72);
+  border: 1.5px solid rgba(233, 200, 150, 0.5);
+  border-radius: 8px;
+  animation: closeupIn 0.25s ease-out;
+}
+
+/*
+ * Gros plan avec une énigme (cadenas, leviers, clavier du terminal) : l'énigme passe avant l'objet. La zone de
+ * l'énigme prend sa hauteur (et défile s'il le faut), l'objet prend ce qui reste ; les boutons restent à l'écran.
+ * (Pas en téléphone paysage : la mise en page à deux colonnes plus bas gère déjà ce cas.)
+ */
+@media (min-height: 481px) {
+  .closeup[data-puzzle] {
+    grid-template-rows: auto minmax(88px, 1fr) minmax(0, auto) auto;
+  }
+  .closeup[data-puzzle] .stage {
+    min-height: 0;
+  }
+  .closeup[data-puzzle] .closeupInfo {
+    height: auto;
+    min-height: 0;
+  }
+}
+
 .closeup .newClue {
   top: auto;
   bottom: 84px;
@@ -503,6 +535,18 @@
   .stage { padding: 12px; }
   .tool[data-wide] span { font-size: 14px; }
   .closeBtn { flex: 1 1 100%; margin-left: 0; }
+  /* Énigme au téléphone : en-tête plus serré, pas d'aide « glisser pour tourner », « Reposer » sur la ligne des outils. */
+  .closeup[data-puzzle] { gap: 6px; padding: 10px; }
+  .closeup[data-puzzle] .closeupHead { padding: 5px 10px 6px; }
+  .closeup[data-puzzle] .closeupTitle { font-size: 18px; }
+  .closeup[data-puzzle] .glance { font-size: 14px; line-height: 1.2; }
+  .closeup[data-puzzle] { padding: 10px 8px; }
+  .closeup[data-puzzle] .stage { padding: 6px; }
+  /* Scène basse : l'objet prend toute la hauteur de la scène (les 36 px de marge le rendaient minuscule). */
+  .closeup[data-puzzle] .object { width: min(100cqw - 6px, 520px, (100cqh - 6px) * var(--aspect, 1)); }
+  .closeup[data-puzzle] .stageHint { display: none; }
+  .closeup[data-puzzle] .closeBtn { flex: 1 1 96px; }
+  .closeup[data-puzzle] .closeupNotice { font-size: 14px; padding: 3px 8px; }
 }
 
 /* ——— Tableau d'enquête ——— */

@@ -132,7 +132,7 @@ export function Overlay({ engine }: { engine: Engine }) {
       );
     case "closeup":
       return (
-        <div className={styles.backdrop} data-tone="note">
+        <div className={styles.backdrop} data-tone="note" data-fit>
           <CloseupSheet key={ui.character} engine={engine} id={ui.character} touch={touch} />
         </div>
       );

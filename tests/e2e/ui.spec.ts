@@ -19,7 +19,7 @@ async function boot(page: Page, keepSave = false) {
     const renderer = engine.renderer;
     engine.__draw = renderer.render.bind(renderer);
     renderer.render = () => undefined;
-    setInterval(() => engine.tick(1 / 30), 40);
+    (window as any).__ticker = setInterval(() => engine.tick(1 / 30), 40);
   }, keepSave);
   return errors;
 }
@@ -361,10 +361,65 @@ test("sauvegarde automatique : lieu sûr seulement, jamais en danger, pause en a
   await page.waitForTimeout(1200);
   expect((await slot(page, "safe"))?.collected).not.toContain("part_2");
 
-  // Toutes les 30 s de jeu en lieu sûr, même sans progrès : la position suit le joueur.
+  // Toutes les 30 s de jeu en lieu sûr, même sans progrès : la minuterie, prouvée seule. La simulation passe à la
+  // main (horloge du test), et chaque écriture du « Lieu sûr » est comptée.
+  await page.evaluate(() => {
+    const w = window as any;
+    clearInterval(w.__ticker);
+    w.__safeWrites = 0;
+    const setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key === "sillo8-save-safe") w.__safeWrites += 1;
+      return setItem.call(this, key, value);
+    };
+    w.__run = (seconds: number) => { for (let t = 0; t < seconds; t += 1 / 30) w.__silo.tick(1 / 30); };
+  });
+  const writes = () => page.evaluate(() => (window as any).__safeWrites as number);
+  const run = (seconds: number) => page.evaluate((s) => (window as any).__run(s), seconds);
+  const pending = () => page.evaluate(() => (window as any).__silo.autosaveDue as boolean);
+  // Le progrès fait au hub (part_2) attendait un lieu sûr : il s'écrit dès l'entrée. Ensuite, plus rien en attente.
   await place(page, 4, 38);
-  // boot() fait avancer la simulation de 1/30 s toutes les 40 ms : 30 s de jeu ≈ 36 s réelles.
-  await expect.poll(async () => (await slot(page, "safe"))?.player_position?.[0] ?? 0, { timeout: 60_000 }).toBeCloseTo(4, 0);
+  await run(0.1);
+  expect((await slot(page, "safe"))?.collected).toContain("part_2");
+  expect(await pending()).toBe(false);
+  // Un autre point du lieu sûr, sans aucun progrès : la position ne s'écrit pas tout de suite…
+  await place(page, -2, 36);
+  expect(await page.evaluate(() => (window as any).__silo.safeNow())).toBe(true);
+  await page.evaluate(() => { (window as any).__safeWrites = 0; });
+  await run(28);
+  expect(await pending()).toBe(false);
+  expect(await writes()).toBe(0);
+  expect((await slot(page, "safe"))?.player_position?.[0]).toBeCloseTo(4, 0);
+  // … mais la minuterie l'écrit à 30 s de jeu, une seule fois.
+  await run(3);
+  expect(await writes()).toBe(1);
+  expect((await slot(page, "safe"))?.player_position?.[0]).toBeCloseTo(-2, 0);
+  expect((await slot(page, "safe"))?.player_position?.[2]).toBeCloseTo(36, 0);
+  // En danger (un mordu en alerte à 3 m), la minuterie passe sans rien écrire, même après 35 s de jeu…
+  await place(page, 4, 38);
+  await page.evaluate(() => {
+    const horde = (window as any).__silo.horde;
+    horde.__threats = horde.threats;
+    horde.threats = () => [{ x: 4, z: 35, alert: true }];
+  });
+  await page.evaluate(() => { (window as any).__safeWrites = 0; });
+  await run(35);
+  expect(await page.evaluate(() => (window as any).__silo.safeNow())).toBe(false);
+  expect(await writes()).toBe(0);
+  expect((await slot(page, "safe"))?.player_position?.[0]).toBeCloseTo(-2, 0);
+  // … et l'écriture due attend le retour au calme.
+  await page.evaluate(() => {
+    const horde = (window as any).__silo.horde;
+    horde.threats = horde.__threats;
+  });
+  await run(0.1);
+  expect(await writes()).toBe(1);
+  expect((await slot(page, "safe"))?.player_position?.[0]).toBeCloseTo(4, 0);
+  // La simulation reprend son rythme pour la suite.
+  await page.evaluate(() => {
+    const w = window as any;
+    w.__ticker = setInterval(() => w.__silo.tick(1 / 30), 40);
+  });
 
   // Passage en arrière-plan (téléphone verrouillé, autre appli) : pause automatique et sauvegarde en lieu sûr.
   await page.evaluate(() => {

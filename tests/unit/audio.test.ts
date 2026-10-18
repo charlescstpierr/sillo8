@@ -5,7 +5,7 @@ import { GameAudio, SOUND_NAMES } from "@/game/audio";
 import { GameEvents, type GameEvent } from "@/game/events";
 import {
   approach, busLevels, computeTension, DEFAULT_SOUND, distanceGain, footstepGain, heartbeatInterval, heartbeatLevel,
-  MYSTERY_CUES, nextMysteryDelay, panFor, TENSION_RANGE, zoneAmbience,
+  HUSH_FAR, HUSH_NEAR, hushed, MYSTERY_CUES, nextMysteryDelay, panFor, TENSION_RANGE, zoneAmbience,
 } from "@/game/mix";
 import { PlayerController } from "@/game/player";
 import { SiloState } from "@/game/state";
@@ -213,5 +213,59 @@ describe("événements déduits du moteur", () => {
     state.reset();
     director.update(1 / 30, src);
     expect(log.filter((e) => e.type === "pickup")).toHaveLength(0);
+  });
+});
+
+describe("Marceau, le mordu muet : la musique se coupe quand il approche", () => {
+  it("seuils avec écart : coupée sous 8 m, revenue au-delà de 9,5 m", () => {
+    expect(hushed(false, 12)).toBe(false);
+    expect(hushed(false, HUSH_NEAR - 0.1)).toBe(true);
+    // Entre les deux seuils, l'état précédent tient (pas de va-et-vient).
+    expect(hushed(true, 9)).toBe(true);
+    expect(hushed(false, 9)).toBe(false);
+    expect(hushed(true, HUSH_FAR + 0.1)).toBe(false);
+  });
+
+  it("fondu de la musique quand il s'approche, retour quand il s'éloigne ; les autres mordus n'y font rien", () => {
+    const state = new SiloState();
+    const player = new PlayerController(0, 30, 0);
+    const marceau = { id: "walker_gen", x: 20, z: 30, hit: 0, alive: true, dead: -1, mode: "patrol", stunned: 0, spawn: { silent: true } };
+    const other = { id: "walker_ext", x: 3, z: 30, hit: 0, alive: true, dead: -1, mode: "patrol", stunned: 0, spawn: {} };
+    const src: SoundSource = {
+      state,
+      player,
+      combat: { weapon: 0, swingTime: 0, dazzleTime: 0 },
+      horde: { root: new Group(), zombies: [marceau, other] } as unknown as SoundSource["horde"],
+      ui: { get: () => ({ mode: "playing" as UiMode, previous: "playing" as UiMode }) },
+      hud: { get: () => ({ autosaved: false }) },
+    };
+    const audio = new GameAudio();
+    const director = new SoundDirector(audio, new GameEvents());
+    const run = (seconds: number) => { for (let t = 0; t < seconds; t += 1 / 30) director.update(1 / 30, src); };
+    run(2);
+    // Un mordu ordinaire à 3 m : pas de coupure.
+    expect(audio.hush).toBe(0);
+    marceau.x = 6;
+    run(0.2);
+    expect(audio.hush).toBeGreaterThan(0);
+    expect(audio.hush).toBeLessThan(1);
+    run(2.5);
+    expect(audio.hush).toBeGreaterThan(0.95);
+    expect(audio.debug().hush).toBeGreaterThan(0.95);
+    // Entre 8 et 9,5 m, elle reste coupée ; plus loin, elle revient doucement.
+    marceau.x = 9;
+    run(1);
+    expect(audio.hush).toBeGreaterThan(0.95);
+    marceau.x = 14;
+    run(1);
+    expect(audio.hush).toBeLessThan(0.95);
+    expect(audio.hush).toBeGreaterThan(0.2);
+    run(12);
+    expect(audio.hush).toBe(0);
+    // Mort, il ne coupe plus rien.
+    marceau.x = 4;
+    marceau.alive = false;
+    run(2);
+    expect(audio.hush).toBe(0);
   });
 });

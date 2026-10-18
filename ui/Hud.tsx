@@ -8,6 +8,7 @@ import { useUi } from "./useUi";
 import { hudExtra } from "./compat";
 import { Icon, type IconName } from "./icons";
 import { Captions } from "./Captions";
+import { frenchSpaces } from "./typo";
 import styles from "./hud.module.css";
 
 function Gauge({ value, max, tone }: { value: number; max: number; tone: "health" | "lamp" }) {
@@ -263,7 +264,10 @@ export function Hud({ engine }: { engine: Engine }) {
   );
 }
 
-/** Avis du moteur, visible aussi hors jeu (sauvegarde, chargement…) sauf pendant un dialogue. */
+/**
+ * Avis du moteur, visible aussi hors jeu (sauvegarde, chargement…), sauf sur les feuilles qu'il couvrirait
+ * (dialogue, note, carnet, fin d'étage). En gros plan, il passe dans la feuille (ui/CloseupSheet.tsx).
+ */
 export function Notice({ engine }: { engine: Engine }) {
   const hud = useHud(engine.hud);
   const ui = useUi(engine.ui);
@@ -274,6 +278,6 @@ export function Notice({ engine }: { engine: Engine }) {
     return () => clearTimeout(timer);
   }, [hud.noticeId]);
   const mode = ui.mode as string;
-  if (!hud.notice || expired === hud.noticeId || mode === "dialogue" || mode === "note" || mode === "journal" || mode === "closeup") return null;
-  return <p key={hud.noticeId} className={styles.notice} data-mode={ui.mode} role="status" data-avoid-captions>{hud.notice}</p>;
+  if (!hud.notice || expired === hud.noticeId || mode === "dialogue" || mode === "note" || mode === "journal" || mode === "closeup" || mode === "conclusion") return null;
+  return <p key={hud.noticeId} className={styles.notice} data-mode={ui.mode} role="status" data-avoid-captions>{frenchSpaces(hud.notice)}</p>;
 }

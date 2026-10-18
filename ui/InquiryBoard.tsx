@@ -3,7 +3,7 @@
 // cartes » pour les contradictions, phrases à trous à compléter depuis la banque de mots (validées en entier),
 // tampon quand c'est juste, pensée de Lou quand c'est faux, bouton « Réfléchir » (aide en trois paliers).
 // Tout se fait au toucher : toucher une carte, puis l'autre ; toucher une case, puis un mot.
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Engine } from "@/game/engine";
 import { CONTENT, INDEX } from "@/game/investigation/world";
 import { recordOf } from "@/game/investigation/record";
@@ -213,10 +213,17 @@ function CardButton({ card, selected, expanded, linking, onTap }: { card: Card; 
 }
 
 function Thread({ d, solved, fresh, known }: { d: Contradiction; solved: boolean; fresh: { lines: string[]; key: number } | null; known: readonly string[] }) {
+  // Une contradiction tout juste trouvée apparaît sous les cartes : on la fait venir à l'écran (sur téléphone, le
+  // tampon « Juste » restait hors de vue, sous la dernière carte).
+  const ref = useRef<HTMLDivElement>(null);
+  const freshKey = fresh?.key;
+  useEffect(() => {
+    if (freshKey !== undefined) ref.current?.scrollIntoView({ block: "nearest" });
+  }, [freshKey]);
   if (!solved) return null;
   const pair = d.pairs.find(([a, b]) => known.includes(a) && known.includes(b)) ?? d.pairs[0];
   return (
-    <div className={styles.thread} data-fresh={fresh ? true : undefined} aria-label={`Contradiction : ${d.title}`}>
+    <div ref={ref} className={styles.thread} data-fresh={fresh ? true : undefined} aria-label={`Contradiction : ${d.title}`}>
       <p className={styles.threadPair}>
         <span>{INDEX.cards.get(pair[0])?.title}</span>
         <svg viewBox="0 0 60 12" aria-hidden><path d="M2 6c10-6 18 6 28 0s18-6 28 0" fill="none" stroke="#c4412a" strokeWidth="2.4" strokeLinecap="round" /></svg>

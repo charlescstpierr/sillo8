@@ -102,11 +102,14 @@ export const TRACES: UvTrace[] = [
 export const EVENTS: StrangeEvent[] = [
   // ——— Première minute ———
   {
-    // d1 : la voix de l'opératrice à la radio de la guérite, puis la pile meurt.
+    // d1 : l'accroche automatique de la voix de l'opératrice à la radio de la guérite (avis court + carte). C'est le
+    // seul endroit où la voix passe : « Écouter » la radio ouvre ensuite la conversation radio_guerite
+    // (game/content/people_talk.ts), qui commence par la réponse de Lou et range la même carte, une seule fois.
     id: "d1", trigger: near("guard_radio", 5.5),
     actions: [
       { do: "sound", cue: "radio_static", x: POS.guard_radio.x, z: POS.guard_radio.z },
-      { do: "notice", text: "La radio grésille : « …ici l'opératrice de nuit… c'est l'heure de la relève… il y a quelqu'un ? » Puis plus rien." },
+      // « la relève » reste dans l'avis : la pensée t_releve y répond.
+      { do: "notice", text: "La radio de la guérite grésille : « …l'heure de la relève… il y a quelqu'un ? »" },
       { do: "card", card: "audio_gate", delay: 1.5 },
       { do: "thought", thought: "t_releve", delay: 4 },
     ],
