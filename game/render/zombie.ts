@@ -1,4 +1,4 @@
-// Zombies « jouets d'argile » : chibi arrondis (grosse tête, membres trapus), mêmes habits que l'opératrice
+// Zombies « jouets d'argile » : chibi arrondis (grosse tête, membres trapus), mêmes habits que l'opérateur
 // mais délavés et rapiécés (bonnet, sweat à capuche, écharpe, cargo, bottes), peau gris-vert, yeux luisants dépareillés.
 // Le marcheur est grand et voûté, bras tendus ; le rampant n'a plus de jambes et se hisse sur ses longs bras.
 // Mignons-inquiétants, jamais gores : bave, langue pendante, coutures, haillons qui flottent, petit « pouf » de poussière à la mort.

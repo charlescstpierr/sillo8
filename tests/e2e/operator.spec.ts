@@ -1,4 +1,4 @@
-// Gros plan de l'opératrice sous 4 angles et planche d'animations, depuis la caméra du jeu.
+// Gros plan de l'opérateur sous 4 angles et planche d'animations, depuis la caméra du jeu.
 import { expect, test, type Page } from "@playwright/test";
 
 const SHOTS = process.env.SHOTS_DIR ?? "docs/screenshots";

@@ -1,6 +1,6 @@
-// L'opérateur : petite exploratrice chibi en « pâte à modeler » — bonnet olive, veste moutarde à capuche,
+// L'opérateur : petit explorateur chibi en « pâte à modeler » — bonnet olive, veste moutarde à capuche,
 // écharpe, sacoche en cuir en bandoulière, pantalon cargo et grosses bottes fourrées.
-// Outils de bricoleuse : clé à molette (corps à corps), lance-clous à batterie, lampe frontale qui éblouit.
+// Outils de bricoleur : clé à molette (corps à corps), lance-clous à batterie, lampe frontale qui éblouit.
 // Animations procédurales : marche, course, accroupi, coup de clé, tir et rechargement du lance-clous, éblouir.
 import {
   BoxGeometry, CapsuleGeometry, ConeGeometry, CylinderGeometry, DataTexture, DoubleSide, Group, LinearFilter,
@@ -34,9 +34,9 @@ const LOOK = {
   hairDark: "#5c361e",
   skin: "#f3c8a4",
   skinDark: "#e8b08c",
-  blush: "#f19a86",
+  blush: "#e9aa92",
   eye: "#2a1d16",
-  mouth: "#7a3a2c",
+  mouth: "#5a3426",
   scarf: "#3b3d40",
   scarfLight: "#55585c",
   jacket: "#d8a43a",
@@ -200,12 +200,12 @@ function buildHead(head: Group): HeadParts {
     eye.add(decal(new SphereGeometry(0.014, 8, 6), "#ffffff", 0.011, 0.018, 0.016));
     eye.add(decal(new SphereGeometry(0.0065, 6, 5), "#ffffff", -0.012, -0.02, 0.016));
     eyes.push(eye);
-    const blush = decal(new SphereGeometry(0.034, 10, 8), LOOK.blush, side * 0.15, 0.085, 0.178, true);
+    const blush = decal(new SphereGeometry(0.028, 10, 8), LOOK.blush, side * 0.15, 0.085, 0.178, true);
     blush.scale.set(1.3, 0.62, 0.4);
     blush.rotation.y = side * 0.68;
     head.add(blush);
-    const brow = decal(new CapsuleGeometry(0.008, 0.035, 2, 6), LOOK.hairDark, side * 0.092, 0.218, 0.214);
-    brow.rotation.set(0, side * 0.4, Math.PI / 2 + side * 0.15);
+    const brow = decal(new CapsuleGeometry(0.011, 0.04, 2, 6), LOOK.hairDark, side * 0.092, 0.218, 0.214);
+    brow.rotation.set(0, side * 0.4, Math.PI / 2 + side * 0.06);
     head.add(brow);
   }
   const smile = decal(new TorusGeometry(0.022, 0.0062, 4, 12, Math.PI), LOOK.mouth, 0, 0.078, 0.229);
@@ -556,7 +556,7 @@ export function buildOperator(): OperatorRig {
     arms.push({ shoulder, elbow });
   }
 
-  // Outils dans la main droite. L'opératrice regarde +Z : sa droite est du côté −X (bras d'indice 0).
+  // Outils dans la main droite. L'opérateur regarde +Z : sa droite est du côté −X (bras d'indice 0).
   const hand = arms[0].elbow;
   const wrench = buildWrench();
   wrench.position.set(0, -FOREARM - 0.01, 0.01);

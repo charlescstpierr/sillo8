@@ -1,5 +1,5 @@
 // Petits nuages de poussière sous les pas : réserve fixe de bouffées (aucune allocation par image).
-// Chaque conteneur (la scène de l'opératrice) reçoit sa propre réserve, créée au premier pas.
+// Chaque conteneur (la scène de l'opérateur) reçoit sa propre réserve, créée au premier pas.
 import { Group, IcosahedronGeometry, Mesh, MeshBasicMaterial, type Object3D } from "three";
 
 const COUNT = 14;
