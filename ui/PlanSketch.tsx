@@ -1,6 +1,6 @@
 "use client";
 // Plan de l'étage 1 croqué au crayon dans le carnet : traits d'encre brune un peu tremblés, hachures,
-// noms des pièces à la main. Généré d'après game/level.ts (pièces, portes) et ce que l'héroïne connaît
+// noms des pièces à la main. Généré d'après game/level.ts (pièces, portes) et ce que le joueur connaît
 // (game/plan.ts). Se déplace au doigt ou à la souris, se zoome au pincement, à la molette ou aux boutons.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { DOORS, type Door, type Room } from "@/game/level";
@@ -202,7 +202,7 @@ const HOME: View = { zoom: 1, cx: VB.x + VB.w / 2, cz: VB.z + VB.h / 2 };
 const AUTO_PPM = 7;
 
 /**
- * Vue de départ : cadre les pièces connues, l'héroïne et l'objectif, selon la forme du cadre
+ * Vue de départ : cadre les pièces connues, le joueur et l'objectif, selon la forme du cadre
  * (un téléphone en portrait zoome davantage). Le reste du plan se découvre en le faisant glisser.
  */
 function fitView(plan: PlanModel, width: number, height: number): View {
@@ -467,7 +467,7 @@ function RoomLabel({ r, player }: { r: PlanRoom; player: { x: number; z: number 
   const size = Math.min(3.4, (span / Math.max(name.length, 3)) * 1.85, vertical ? w * 0.75 : h * 0.4);
   const tilt = vertical ? -90 : ((seedOf(cx, cz) % 7) - 3) * 0.8;
   if (size < 1.7) return null; // trop étroit pour y écrire
-  // Le nom s'écarte de la flèche de l'héroïne quand elle se tient au milieu de la pièce.
+  // Le nom s'écarte de la flèche du joueur quand il se tient au milieu de la pièce.
   const near = !vertical && Math.abs(player.x - cx) < size * name.length * 0.3 + 1.5 && Math.abs(player.z - cz) < size + 1.5;
   const dz = near ? (player.z >= cz ? -1 : 1) * (size + 1.2) : 0;
   return (

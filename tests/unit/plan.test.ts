@@ -106,7 +106,7 @@ describe("plan du carnet", () => {
     expect(buildPlan(s).doors.find((d) => d.door.id === "dorms_secret")?.locked).toBe(false);
   });
 
-  it("marque l'objectif en cours, les notes lues et l'héroïne", () => {
+  it("marque l'objectif en cours, les notes lues et la position du joueur", () => {
     const s = new SiloState();
     expect(objectiveMark(s)?.label).toBe("Porte de sécurité");
     s.exploreEntrance();

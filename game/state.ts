@@ -309,7 +309,7 @@ export class SiloState {
     return loaded;
   }
 
-  /** Note la pièce où se tient l'héroïne. Vrai à la première visite. */
+  /** Note la pièce où se tient le bricoleur. Vrai à la première visite. */
   visitRoom(id: string): boolean {
     if (!ROOM_IDS.includes(id) || this.visited.includes(id)) return false;
     this.visited.push(id);

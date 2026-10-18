@@ -1,4 +1,4 @@
-// Plan de l'étage 1 pour le carnet, sans rendu : ce que l'héroïne connaît des pièces, des portes,
+// Plan de l'étage 1 pour le carnet, sans rendu : ce que le joueur connaît des pièces, des portes,
 // des notes lues et de l'objectif en cours. Tout vient de level.ts ; le dessin est dans ui/PlanSketch.tsx.
 import { DOORS, ENTRANCE_TRIGGER, INTERACTABLES, ROOMS, roomAt, type Door, type Room, type RoomId } from "./level";
 import { doorOpen } from "./rules";
