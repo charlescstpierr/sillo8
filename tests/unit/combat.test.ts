@@ -1,13 +1,13 @@
 // Armes du bricoleur : clé à molette, lance-clous, lampe qui éblouit, changement d'arme. Horde et monde factices.
 import { describe, expect, it } from "vitest";
 import { Group, Scene } from "three";
-import { Combat, LAMP, NAIL, WRENCH, type CombatInput } from "@/game/combat";
+import { Combat, FEEL, LAMP, NAIL, WRENCH, type CombatInput } from "@/game/combat";
 import { rayDistance, type Box } from "@/game/collision";
 import { NAILGUN, PlayerController } from "@/game/player";
 import { NAIL_CAPACITY, SiloState } from "@/game/state";
 import type { Horde, RayHit } from "@/game/types";
 
-interface FakeZombie { id: string; x: number; z: number; hp: number; stun: number; }
+interface FakeZombie { id: string; x: number; z: number; hp: number; stun: number; pushes: number[][]; }
 
 function fakeHorde(zombies: FakeZombie[]) {
   const horde: Horde = {
@@ -32,6 +32,10 @@ function fakeHorde(zombies: FakeZombie[]) {
       zb.hp -= amount;
       zb.stun = Math.max(zb.stun, stun);
     },
+    push(id, dx, dz, distance, freeze = 0) {
+      zombies.find((z) => z.id === id)!.pushes.push([dx, dz, distance, freeze]);
+    },
+    headHeight: () => 1.85,
     sync() {},
     setLowQuality() {},
   };
@@ -64,7 +68,7 @@ function step(s: ReturnType<typeof setup>, dt: number, patch: Partial<CombatInpu
   s.combat.update(dt, { ...idle, ...patch });
 }
 
-const zombie = (id: string, x: number, z: number): FakeZombie => ({ id, x, z, hp: 100, stun: 0 });
+const zombie = (id: string, x: number, z: number): FakeZombie => ({ id, x, z, hp: 100, stun: 0, pushes: [] });
 
 describe("rayDistance", () => {
   const box: Box = { minX: -1, maxX: 1, minZ: 4, maxZ: 5 };
@@ -289,5 +293,116 @@ describe("changement d'arme", () => {
     expect(s.combat.swingTime).toBe(0);
     expect(s.state.ammo).toBe(NAIL_CAPACITY - 1);
     expect(zb.hp).toBe(100 - NAIL.damage);
+  });
+});
+
+describe("ressenti des coups", () => {
+  /** Caméra factice qui note ce que le combat lui transmet. */
+  function fakeRig() {
+    const calls = { shakes: [] as number[][], kicks: [] as number[][] };
+    return { calls, rig: { addShake: (s: number, d: number) => calls.shakes.push([s, d]), kick: (x: number, z: number, a: number) => calls.kicks.push([x, z, a]) } };
+  }
+
+  it("clé à molette : recul de la cible avec arrêt sur image, à-coup vers l'avant et secousse", () => {
+    const target = zombie("t", 0.6, 1);
+    const s = setup({ zombies: [target] });
+    step(s, 0.016, { firing: true });
+    expect(target.pushes).toHaveLength(1);
+    const [dx, dz, distance, freeze] = target.pushes[0];
+    // Dans l'axe joueur → zombie.
+    expect(Math.atan2(dx, dz)).toBeCloseTo(Math.atan2(0.6, 1), 5);
+    expect(distance).toBe(FEEL.wrenchPush);
+    expect(distance).toBeGreaterThanOrEqual(0.6);
+    expect(distance).toBeLessThanOrEqual(1);
+    expect(freeze).toBeCloseTo(0.05, 5);
+    expect(s.combat.pendingKick.z).toBeCloseTo(FEEL.wrenchKick, 5);
+    expect(s.combat.pendingShake).toBe(FEEL.wrenchShake);
+    const { calls, rig } = fakeRig();
+    s.combat.applyCamera(rig);
+    expect(calls.shakes).toEqual([[FEEL.wrenchShake, FEEL.wrenchShakeTime]]);
+    expect(calls.kicks).toHaveLength(1);
+    expect(calls.kicks[0][2]).toBeCloseTo(FEEL.wrenchKick, 5);
+    // Transmis une seule fois.
+    s.combat.applyCamera(rig);
+    expect(calls.shakes).toHaveLength(1);
+    expect(calls.kicks).toHaveLength(1);
+    // Le BONK laisse étoiles et étincelles.
+    expect(s.combat.fx.active.stars).toBeGreaterThan(0);
+    expect(s.combat.fx.active.sparks).toBeGreaterThan(0);
+  });
+
+  it("lance-clous : léger recul de la cible, sans arrêt sur image, caméra repoussée vers l'arrière", () => {
+    const target = zombie("t", 0, 6);
+    const s = setup({ zombies: [target] });
+    s.combat.select(1);
+    step(s, 0.016, { firing: true });
+    expect(target.pushes).toEqual([[0, 1, FEEL.nailPush, 0]]);
+    expect(s.combat.pendingKick.z).toBeCloseTo(-FEEL.nailKick, 5);
+    expect(s.combat.fx.active.tracers).toBe(1);
+    expect(s.combat.fx.active.splats).toBe(1);
+    // Le trait du clou reste visible au moins deux images à 30 i/s, puis disparaît.
+    step(s, 1 / 30);
+    expect(s.combat.fx.active.tracers).toBe(1);
+    for (let i = 0; i < 3; i++) step(s, 1 / 30);
+    expect(s.combat.fx.active.tracers).toBe(0);
+  });
+
+  it("clou dans un mur : ébréchure qui reste quelques secondes", () => {
+    const s = setup({ colliders: [{ minX: -2, maxX: 2, minZ: 4, maxZ: 4.3 }] });
+    s.combat.select(1);
+    step(s, 0.016, { firing: true });
+    expect(s.combat.fx.active.chips).toBe(1);
+    expect(s.combat.fx.active.splats).toBe(0);
+    for (let i = 0; i < 120; i++) step(s, 1 / 60);
+    expect(s.combat.fx.active.chips).toBe(1);
+    for (let i = 0; i < 240; i++) step(s, 1 / 60);
+    expect(s.combat.fx.active.chips).toBe(0);
+  });
+
+  it("une blessure secoue la caméra, proportionnellement", () => {
+    const s = setup();
+    step(s, 0.016);
+    expect(s.combat.pendingShake).toBe(0);
+    s.state.damage(9);
+    step(s, 0.016);
+    const strong = s.combat.pendingShake;
+    expect(strong).toBeGreaterThan(0);
+    s.combat.applyCamera(fakeRig().rig);
+    s.state.damage(2);
+    step(s, 0.016);
+    expect(s.combat.pendingShake).toBeLessThan(strong);
+  });
+
+  it("ramassage : étincelles une fois par objet, rien au chargement d'une partie", () => {
+    const s = setup();
+    s.state.collect("part_0", "components", 1);
+    step(s, 0.016);
+    expect(s.combat.fx.active.stars).toBeGreaterThan(0);
+    for (let i = 0; i < 90; i++) step(s, 1 / 60);
+    expect(s.combat.fx.active.stars).toBe(0);
+    for (let i = 1; i <= 5; i++) s.state.collect(`part_${i}`, "components", 1);
+    step(s, 0.016);
+    expect(s.combat.fx.active.stars).toBe(0);
+  });
+
+  it("lampe : étoiles d'étourdissement pendant toute la durée, puis plus rien", () => {
+    const zb = zombie("z", 0, 5);
+    const s = setup({ zombies: [zb] });
+    step(s, 0.016, { light: true });
+    expect(s.combat.fx.active.dizzy).toBe(1);
+    for (let i = 0; i < 100; i++) step(s, 1 / 60); // 1,67 s
+    expect(s.combat.fx.active.dizzy).toBe(1);
+    for (let i = 0; i < 12; i++) step(s, 1 / 60);
+    expect(s.combat.fx.active.dizzy).toBe(0);
+  });
+
+  it("la qualité basse réduit les particules", () => {
+    const high = setup();
+    const low = setup();
+    low.combat.setLowQuality(true);
+    high.combat.fx.bonk(0, 1, 0);
+    low.combat.fx.bonk(0, 1, 0);
+    expect(low.combat.fx.active.sparks).toBeLessThan(high.combat.fx.active.sparks);
+    expect(low.combat.fx.active.stars).toBeLessThan(high.combat.fx.active.stars);
   });
 });

@@ -609,6 +609,8 @@ export class Engine {
   }
 
   private render(dt: number): void {
+    // Ressenti du combat (game/combat.ts) : tremblement et à-coups de la caméra.
+    this.combat.applyCamera(this.rig);
     this.rig.update(dt, this.tmp.set(this.player.x, 0, this.player.z), this.aimPoint);
     // Ambiance de la pièce du joueur ; la lune suit le point visé pour garder des ombres nettes autour de lui.
     this.atmosphere.update({

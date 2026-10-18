@@ -28,6 +28,12 @@ const DOOR_PAST = 1.2;
 const DOOR_APPROACH = 0.7;
 /** Écart latéral toléré avant de franchir une porte (> 0,4 m, la tolérance d'arrivée à un point). */
 const DOOR_ALIGN = 0.45;
+/** Recul : part de la poussée restante parcourue par seconde (exponentiel, ≈ 99 % en 0,35 s). */
+const PUSH_RATE = 14;
+/** Arrêt sur image le plus long accepté (s). */
+const FREEZE_MAX = 0.2;
+/** Sommet de la tête (m) par type, pour les étoiles d'étourdissement. */
+const HEAD_HEIGHT = { walker: 1.85, crawler: 0.95 } as const;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -61,6 +67,11 @@ export interface Zombie {
   /** Secondes depuis la mort, −1 si vivant. */
   dead: number;
   stuck: number;
+  /** Arrêt sur image restant (s) : ni déplacement, ni animation. */
+  freeze: number;
+  /** Recul restant à parcourir (m). */
+  pushX: number;
+  pushZ: number;
   room: number;
   waypointX: number;
   waypointZ: number;
@@ -156,7 +167,7 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
       id: spawn.id, kind: spawn.kind, spawn, x: spawn.x, z: spawn.z, yaw: 0, health: 0, mode: "patrol", alive: true,
       stunned: 0, patrolIndex: 0, destX: 0, destZ: 0, lastX: 0, lastZ: 0, searchRemaining: 0, senseRemaining: i * 0.033,
       attackRemaining: 0, seesTarget: false, hit: 0, attackVisual: 0, stride: i * 1.7, speed: 0, dead: -1, stuck: 0,
-      room: -1, waypointX: spawn.x, waypointZ: spawn.z, rig: null, shadow: null, candidate: { id: spawn.id, x: spawn.x, z: spawn.z },
+      freeze: 0, pushX: 0, pushZ: 0, room: -1, waypointX: spawn.x, waypointZ: spawn.z, rig: null, shadow: null, candidate: { id: spawn.id, x: spawn.x, z: spawn.z },
     };
     if (visuals) {
       z.rig = buildZombie(spawn.kind);
@@ -185,6 +196,7 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
     z.alive = true;
     z.dead = -1;
     z.stunned = z.hit = z.attackRemaining = z.attackVisual = z.searchRemaining = z.stuck = z.speed = 0;
+    z.freeze = z.pushX = z.pushZ = 0;
     z.patrolIndex = 0;
     z.seesTarget = false;
     const first = z.spawn.patrol[0] ?? [z.spawn.x, z.spawn.z];
@@ -417,6 +429,21 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
     z.speed = 0;
   }
 
+  /** Recul en cours : glisse le long des murs (moveCircle), jamais à travers. */
+  function knock(z: Zombie, ctx: HordeContext, dt: number): void {
+    const remaining = Math.hypot(z.pushX, z.pushZ);
+    if (remaining <= 0) return;
+    const k = remaining < 0.005 ? 1 : 1 - Math.exp(-PUSH_RATE * dt);
+    const mx = z.pushX * k;
+    const mz = z.pushZ * k;
+    const next = moveCircle(z.x, z.z, mx, mz, ZOMBIE[z.kind].radius, ctx.colliders);
+    z.x = next.x;
+    z.z = next.z;
+    z.pushX -= mx;
+    z.pushZ -= mz;
+    if (k === 1) z.pushX = z.pushZ = 0;
+  }
+
   /** Les zombies s'écartent les uns des autres et du joueur. */
   function separate(ctx: HordeContext): void {
     for (let i = 0; i < zombies.length; i++) {
@@ -503,8 +530,14 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
       playerX = ctx.player.x;
       playerZ = ctx.player.z;
       for (const z of zombies) {
+        // Arrêt sur image : le zombie reste figé dans sa pose d'impact (décompté au dessin).
+        if (z.freeze > 0) {
+          z.speed = 0;
+          continue;
+        }
         z.hit = Math.max(0, z.hit - dt);
         z.attackVisual = Math.max(0, z.attackVisual - dt / 0.4);
+        if (z.pushX !== 0 || z.pushZ !== 0) knock(z, ctx, dt);
         if (!z.alive) {
           if (z.dead >= 0) z.dead += dt;
           continue;
@@ -527,7 +560,9 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
       for (const z of zombies) {
         z.candidate.x = z.x;
         z.candidate.z = z.z;
-        draw(z, dt);
+        const frozen = z.freeze > 0;
+        if (frozen) z.freeze = Math.max(0, z.freeze - dt);
+        draw(z, frozen ? 0 : dt);
       }
     },
 
@@ -581,6 +616,21 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
         z.stunned = 0;
         current.markDefeated(z.id);
       }
+    },
+
+    push(id, dx, dz, distance, freeze = 0) {
+      const z = byId.get(id);
+      if (!z || dormant || !(distance > 0)) return;
+      const length = Math.hypot(dx, dz);
+      if (length < 1e-6) return;
+      z.pushX += (dx / length) * distance;
+      z.pushZ += (dz / length) * distance;
+      z.freeze = Math.max(z.freeze, clamp(freeze, 0, FREEZE_MAX));
+    },
+
+    headHeight(id) {
+      const z = byId.get(id);
+      return z ? HEAD_HEIGHT[z.kind] : HEAD_HEIGHT.walker;
     },
 
     sync(next) {
