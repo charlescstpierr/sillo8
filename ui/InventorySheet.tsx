@@ -41,6 +41,8 @@ export function InventorySheet({ engine, touch }: { engine: Engine; touch: boole
   const hurt = hud.health > 0 && hud.health < 100;
   const lampFull = hud.energy >= hud.maxEnergy;
   const nailgun = extra.weapon === 1;
+  // Ferraille gardée pour la génératrice et la radio : la presse et le banc n'y touchent pas.
+  const reserved = engine.state.reservedParts();
   const use = (label: string, aria: string, disabled: boolean, run: () => void, hotkey?: string) => (
     <PaperButton className={styles.useBtn} variant="primary" aria-label={aria} hotkey={touch ? undefined : hotkey} disabled={disabled} onClick={run}>{label}</PaperButton>
   );
@@ -85,19 +87,24 @@ export function InventorySheet({ engine, touch }: { engine: Engine; touch: boole
         </Pocket>
 
         <Pocket title="Matériaux" area="materiaux">
-          <Item icon="scrap" name="Ferraille" count={hud.components} detail="Pièces récupérées, à bricoler" />
+          <Item
+            icon="scrap"
+            name="Ferraille"
+            count={hud.components}
+            detail={reserved > 0 ? `Dont ${Math.min(reserved, hud.components)} réservée${Math.min(reserved, hud.components) > 1 ? "s" : ""} aux objectifs (génératrice, radio)` : "Pièces récupérées, à bricoler"}
+          />
           <ul className={styles.recipes}>
             <li><span>Génératrice</span><b>{GENERATOR_PARTS}</b></li>
             <li><span>Module radio</span><b>{RADIO_PARTS}</b></li>
-            <li><span>Presse à clous · 1 → {NAILS_PER_SCRAP} clous</span><b>1</b></li>
-            <li><span>Amélioration de la lampe</span><b>{UPGRADE_PARTS}</b></li>
+            <li><span>Presse à clous · 1 → {NAILS_PER_SCRAP} clous · hors réserve</span><b>1</b></li>
+            <li><span>Amélioration de la lampe · hors réserve</span><b>{UPGRADE_PARTS}</b></li>
           </ul>
         </Pocket>
       </div>
 
       <div className={styles.invFoot}>
         <PaperButton variant="ghost" className={styles.back} hotkey={touch ? undefined : "Tab"} autoFocus={!touch} onClick={() => engine.resume()}>Refermer le sac</PaperButton>
-        <p className={styles.muted}>Borne de recharge gratuite au poste de sécurité. {touch ? "" : "H : se soigner au mieux."}</p>
+        <p className={styles.muted}>Borne de recharge au poste de sécurité : une charge par visite. {touch ? "" : "H : se soigner au mieux."}</p>
       </div>
     </section>
   );

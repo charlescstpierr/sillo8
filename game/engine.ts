@@ -8,9 +8,11 @@ import { AIM_HEIGHT, assistTarget, groundPoint, yawTowards } from "./aim";
 import { InputState } from "./input";
 import { PlayerController } from "./player";
 import { NAIL_CAPACITY, SiloState, type Character, type KeyValueStore } from "./state";
-import { SiloDialogue } from "./dialogue";
 import { DOORS, sectorAt, type InteractableDef } from "./level";
-import { doorOpen, interactableAvailable } from "./rules";
+import { actionLabel, doorOpen, interactableAvailable } from "./rules";
+import { anySave, clearSlot, latestSlot, listSlots, loadSlot, writeSlot, type SlotId, type SlotInfo } from "./save";
+import { safeSpot } from "./safety";
+import { CONVERSATIONS } from "./conversation";
 import { HudStore, type HudSnapshot } from "./hud";
 import { UiStore, type UiMode } from "./ui";
 import { createHorde } from "./enemy";
@@ -39,7 +41,8 @@ const REACH = 1.1;
 
 export class Engine {
   readonly state = new SiloState();
-  readonly dialogue = new SiloDialogue();
+  /** Conversations écrites (game/conversation.ts), ouvertes par openConversation(id). */
+  readonly conversations = CONVERSATIONS;
   readonly input = new InputState();
   readonly hud: HudStore;
   readonly ui = new UiStore();
@@ -83,6 +86,11 @@ export class Engine {
   private autosaveDue = false;
   /** Temps de jeu de la dernière sauvegarde automatique (pour le petit tampon « Sauvegardé »). */
   private savedAt = -10;
+  /** Temps de jeu du dernier coup reçu (danger : vie basse en plein combat). */
+  private hurtAt = -Infinity;
+  private detachPageEvents: (() => void) | null = null;
+  /** Vrai dès qu'une partie a commencé ou été chargée : avant (menu, réglages), rien à sauvegarder. */
+  private runActive = false;
   private progressKey = "";
   /** Lumières, brouillard et vignette selon la zone (nuit dehors, pièces teintées dedans). */
   readonly atmosphere: Atmosphere;
@@ -146,7 +154,6 @@ export class Engine {
       floor2: () => this.openFloor2(),
     };
 
-    this.dialogue.setup(this.state);
     this.state.subscribe(() => {
       this.worldDirty = true;
       // Un progrès (objectif, note, objet ramassé) déclenche une sauvegarde automatique.
@@ -157,9 +164,15 @@ export class Engine {
       }
     });
     if (typeof document !== "undefined") {
-      const flush = () => { if (this.ui.get().mode !== "menu") this.autosave(); };
-      document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
-      window.addEventListener("pagehide", flush);
+      // Onglet masqué, appel, appli quittée : pause automatique, puis sauvegarde si l'on est en lieu sûr.
+      const visibility = () => { if (document.visibilityState === "hidden") this.pageHidden(); };
+      const pagehide = () => this.pageHidden();
+      document.addEventListener("visibilitychange", visibility);
+      window.addEventListener("pagehide", pagehide);
+      this.detachPageEvents = () => {
+        document.removeEventListener("visibilitychange", visibility);
+        window.removeEventListener("pagehide", pagehide);
+      };
     }
     this.hud = new HudStore(this.snapshot());
     this.setLowQuality(this.lowQuality);
@@ -194,7 +207,7 @@ export class Engine {
     this.stop();
     this.input.dispose();
     this.audio.dispose();
-    this.dialogue.cancel();
+    this.detachPageEvents?.();
     this.resizeObserver?.disconnect();
     this.renderer.dispose();
   }
@@ -241,16 +254,41 @@ export class Engine {
   }
 
   resume(): void {
-    this.dialogue.cancel();
     this.setMode(this.state.health > 0 ? "playing" : "death");
   }
 
+  /**
+   * Pause automatique quand la page passe en arrière-plan (onglet masqué, appel, appli quittée). Le son se coupe
+   * de lui-même (audio.ts) ; au retour, la feuille de pause attend « Reprendre ».
+   */
+  pageHidden(): void {
+    const mode = this.ui.get().mode;
+    if (mode === "playing") {
+      this.openPause();
+      this.notify("Pause automatique : la partie vous attend.");
+    }
+    if (mode !== "menu" && mode !== "death") this.autosave();
+  }
+
+  /**
+   * Nouvelle descente. L'interface demande d'abord confirmation s'il existe une sauvegarde (ui/NewGameButton).
+   * Écrit l'emplacement « Début d'étage » et efface l'ancien « Lieu sûr » ; le « Manuel » reste intact.
+   */
   newGame(): void {
-    this.dialogue.cancel();
     this.state.reset();
     this.startRun();
     this.setMode("playing");
+    if (this.storage) {
+      clearSlot(this.storage, "safe");
+      this.saveFloorStart();
+    }
     this.notify("SILLO 8. L'entrée est juste devant. Avancez sans bruit.");
+  }
+
+  /** Emplacement « Début d'étage » : écrit en entrant dans un étage, jamais en cours d'étage. */
+  saveFloorStart(): boolean {
+    if (!this.storage || this.state.health <= 0) return false;
+    return this.writeSave("floor");
   }
 
   /** Sauvegarde manuelle (F5, menu pause) : annonce le résultat. */
@@ -263,52 +301,69 @@ export class Engine {
       this.notify("Sauvegarde indisponible dans cet état.");
       return false;
     }
-    const ok = this.writeSave();
+    const ok = this.writeSave("manual");
     this.notify(ok ? "Progression sauvegardée." : "Échec de sauvegarde.");
     return ok;
   }
 
+  /** Vrai en lieu sûr : pièce sûre, aucun mordu en alerte proche, pas de vie basse en plein combat (safety.ts). */
+  safeNow(): boolean {
+    return safeSpot({
+      x: this.player.x, z: this.player.z, health: this.state.health,
+      sinceHurt: this.elapsed - this.hurtAt, threats: this.horde.threats?.() ?? [],
+    });
+  }
+
   /**
-   * Sauvegarde automatique, silencieuse : toutes les 30 s de jeu, à chaque progrès (objectif, note, objet ramassé)
-   * et quand la page passe en arrière-plan. Jamais pendant la mort.
+   * Sauvegarde automatique « Lieu sûr », silencieuse : à chaque progrès (objectif, note, objet ramassé), toutes les
+   * 30 s de jeu et quand la page passe en arrière-plan, mais seulement en lieu sûr. Jamais en danger ni pendant la
+   * mort : un progrès fait ailleurs attend le prochain lieu sûr.
    */
   autosave(): boolean {
     this.autosaveClock = 0;
+    if (!this.runActive || !this.storage || this.state.health <= 0 || !this.safeNow()) return false;
     this.autosaveDue = false;
-    if (!this.storage || this.state.health <= 0) return false;
-    const ok = this.writeSave();
+    const ok = this.writeSave("safe");
     if (ok) this.savedAt = this.elapsed;
     return ok;
   }
 
-  private writeSave(): boolean {
+  private writeSave(slot: SlotId): boolean {
     this.state.playerPosition = [this.player.x, 0, this.player.z];
     this.state.playerYaw = this.player.yaw;
-    return this.state.saveGame(this.storage!) === "ok";
+    return writeSlot(this.state, this.storage!, slot);
   }
 
+  /** Vrai s'il existe au moins une sauvegarde (même illisible : la nouvelle descente demande confirmation). */
   hasSave(): boolean {
-    try {
-      return Boolean(this.storage?.getItem("sillo8-save"));
-    } catch {
-      return false;
-    }
+    return this.storage ? anySave(this.storage) : false;
   }
 
-  loadGame(): boolean {
+  /** Emplacements remplis, pour le choix au menu et en pause. */
+  saveSlots(): SlotInfo[] {
+    return this.storage ? listSlots(this.storage) : [];
+  }
+
+  /** Charge un emplacement, ou le plus récent (« Continuer », F9). */
+  loadGame(slot?: SlotId): boolean {
     if (!this.storage) {
       this.notify("Sauvegarde indisponible dans ce navigateur.");
       return false;
     }
+    const target = slot ?? latestSlot(this.storage);
     // Validation sur une copie : un échec laisse la partie en cours intacte.
-    const result = new SiloState().loadGame(this.storage);
-    if (result !== "ok") {
-      this.notify(result === "missing" ? "Aucune sauvegarde." : "Sauvegarde invalide.");
+    const result = target ? loadSlot(new SiloState(), this.storage, target) : "missing";
+    if (result !== "ok" || !target) {
+      this.notify(result === "missing" ? "Aucune sauvegarde." : result === "newer" ? "Sauvegarde d'une version plus récente du jeu." : "Sauvegarde invalide.");
       return false;
     }
-    this.dialogue.cancel();
-    this.state.loadGame(this.storage);
+    loadSlot(this.state, this.storage, target);
     this.startRun();
+    // Pas de sauvegarde automatique immédiate : charger un ancien emplacement n'écrase pas aussitôt le « Lieu sûr ».
+    this.progressKey = `${this.state.facts.length}:${this.state.notes.length}:${this.state.collected.length}:${this.state.upgraded}`;
+    this.autosaveDue = false;
+    this.autosaveClock = 0;
+    this.hurtAt = -Infinity;
     this.setMode("playing");
     this.notify("Progression restaurée.");
     return true;
@@ -316,6 +371,7 @@ export class Engine {
 
   /** Replace le joueur et le monde d'après l'état courant (nouvelle partie ou chargement). */
   private startRun(): void {
+    this.runActive = true;
     const [x, , z] = this.state.playerPosition;
     this.player.x = x;
     this.player.z = z;
@@ -350,8 +406,11 @@ export class Engine {
     if (this.state.notes.includes(id)) this.setMode("note", id);
   }
 
-  openConversation(character: Character): void {
-    this.setMode("dialogue", character);
+  /** Ouvre une conversation écrite (identifiant dans game/conversation.ts). */
+  openConversation(id: Character): boolean {
+    if (!this.conversations[id]) return false;
+    this.setMode("dialogue", id);
+    return true;
   }
 
   /** Fin de l'étage 1 : l'accès à l'étage 2 est ouvert (l'étage 2 reste à construire). */
@@ -360,15 +419,9 @@ export class Engine {
       this.notify("Accès verrouillé. Il faut une clé d'accès.");
       return;
     }
-    if (this.storage) this.saveGame();
+    // L'escalier est un lieu sûr : sauvegarde automatique si aucun mordu ne talonne Lou.
+    this.autosave();
     this.setMode("conclusion", "floor2");
-  }
-
-  /** Choix de fin : réservé aux étages suivants (l'histoire de SILLO 8 reste à écrire). */
-  chooseEnding(choice: Character): boolean {
-    void choice;
-    this.notify("Ce choix n'est pas encore disponible.");
-    return false;
   }
 
   // ——— Soins et lampe (touches H et B, inventaire) ———
@@ -424,6 +477,7 @@ export class Engine {
   damagePlayer(amount: number): void {
     if (this.state.health <= 0) return;
     this.state.damage(amount);
+    this.hurtAt = this.elapsed;
     this.operator.root.userData.hurt = 0.25;
     if (this.state.health <= 0) this.setMode("death");
   }
@@ -431,7 +485,6 @@ export class Engine {
   private refreshWorld(): void {
     this.worldDirty = false;
     this.world.refresh(this.state);
-    this.world.setEndingTint(this.state.ending);
     this.hordeContext.colliders = this.world.colliders;
   }
 
@@ -444,7 +497,7 @@ export class Engine {
     if (this.input.consume("perf")) this.showPerf = !this.showPerf;
     if (this.input.consume("pause")) {
       if (mode === "playing") this.openPause();
-      else if (mode !== "menu" && mode !== "death" && mode !== "ending") this.resume();
+      else if (mode !== "menu" && mode !== "death") this.resume();
     } else if (mode === "inventory" && this.input.consume("inventory")) this.resume();
     else if (mode === "journal" && this.input.consume("journal")) this.resume();
     else if (mode === "note" && this.input.consume("journal")) this.openJournal();
@@ -456,8 +509,13 @@ export class Engine {
   }
 
   private simulate(dt: number): void {
+    // Sauvegarde « Lieu sûr » : due à chaque progrès et toutes les 30 s, écrite dès qu'on est en sécurité.
     this.autosaveClock += dt;
-    if (this.autosaveDue || this.autosaveClock >= 30) this.autosave();
+    if (this.autosaveClock >= 30) {
+      this.autosaveDue = true;
+      this.autosaveClock = 0;
+    }
+    if (this.autosaveDue) this.autosave();
     this.elapsed += dt;
     this.state.elapsed += dt;
     const input = this.input;
@@ -679,7 +737,7 @@ export class Engine {
       autosaved: this.elapsed - this.savedAt < 1.6,
       notice: this.noticeTime > 0 ? this.notice : "",
       noticeId: this.noticeId,
-      prompt: this.focus ? { name: this.focus.name, action: this.focus.action } : null,
+      prompt: this.focus ? { name: this.focus.name, action: actionLabel(this.focus, s) } : null,
       tutorial: this.tutorial?.bubble ?? null,
       hint: this.tutorial?.hint ?? "",
       device: this.input.device,

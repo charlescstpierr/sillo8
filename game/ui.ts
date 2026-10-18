@@ -2,7 +2,7 @@
 import type { Character } from "./state";
 
 export type UiMode =
-  | "menu" | "playing" | "pause" | "settings" | "inventory" | "dialogue" | "ending" | "conclusion" | "death"
+  | "menu" | "playing" | "pause" | "settings" | "inventory" | "dialogue" | "conclusion" | "death"
   /** Fiche de lecture d'une note (identifiant dans `character`) et carnet des notes lues. */
   | "note" | "journal";
 
@@ -10,7 +10,7 @@ export interface UiSnapshot {
   mode: UiMode;
   /** Mode d'où l'on vient (retour depuis les réglages). */
   previous: UiMode;
-  /** Interlocuteur du dialogue, note lue (ex. "note_storage"), ou identifiant de la conclusion (ex. "floor2"). */
+  /** Conversation ouverte (identifiant de game/conversation.ts), note lue (ex. "note_storage"), ou identifiant de la conclusion (ex. "floor2"). */
   character: Character;
 }
 

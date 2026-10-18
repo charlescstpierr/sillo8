@@ -75,8 +75,6 @@ export interface WorldView {
   /** Met à jour portes, relais, cœur et objets ramassés selon l'état (port de SiloWorld.refresh). */
   refresh(state: SiloState): void;
   update(dt: number, time: number, playerX: number, playerZ: number): void;
-  /** Éclairage de fin : rouge-orangé (MÈRE) ou teal (N-7). */
-  setEndingTint(ending: string): void;
   /** Coupure brève de toutes les lampes (événement « colosse »). */
   shudder(): void;
   setLowQuality(low: boolean): void;
@@ -718,7 +716,7 @@ export function ruin(root: Group, x0: number, x1: number, z0: number, z1: number
 
 // ——— Objets interactifs ———
 
-/** Modèles fournis par les secteurs (relais, N-7, archive, verrou, cœur…). */
+/** Modèles fournis par les secteurs (objets interactifs propres à chaque zone). */
 const SECTOR_MODELS: Record<string, ModelBuilder> = { ...EXTERIOR_MODELS, ...CENTER_MODELS, ...WEST_MODELS, ...EAST_MODELS };
 
 /** Réactions des secteurs à l'état (ex. panneau du relais qui disparaît après le scan). */
@@ -735,13 +733,21 @@ function interactableModel(def: InteractableDef): { group: Group; height: number
     case "recharge": {
       block(g, 0.6, 1.3, 0.5, PALETTE.yellow, 0, 0, 0, 0.08);
       block(g, 0.46, 0.5, 0.06, PALETTE.steelDark, 0, 0.6, 0.25, 0.02);
+      // Jauge : 4 barres allumées quand la borne est chargée, éteintes (et voyant rouge) une fois utilisée.
+      // Elle se réarme quand on quitte le poste de sécurité (une charge par visite, voir refresh()).
+      const lit = new Group();
+      const dark = new Group();
       for (let i = 0; i < 4; i++) {
-        const cell = mesh(new BoxGeometry(0.34, 0.08, 0.04), glow(i < 3 ? PALETTE.amber : "#5a4a30"), 0, 0.7 + i * 0.1, 0.29, false);
-        g.add(cell);
+        lit.add(mesh(new BoxGeometry(0.34, 0.08, 0.04), glow(PALETTE.amber), 0, 0.7 + i * 0.1, 0.29, false));
+        dark.add(mesh(new BoxGeometry(0.34, 0.08, 0.04), glow("#4a3c28"), 0, 0.7 + i * 0.1, 0.29, false));
       }
+      dark.add(mesh(new SphereGeometry(0.045, 8, 6), glow(PALETTE.danger), 0.22, 1.08, 0.27, false));
+      dark.visible = false;
+      g.add(lit, dark);
+      g.userData.charge = { lit, dark };
       const coil = mesh(new TorusGeometry(0.16, 0.035, 6, 14), toon(PALETTE.outline), 0, 0.3, 0.28);
       g.add(coil);
-      panel(g, signTexture("PILES ∞", { bg: PALETTE.paper, fg: PALETTE.outline, width: 256, height: 64 }), 0, 1.15, 0.255, 0.42, 0.1, 0);
+      panel(g, signTexture("1 CHARGE / VISITE", { bg: PALETTE.paper, fg: PALETTE.outline, width: 320, height: 64 }), 0, 1.15, 0.255, 0.5, 0.1, 0);
       height = 1.7;
       break;
     }
@@ -882,11 +888,10 @@ export function buildWorld(scene: Scene): WorldView {
   }
 
   const staticColliders = [...colliders];
-  const view: WorldView = { root, colliders: [], interactables, refresh, update, setEndingTint, shudder, setLowQuality };
+  const view: WorldView = { root, colliders: [], interactables, refresh, update, shudder, setLowQuality };
   const motes = dust(root, dustCenters, lowDust() ? 30 : 50);
   let lowQuality = false;
   let shudderTime = 0;
-  let tint: Color | null = null;
   const pool: PointLight[] = [];
   for (let i = 0; i < LIGHT_POOL; i++) {
     const light = new PointLight("#ffffff", 0, 8, 1.6);
@@ -915,15 +920,16 @@ export function buildWorld(scene: Scene): WorldView {
       const available = interactableAvailable(item.def, state);
       item.group.visible = available;
       item.group.userData.available = available;
+      const charge = item.group.userData.charge as { lit: Group; dark: Group } | undefined;
+      if (charge) {
+        charge.lit.visible = !state.rechargeSpent;
+        charge.dark.visible = state.rechargeSpent;
+      }
       const box = solidItems.get(id);
       if (box && available) active.push(box);
     }
     view.colliders = active;
     for (const hook of REFRESH_HOOKS) hook(view, state);
-  }
-
-  function setEndingTint(ending: string): void {
-    tint = ending === "" ? null : new Color(ending === "mother" ? "#ff6737" : "#63e9e0");
   }
 
   function shudder(): void {
@@ -951,7 +957,7 @@ export function buildWorld(scene: Scene): WorldView {
       const wobble = Math.sin(time * 9 + f.seed * 7) * 0.5 + Math.sin(time * 23 + f.seed * 3) * 0.5;
       const cut = Math.sin(time * 1.7 + f.seed * 11) > 0.93 - f.nervous * 0.1 && Math.sin(time * 41 + f.seed) > 0 ? 0.15 : 1;
       f.level = (1 - f.nervous * 0.25 + wobble * f.nervous * 0.2) * (f.nervous > 0.3 ? cut : 1) * dim;
-      if (f.bulb) (f.bulb.material as MeshBasicMaterial).color.set(tint ?? f.color).multiplyScalar(0.4 + f.level * 0.6);
+      if (f.bulb) (f.bulb.material as MeshBasicMaterial).color.set(f.color).multiplyScalar(0.4 + f.level * 0.6);
     }
     // Les lampes les plus proches du joueur occupent les places de lumière (coût constant).
     poolClock -= dt;
@@ -963,7 +969,7 @@ export function buildWorld(scene: Scene): WorldView {
       const f = assigned[i];
       if (!f) { light.intensity = 0; return; }
       light.position.set(f.x, f.y, f.z);
-      light.color.set(tint ?? f.color);
+      light.color.set(f.color);
       light.distance = f.distance;
       light.intensity = f.base * f.level;
     });

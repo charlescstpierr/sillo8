@@ -14,9 +14,9 @@ Changement d'arme : 1 / 2, molette de la manette LB/RB, bouton ⇄ au tactile. L
 
 ## Ressources (`game/state.ts`)
 
-- **Ferraille** = `components` : génératrice (3), module radio (2), amélioration de la lampe (3), presse à clous (1 → 16 clous).
+- **Ferraille** = `components` : génératrice (3), module radio (2), amélioration de la lampe (3), presse à clous (1 → 16 clous). La ferraille des objectifs pas encore atteints (génératrice, radio) est **réservée** : la presse et le banc refusent d'y toucher, avec un message. On ne peut donc jamais se bloquer (test `tests/unit/noblock.test.ts`).
 - **Clous** = `ammo` (chargeur, 16) + `reserve`.
-- **Charge de lampe** = `energy` ; **piles** de rechange = `cells` (+40) ; borne de recharge gratuite au poste de sécurité.
+- **Charge de lampe** = `energy` ; **piles** de rechange = `cells` (+40) ; borne de recharge au poste de sécurité : **une charge par visite**, réarmée quand on quitte le poste (jauge éteinte et voyant rouge tant qu'elle est vide).
 - **Bandages** (+30), **trousses** = `medkits` (+60), **conserves** = `cans` (+15). H soigne au mieux (`heal()`), B met une pile.
 
 ## Carnet d'indices (`game/notes.ts`)

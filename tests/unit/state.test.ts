@@ -15,12 +15,12 @@ describe("ressources", () => {
     expect(s.energy).toBe(80);
     expect(s.spendEnergy(-10)).toBe(false);
     expect(s.spendEnergy(Infinity)).toBe(false);
-    expect(s.collect("parts-a", "components", 7)).toBe(true);
-    expect(s.collect("parts-a", "components", 7)).toBe(false);
+    expect(s.collect("parts-a", "components", 10)).toBe(true);
+    expect(s.collect("parts-a", "components", 10)).toBe(false);
     expect(s.collect("fake", "components", -1)).toBe(false);
     expect(s.collect("fake", "unknown", 1)).toBe(false);
     expect(s.upgrade()).toBe(true);
-    expect([s.components, s.maxEnergy()]).toEqual([4, 150]);
+    expect([s.components, s.maxEnergy()]).toEqual([7, 150]);
     expect(s.upgrade()).toBe(false);
     s.spendEnergy(s.energy);
     s.recharge();
@@ -41,7 +41,7 @@ describe("ressources", () => {
     expect(s.fireRound() && s.ammo === 15).toBe(true);
     expect(s.reloadRounds()).toBe(1);
     expect([s.reserve, s.ammo]).toEqual([15, 16]);
-    expect(s.craftNails() && s.reserve === 31 && s.components === 3).toBe(true);
+    expect(s.craftNails() && s.reserve === 31 && s.components === 6).toBe(true);
     s.markDefeated("z");
     s.markDefeated("z");
     expect(s.defeated).toEqual(["z"]);

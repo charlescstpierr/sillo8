@@ -1,3 +1,4 @@
+// operator = Lou, le héros ; sans lien avec l'opératrice de nuit de l'histoire.
 // L'opérateur : petit explorateur chibi en « pâte à modeler » — bonnet olive, veste moutarde à capuche,
 // écharpe, sacoche en cuir en bandoulière, pantalon cargo et grosses bottes fourrées.
 // Outils de bricoleur : clé à molette (corps à corps), lance-clous à batterie, lampe frontale qui éblouit.

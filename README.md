@@ -62,7 +62,7 @@ lance-clous et voient mieux qui se tient debout : s'accroupir aide à passer.
 | Ctrl ou C | B | ⤓ | S'accroupir |
 | Molette | Croix haut/bas | — | Zoom |
 | Échap | Start | ❚❚ | Pause |
-| F5 / F9 | — | — | Sauvegarder / charger |
+| F5 / F9 | — | — | Sauvegarde manuelle / charger la plus récente |
 | H / B | — | — | Se soigner / mettre une pile |
 
 ## Aide en jeu
@@ -86,6 +86,13 @@ monte quand des zombies en alerte sont tout près, et un battement de cœur sous
 `engine.audio.cue("radio_static", x, z)` (ou `engine.events.emit({ type: "cue", name, x, z })`).
 Volumes et vibration dans les réglages.
 
+## Sauvegardes
+
+Trois emplacements : **Début d'étage** (en entrant dans l'étage), **Lieu sûr** (automatique, seulement
+dans une pièce sûre et hors danger) et **Manuel** (F5, menu pause). « Continuer » reprend la plus récente ;
+le menu permet aussi de choisir l'emplacement. Les anciennes sauvegardes sont migrées, jamais perdues.
+Détails, champs `ext` pour les nouveaux systèmes et code de sauvegarde : `docs/SAUVEGARDES.md`.
+
 ## Vérifier
 
 ```sh
@@ -98,7 +105,7 @@ et n'affichent que quelques images par capture.
 ## Structure
 
 ```
-app/                 pages Next.js, route optionnelle /api/dialogue
+app/                 pages Next.js (aucune route serveur : le jeu tient dans le navigateur)
 game/                logique en TypeScript pur : état, objectifs (progress.ts), plan (level.ts), plan du carnet
                      (plan.ts : pièces visitées, brouillard), collisions,
                      caméra, visée, entrées, combat, zombies, notes

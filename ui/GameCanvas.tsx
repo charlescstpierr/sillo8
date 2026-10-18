@@ -11,6 +11,8 @@ function storage() {
     const probe = "__sillo8_probe";
     window.localStorage.setItem(probe, "1");
     window.localStorage.removeItem(probe);
+    // Demande au navigateur de ne pas purger les sauvegardes (sans effet garanti sur iPhone : voir docs/SAUVEGARDES.md).
+    void navigator.storage?.persist?.().catch(() => undefined);
     return window.localStorage;
   } catch {
     return null;

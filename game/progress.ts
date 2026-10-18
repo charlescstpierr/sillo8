@@ -1,6 +1,6 @@
 // Progression de l'étage 1, sans rendu : ce que fait la touche E sur chaque objet, et les objectifs
 // déclenchés en se déplaçant. Le moteur fournit les effets (messages, tremblement, fiches).
-import { ENTRANCE_TRIGGER, roomAt, type InteractableDef, type InteractableKind } from "./level";
+import { ENTRANCE_TRIGGER, RECHARGE_ROOM, roomAt, type InteractableDef, type InteractableKind } from "./level";
 import { NOTES } from "./notes";
 import { GENERATOR_PARTS, NAILS_PER_SCRAP, RADIO_PARTS, UPGRADE_PARTS, type SiloState } from "./state";
 
@@ -68,14 +68,17 @@ export function interactWith(def: InteractableDef, s: SiloState, fx: ProgressEff
         fx.notify(`Presse à clous : +${NAILS_PER_SCRAP} clous · réserve ${s.reserve}.`);
         return true;
       }
-      fx.notify(s.components < 1 ? "La presse demande une ferraille." : "Sacoche pleine de clous.");
+      if (s.components < 1) fx.notify("La presse demande une ferraille.");
+      else if (s.spareParts() < 1) fx.notify(reservedMessage(s));
+      else fx.notify("Sacoche pleine de clous.");
       return false;
     case "upgrade":
       if (s.upgrade()) {
         fx.notify("Lampe améliorée : charge 150.");
         return true;
       }
-      fx.notify(`Le banc demande ${UPGRADE_PARTS} ferrailles (${s.components} en poche).`);
+      if (s.components >= UPGRADE_PARTS && s.spareParts() < UPGRADE_PARTS) fx.notify(reservedMessage(s, UPGRADE_PARTS));
+      else fx.notify(`Le banc demande ${UPGRADE_PARTS} ferrailles (${s.components} en poche).`);
       return false;
     case "comms":
       if (s.repairComms()) {
@@ -105,13 +108,27 @@ export function interactWith(def: InteractableDef, s: SiloState, fx: ProgressEff
       }
       fx.notify("Accès verrouillé. Il faut une clé d'accès.");
       return false;
-    case "recharge":
-      s.recharge();
-      fx.notify("Lampe rechargée.");
-      return true;
+    case "recharge": {
+      const result = s.useRechargeStation();
+      if (result === "ok") fx.notify("Lampe rechargée. La borne est vide : elle se recharge pendant votre absence.");
+      else if (result === "full") fx.notify("La lampe est déjà pleine. Gardez la borne pour plus tard.");
+      else fx.notify(RECHARGE_SPENT);
+      return result === "ok";
+    }
     default:
       return false;
   }
+}
+
+export const RECHARGE_SPENT = "Borne vide. Elle se recharge quand vous quittez le poste de sécurité : revenez plus tard.";
+
+/** Message clair quand la presse ou le banc refusent la ferraille gardée pour les objectifs. */
+export function reservedMessage(s: SiloState, cost = 1): string {
+  const uses: string[] = [];
+  if (!s.has("generator_powered")) uses.push(`${GENERATOR_PARTS} pour la génératrice`);
+  if (!s.has("radio_module")) uses.push(`${RADIO_PARTS} pour le module radio`);
+  const spare = s.spareParts();
+  return `Ferraille réservée : ${uses.join(" et ")}. ${spare > 0 ? `Seulement ${spare} de libre, il en faut ${cost}.` : "Aucune de libre pour l'instant."}`;
 }
 
 /** Objectifs déclenchés en se déplaçant (entrée, hub), et pièces visitées pour le plan. Retourne les messages à afficher. */
@@ -119,6 +136,8 @@ export function checkTriggers(s: SiloState, x: number, z: number): string[] {
   const messages: string[] = [];
   const room = roomAt(x, z);
   if (room) s.visitRoom(room.id);
+  // La borne se réarme dès qu'on quitte le poste de sécurité (une charge par visite).
+  if (room && room.id !== RECHARGE_ROOM) s.rearmRechargeStation();
   if (!s.has("entrance_explored") && Math.hypot(x - ENTRANCE_TRIGGER.x, z - ENTRANCE_TRIGGER.z) < ENTRANCE_TRIGGER.radius && s.exploreEntrance()) {
     messages.push("La porte de sécurité est morte. Plus de courant. La génératrice doit être à l'ouest.");
   }
