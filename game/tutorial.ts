@@ -91,7 +91,7 @@ export const TUTORIAL_STEPS: readonly StepDef[] = [
     texts: {
       keyboard: ["E", "pour examiner : lisez les notes des survivants, ramassez ce qui traîne."],
       gamepad: ["A", "pour examiner : lisez les notes des survivants, ramassez ce qui traîne."],
-      touch: ["✋", "pour examiner : lisez les notes, ramassez ce qui traîne."],
+      touch: ["EXAMINER", "pour lire les notes et ramasser ce qui traîne."],
     },
     ready: (o, done) => done.has("move") && o.noteDistance <= TUTORIAL_RANGE.note,
     achieved: (o) => o.interacted,

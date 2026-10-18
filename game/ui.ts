@@ -4,7 +4,9 @@ import type { Character } from "./state";
 export type UiMode =
   | "menu" | "playing" | "pause" | "settings" | "inventory" | "dialogue" | "conclusion" | "death"
   /** Fiche de lecture d'une note (identifiant dans `character`) et carnet des notes lues. */
-  | "note" | "journal";
+  | "note" | "journal"
+  /** Gros plan d'un objet d'enquête (identifiant dans `character`). */
+  | "closeup";
 
 export interface UiSnapshot {
   mode: UiMode;

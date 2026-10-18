@@ -95,24 +95,25 @@
   box-shadow: 0 1px 0 rgba(30, 20, 13, 0.5);
 }
 
-.fire {
+/* Gros bouton : EXAMINER (interagir, lire, examiner). L'enquête d'abord. */
+.examine {
   right: 0;
   bottom: 0;
   width: 98px;
   height: 98px;
-  font-size: calc(14px * var(--text-scale, 1));
-  letter-spacing: 0.5px;
+  font-size: calc(13px * var(--text-scale, 1));
+  letter-spacing: 0.3px;
   background: var(--mustard) !important;
 }
 
-.fire[data-weapon="1"] {
-  background: #c97a4a !important;
-  color: var(--cream) !important;
+.examine[data-ready="true"] {
+  background: #ffd76a !important;
+  animation: pulse 0.9s ease-in-out infinite;
 }
 
-.fire svg {
-  width: 44px;
-  height: 44px;
+.examine svg {
+  width: 46px;
+  height: 46px;
   margin-bottom: 1px;
 }
 
@@ -137,8 +138,8 @@
 }
 
 .small[data-slot="swap"] {
-  right: 98px;
-  bottom: 80px;
+  right: 160px;
+  bottom: 104px;
   width: 46px;
   height: 46px;
   font-size: calc(22px * var(--text-scale, 1));
@@ -146,10 +147,15 @@
   background: var(--olive) !important;
 }
 
-.small[data-slot="use"] { right: 22px; bottom: 112px; width: 56px; height: 56px; font-size: calc(24px * var(--text-scale, 1)); }
-.small[data-slot="use"][data-ready="true"] { background: #ffe39a !important; animation: pulse 0.9s ease-in-out infinite; }
-.small[data-slot="reload"] { right: 152px; bottom: 132px; width: 44px; height: 44px; font-size: calc(17px * var(--text-scale, 1)); }
-.small[data-slot="crouch"] { right: 184px; bottom: 76px; width: 44px; height: 44px; font-size: calc(18px * var(--text-scale, 1)); }
+/* Frapper / tirer : plus petit, au-dessus d'EXAMINER. */
+.small[data-slot="fire"] { right: 16px; bottom: 108px; width: 62px; height: 62px; font-size: calc(9.5px * var(--text-scale, 1)); color: var(--cream) !important; background: var(--leather-light) !important; }
+.small[data-slot="fire"][data-weapon="1"] { background: #c97a4a !important; }
+.small[data-slot="fire"] svg { width: 30px; height: 30px; }
+.small[data-slot="uv"] { right: 104px; bottom: 74px; width: 48px; height: 48px; font-size: calc(10px * var(--text-scale, 1)); color: #f1e6ff !important; background: #5d3fa0 !important; }
+.small[data-slot="uv"] svg { width: 26px; height: 26px; }
+.small[data-slot="uv"][aria-pressed="true"] { background: #9a6cf0 !important; box-shadow: 0 0 0 4px rgba(154, 108, 240, 0.45), 0 3px 0 rgba(30, 20, 13, 0.5); }
+.small[data-slot="reload"] { right: 166px; bottom: 156px; width: 44px; height: 44px; font-size: calc(17px * var(--text-scale, 1)); }
+.small[data-slot="crouch"] { right: 184px; bottom: 54px; width: 44px; height: 44px; font-size: calc(18px * var(--text-scale, 1)); }
 .small[data-slot="crouch"][data-ready="true"] { background: var(--mustard) !important; }
 
 @keyframes pulse {

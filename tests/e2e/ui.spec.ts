@@ -187,6 +187,8 @@ test("téléphone paysage : menu, jeu, sac, note, carnet, pause", async ({ brows
   await expect.poll(() => mode(page)).toBe("playing");
   await page.evaluate(() => { (window as any).__silo.input.device = "touch"; });
   await expect(page.getByRole("button", { name: "Sac" })).toBeVisible();
+  // Le gros bouton est EXAMINER ; frapper passe sur un bouton plus petit.
+  await expect(page.getByRole("button", { name: "Examiner" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Frapper" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Recharger" })).toHaveCount(0);
   await shot(page, "hud-mobile");
@@ -270,7 +272,7 @@ test("objectifs pliables : téléphone en portrait", async ({ browser }) => {
   const box = await rail.boundingBox({ timeout: 10_000 });
   expect(box).not.toBeNull();
   expect(box!.width, "rail étroit").toBeLessThan(60);
-  for (const name of ["Frapper", "Éblouir", "Changer d'arme", "Interagir", "S'accroupir"]) {
+  for (const name of ["Examiner", "Frapper", "Éblouir", "Lampe UV", "Changer d'arme", "S'accroupir"]) {
     const button = await page.getByRole("button", { name, exact: true }).boundingBox({ timeout: 10_000 });
     expect(button, name).not.toBeNull();
     const apart = box!.y + box!.height <= button!.y || button!.y + button!.height <= box!.y || box!.x + box!.width <= button!.x || button!.x + button!.width <= box!.x;

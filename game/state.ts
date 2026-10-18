@@ -113,6 +113,11 @@ export class SiloState {
     for (const listener of this.listeners) listener();
   }
 
+  /** Prévient les abonnés d'un changement fait hors de cette classe (ex. enquête modifiée sur place). */
+  markChanged(): void {
+    this.changed();
+  }
+
   has(fact: FactId): boolean {
     return this.facts.includes(fact);
   }
