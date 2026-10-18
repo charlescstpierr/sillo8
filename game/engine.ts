@@ -67,6 +67,11 @@ export class Engine {
   private noticeId = 0;
   private noticeTime = 0;
   private worldDirty = true;
+  private autosaveClock = 0;
+  private autosaveDue = false;
+  /** Temps de jeu de la dernière sauvegarde automatique (pour le petit tampon « Sauvegardé »). */
+  private savedAt = -10;
+  private progressKey = "";
   private sun: DirectionalLight;
   private shadowBlob: Mesh;
   private readonly tmp = new Vector3();
@@ -137,7 +142,20 @@ export class Engine {
     };
 
     this.dialogue.setup(this.state);
-    this.state.subscribe(() => { this.worldDirty = true; });
+    this.state.subscribe(() => {
+      this.worldDirty = true;
+      // Un progrès (objectif, note, objet ramassé) déclenche une sauvegarde automatique.
+      const key = `${this.state.facts.length}:${this.state.notes.length}:${this.state.collected.length}:${this.state.upgraded}`;
+      if (key !== this.progressKey) {
+        this.progressKey = key;
+        this.autosaveDue = true;
+      }
+    });
+    if (typeof document !== "undefined") {
+      const flush = () => { if (this.ui.get().mode !== "menu") this.autosave(); };
+      document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
+      window.addEventListener("pagehide", flush);
+    }
     this.hud = new HudStore(this.snapshot());
     this.setLowQuality(this.lowQuality);
     this.refreshWorld();
@@ -228,6 +246,7 @@ export class Engine {
     this.notify("SILLO 8. L'entrée est juste devant. Avancez sans bruit.");
   }
 
+  /** Sauvegarde manuelle (F5, menu pause) : annonce le résultat. */
   saveGame(): boolean {
     if (!this.storage) {
       this.notify("Sauvegarde indisponible dans ce navigateur.");
@@ -237,11 +256,28 @@ export class Engine {
       this.notify("Sauvegarde indisponible dans cet état.");
       return false;
     }
+    const ok = this.writeSave();
+    this.notify(ok ? "Progression sauvegardée." : "Échec de sauvegarde.");
+    return ok;
+  }
+
+  /**
+   * Sauvegarde automatique, silencieuse : toutes les 30 s de jeu, à chaque progrès (objectif, note, objet ramassé)
+   * et quand la page passe en arrière-plan. Jamais pendant la mort.
+   */
+  autosave(): boolean {
+    this.autosaveClock = 0;
+    this.autosaveDue = false;
+    if (!this.storage || this.state.health <= 0) return false;
+    const ok = this.writeSave();
+    if (ok) this.savedAt = this.elapsed;
+    return ok;
+  }
+
+  private writeSave(): boolean {
     this.state.playerPosition = [this.player.x, 0, this.player.z];
     this.state.playerYaw = this.player.yaw;
-    const result = this.state.saveGame(this.storage);
-    this.notify(result === "ok" ? "Progression sauvegardée." : "Échec de sauvegarde.");
-    return result === "ok";
+    return this.state.saveGame(this.storage!) === "ok";
   }
 
   hasSave(): boolean {
@@ -410,6 +446,8 @@ export class Engine {
   }
 
   private simulate(dt: number): void {
+    this.autosaveClock += dt;
+    if (this.autosaveDue || this.autosaveClock >= 30) this.autosave();
     this.elapsed += dt;
     this.state.elapsed += dt;
     const input = this.input;
@@ -607,6 +645,7 @@ export class Engine {
       weapon: this.combat?.weapon ?? 0,
       reloading: this.player?.reloading ?? false,
       lightReady: (this.combat?.lightCooldown ?? 0) <= 0 && s.energy >= LAMP.energy,
+      autosaved: this.elapsed - this.savedAt < 1.6,
       notice: this.noticeTime > 0 ? this.notice : "",
       noticeId: this.noticeId,
       prompt: this.focus ? { name: this.focus.name, action: this.focus.action } : null,

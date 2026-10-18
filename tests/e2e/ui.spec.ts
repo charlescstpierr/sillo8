@@ -3,14 +3,14 @@ import { expect, test, type Page } from "@playwright/test";
 
 const SHOTS = process.env.SHOTS_DIR ?? "docs/screenshots";
 
-async function boot(page: Page) {
+async function boot(page: Page, keepSave = false) {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
   await page.goto("/");
   await page.waitForFunction(() => Boolean((window as any).__silo), null, { timeout: 30_000 });
-  await page.evaluate(() => {
-    window.localStorage.removeItem("sillo8-save");
+  await page.evaluate((keep) => {
+    if (!keep) window.localStorage.removeItem("sillo8-save");
     // Le rendu logiciel (swiftshader) prend des secondes par image : la simulation tourne
     // sans dessiner, et on ne dessine qu'au moment des captures.
     const engine = (window as any).__silo;
@@ -19,7 +19,7 @@ async function boot(page: Page) {
     engine.__draw = renderer.render.bind(renderer);
     renderer.render = () => undefined;
     setInterval(() => engine.tick(1 / 30), 40);
-  });
+  }, keepSave);
   return errors;
 }
 
@@ -282,5 +282,53 @@ test("objectifs pliables : ordi au clic", async ({ page }) => {
   expect(await visibleSteps(page)).toBe(0);
   // Le clic sur le panneau ne doit pas tirer : le chargeur reste plein.
   expect(await page.evaluate(() => (window as any).__silo.state.ammo)).toBe(16);
+  expect(errors).toEqual([]);
+});
+
+test("sauvegarde automatique : progrès, minuterie, arrière-plan, reprise", async ({ page }) => {
+  test.setTimeout(300_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  const errors = await boot(page);
+  const saved = () => page.evaluate(() => {
+    const raw = window.localStorage.getItem("sillo8-save");
+    return raw ? JSON.parse(raw) : null;
+  });
+  await page.evaluate(() => (window as any).__silo.newGame());
+  // Un objet ramassé déclenche une sauvegarde à l'image suivante.
+  await page.evaluate(() => (window as any).__silo.state.collect("part_0", "components", 1));
+  await expect.poll(async () => (await saved())?.collected ?? []).toContain("part_0");
+  await expect(page.getByRole("status").filter({ hasText: "Sauvegardé" })).toBeVisible();
+  // Toutes les 30 s de jeu, même sans progrès : la position suit le joueur.
+  await page.evaluate(() => {
+    const engine = (window as any).__silo;
+    engine.player.x = 4;
+    engine.player.z = 38;
+  });
+  // boot() fait avancer la simulation de 1/30 s toutes les 40 ms : 30 s de jeu ≈ 36 s réelles.
+  await expect.poll(async () => (await saved())?.player_position?.[0] ?? 0, { timeout: 60_000 }).toBeCloseTo(4, 0);
+  // Passage en arrière-plan (téléphone verrouillé, autre appli) : sauvegarde immédiate.
+  await page.evaluate(() => {
+    const engine = (window as any).__silo;
+    engine.state.readNote("note_entrance", false);
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  expect((await saved())?.notes).toContain("note_entrance");
+  // Après rechargement, le menu propose de continuer et la partie revient telle quelle.
+  errors.push(...(await boot(page, true)));
+  await expect(page.getByRole("button", { name: /CONTINUER/i })).toBeEnabled();
+  await page.getByRole("button", { name: /CONTINUER/i }).click({ force: true });
+  await expect.poll(() => mode(page)).toBe("playing");
+  const state = await page.evaluate(() => {
+    const engine = (window as any).__silo;
+    return { notes: engine.state.notes, components: engine.state.components };
+  });
+  expect(state.notes).toContain("note_entrance");
+  expect(state.components).toBe(1);
+  // Mort : aucune sauvegarde ne remplace la dernière.
+  const before = JSON.stringify(await saved());
+  await page.evaluate(() => (window as any).__silo.damagePlayer(999));
+  await page.waitForTimeout(500);
+  expect(JSON.stringify(await saved())).toBe(before);
   expect(errors).toEqual([]);
 });

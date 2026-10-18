@@ -27,6 +27,8 @@ export interface HudSnapshot {
   reloading: boolean;
   /** Vrai quand la lampe peut éblouir (charge suffisante et cadence écoulée). */
   lightReady: boolean;
+  /** Vrai pendant un court instant après une sauvegarde automatique. */
+  autosaved: boolean;
   notice: string;
   noticeId: number;
   prompt: { name: string; action: string } | null;

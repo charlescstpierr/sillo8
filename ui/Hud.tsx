@@ -110,6 +110,8 @@ export function Hud({ engine }: { engine: Engine }) {
 
       <Objectives hud={hud} touch={touch} />
 
+      {hud.autosaved ? <div className={styles.autosave} role="status">Sauvegardé</div> : null}
+
       {!touch && hud.device === "keyboard" ? (
         <p className={styles.hint} aria-label={HINT.map(([k, a]) => `${k} : ${a}`).join(" · ")}>
           {HINT.map(([key, action]) => (
