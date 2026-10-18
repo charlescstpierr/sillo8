@@ -3,7 +3,7 @@
 // Le contenu et la logique (conditions, effets sur les faits) viennent de game/conversation.ts.
 import { useEffect, useRef, useState } from "react";
 import type { Engine } from "@/game/engine";
-import { ConversationRun, type Line } from "@/game/conversation";
+import { ConversationRun, speakerStatus, type Line } from "@/game/conversation";
 import { PaperButton, Tag } from "./Paper";
 import { SpeakerPortrait } from "./Portraits";
 import styles from "./sheets.module.css";
@@ -61,13 +61,21 @@ export function DialogueSheet({ engine, conversation, touch }: { engine: Engine;
   };
 
   const speaker = data.speaker;
+  // Sans jauge : le nom qu'on donne à Lou, ce que fait le corps (recalculés à chaque réplique).
+  const status = speakerStatus(speaker.id, engine.state);
+  const calls = status.calls ? (status.calls === "…" ? "Elle ne t'appelle plus. Un silence." : speaker.id === "operatrice" ? `Elle t'appelle « ${status.calls} »` : `Il t'appelle « ${status.calls} »`) : "";
   return (
     <section className={styles.dialogue} aria-label={`Conversation avec ${speaker.name}`} data-sheet>
       <header className={styles.dialogueHead}>
-        <div className={styles.avatar}><SpeakerPortrait portrait={speaker.portrait} /></div>
+        <div className={styles.avatar} data-mood={status.mood}><SpeakerPortrait portrait={speaker.portrait} mood={status.mood} /></div>
         <div>
-          <Tag>{speaker.title}</Tag>
+          <Tag>{status.title && speaker.portrait !== "radio" ? status.title : speaker.title}</Tag>
           <h1 className={styles.title}>{speaker.name}</h1>
+          {calls && speaker.portrait !== "radio" && (
+            <p className={styles.muted} data-testid="speaker-status" style={{ margin: "2px 0 0", fontSize: "0.85em" }}>
+              {calls}{status.gesture ? ` · ${status.gesture}` : ""}
+            </p>
+          )}
         </div>
       </header>
 

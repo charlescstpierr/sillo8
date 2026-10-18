@@ -29,6 +29,11 @@ export interface Horde {
   update(dt: number, ctx: HordeContext): void;
   /** Bruit (coup, clou) : les zombies dans le rayon viennent enquêter. */
   hearNoise(x: number, z: number, radius: number): void;
+  /**
+   * Attire un seul mordu vers un point, comme un bruit qu'il serait seul à entendre (facultatif ; ex. le commis qui
+   * revient vers son ancien patron, scène M4). Sans effet s'il poursuit déjà le joueur. Vrai s'il y va.
+   */
+  lure?(id: string, x: number, z: number, seconds?: number): boolean;
   /** Zombies vivants, pour la visée assistée, la clé à molette et la lampe. */
   aimCandidates(): AimCandidate[];
   /** Premier zombie touché par un rayon horizontal partant de (x, z) dans la direction (dx, dz) normalisée. */

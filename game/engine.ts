@@ -32,6 +32,7 @@ import { buildGuide } from "./render/guide";
 import { Atmosphere } from "./render/atmosphere";
 import { InquiryDirector } from "./investigation/director";
 import { recordKey, recordOf } from "./investigation/record";
+import { PeopleDirector } from "./content/people_director";
 
 export interface EngineOptions {
   lowQuality?: boolean;
@@ -72,6 +73,8 @@ export class Engine {
   readonly guide = buildGuide();
   /** Enquête : gros plans, lampe UV, pensées de Lou, tableau (game/investigation). */
   readonly inquiry: InquiryDirector;
+  /** Les personnes : survivants, confiance, moments clés M1 à M7, mordus examinés (game/content/people_director.ts). */
+  readonly people: PeopleDirector;
 
   private clock = new Clock();
   private frame = 0;
@@ -163,6 +166,11 @@ export class Engine {
       },
     });
     this.inquiry.attach(this.world.interactables);
+    this.people = new PeopleDirector({
+      scene: this.scene, state: this.state, horde: this.horde, inquiry: this.inquiry, events: this.events,
+      notify: (text) => this.notify(text), openConversation: (id) => this.openConversation(id), mode: () => this.ui.get().mode,
+    });
+    this.people.attach(this.world.interactables);
     this.progressEffects = {
       notify: (text) => this.notify(text),
       shudder: () => this.world.shudder(),
@@ -173,7 +181,7 @@ export class Engine {
     this.state.subscribe(() => {
       this.worldDirty = true;
       // Un progrès (objectif, note, objet ramassé) déclenche une sauvegarde automatique.
-      const key = `${this.state.facts.length}:${this.state.notes.length}:${this.state.collected.length}:${this.state.upgraded}:${recordKey(recordOf(this.state))}`;
+      const key = `${this.state.facts.length}:${this.state.notes.length}:${this.state.collected.length}:${this.state.upgraded}:${recordKey(recordOf(this.state))}:${this.state.flags.length}:${JSON.stringify(this.state.relations)}`;
       if (key !== this.progressKey) {
         this.progressKey = key;
         this.autosaveDue = true;
@@ -402,6 +410,7 @@ export class Engine {
     this.rig.snap(new Vector3(x, 0, z));
     this.tutorial.start(this.state);
     this.inquiry.reset();
+    this.people.reset();
     this.atmosphere.snap();
   }
 
@@ -600,6 +609,7 @@ export class Engine {
     // Objectifs déclenchés en se déplaçant
     for (const message of checkTriggers(this.state, this.player.x, this.player.z)) this.notify(message);
     this.inquiry.update(dt, this.player.x, this.player.z, this.player.yaw);
+    this.people.update(dt, this.player.x, this.player.z);
 
     this.noticeTime = Math.max(0, this.noticeTime - dt);
     this.state.playerPosition = [this.player.x, 0, this.player.z];
@@ -655,6 +665,7 @@ export class Engine {
   }
 
   available(def: InteractableDef): boolean {
+    if (def.talk) return this.people.available(def);
     return interactableAvailable(def, this.state);
   }
 
@@ -678,6 +689,10 @@ export class Engine {
   }
 
   interact(def: InteractableDef): void {
+    if (def.talk) {
+      this.events.emit({ type: "interact", id: def.id, changed: this.people.interact(def) });
+      return;
+    }
     if (def.examine) {
       this.events.emit({ type: "interact", id: def.id, changed: this.inquiry.examine(def.examine) });
       return;

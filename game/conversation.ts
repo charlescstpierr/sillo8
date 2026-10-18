@@ -27,13 +27,23 @@
 //
 // Conditions (`when`) : { fact } (objectif atteint ou fait posé par une conversation), { note } (note lue),
 // { trust: "cuisine", min: 2 } ou { trust, max }, et { all: [...] }, { any: [...] }, { not: {...} }.
+// Enquête (state.ext.investigation) : { card } (carte obtenue), { deduction } (X8, C5…), { unlocked } (« dialogue:… »,
+// « fact:… »). Sacoche : { item: "bandages", min: 1 }.
 // Effets (`effects`) : { flag } / { unflag } (faits de conversation), { trust, delta } (confiance −5 → 5),
-// { remember } (mémoire de la partie). Tout est sauvegardé (state.flags, state.relations).
+// { remember } (mémoire de la partie), { item, delta } (donner ou recevoir un objet), { gesture } (geste de
+// confiance nommé, appliqué par game/content/people.ts : marches, plafonds, « Cuisine a remarqué. »).
+// Tout est sauvegardé (state.flags, state.relations, state.ext).
+// Texte : « {nom} » est remplacé par le nom que l'interlocuteur donne à Lou (« l'étranger », « le bricoleur », « Lou »).
 // Le moteur ouvre une conversation avec engine.openConversation(id).
 import type { SiloState } from "./state";
+import { recordOf } from "./investigation/record";
 
 /** Portrait dessiné dans ui/Portraits.tsx. */
-export type PortraitId = "radio" | "survivor" | "hero";
+export type PortraitId = "radio" | "survivor" | "hero" | "cuisine" | "operatrice";
+
+/** Objets de la sacoche qu'une conversation peut donner ou recevoir. */
+export type ItemKind = "bandages" | "cells" | "cans" | "medkits" | "reserve";
+const ITEM_MAX: Record<ItemKind, number> = { bandages: 99, cells: 99, cans: 99, medkits: 99, reserve: 999 };
 
 export interface Speaker {
   /** Identifiant de l'interlocuteur (aussi la clé de sa confiance dans state.relations). */
@@ -49,6 +59,10 @@ export type Condition =
   | { fact: string }
   | { note: string }
   | { trust: string; min?: number; max?: number }
+  | { card: string }
+  | { deduction: string }
+  | { unlocked: string }
+  | { item: ItemKind; min: number }
   | { all: Condition[] }
   | { any: Condition[] }
   | { not: Condition };
@@ -57,7 +71,50 @@ export type Effect =
   | { flag: string }
   | { unflag: string }
   | { trust: string; delta: number }
-  | { remember: string };
+  | { remember: string }
+  | { item: ItemKind; delta: number }
+  | { gesture: string };
+
+/** Ce que la feuille montre de l'interlocuteur, selon la confiance (sans jauge : le nom, le corps, la porte). */
+export interface SpeakerStatus {
+  /** Étiquette (« SUR LA CHAÎNE », « DEHORS », « À L'INTERPHONE »). */
+  title?: string;
+  /** Comment il appelle Lou (« l'étranger »…). */
+  calls?: string;
+  /** Ce que fait son corps (« Couperet levé. Il recule. »). */
+  gesture?: string;
+  /** Humeur du portrait (ui/Portraits.tsx). */
+  mood?: string;
+}
+
+/**
+ * Branchements fournis par le contenu (game/content/people.ts), pour garder ce module sans dépendance :
+ * le nom donné à Lou, l'état visible d'un interlocuteur, et l'application d'un geste de confiance.
+ */
+export const conversationHooks: {
+  name?: (speaker: string, state: SiloState) => string;
+  status?: (speaker: string, state: SiloState) => SpeakerStatus;
+  gesture?: (id: string, state: SiloState) => void;
+} = {};
+
+/** Remplace « {nom} » par le nom que l'interlocuteur donne à Lou ; « {Nom} » avec majuscule. */
+export function fillText(text: string, speaker: string, state: SiloState): string {
+  if (!text.includes("{")) return text;
+  const name = conversationHooks.name?.(speaker, state) ?? "l'étranger";
+  return text.replaceAll("{nom}", name).replaceAll("{Nom}", name.charAt(0).toUpperCase() + name.slice(1));
+}
+
+export function speakerStatus(speaker: string, state: SiloState): SpeakerStatus {
+  return conversationHooks.status?.(speaker, state) ?? {};
+}
+
+function adjustItem(state: SiloState, kind: ItemKind, delta: number): boolean {
+  const next = state[kind] + delta;
+  if (!Number.isInteger(delta) || next < 0 || next > ITEM_MAX[kind]) return false;
+  state[kind] = next;
+  state.markChanged();
+  return true;
+}
 
 export interface Line {
   /** "speaker" : l'interlocuteur ; "lou" : le héros ; "narration" : didascalie (« [grésillement] »). */
@@ -110,7 +167,10 @@ export function checkConversation(c: Conversation): string {
     }
     for (const effect of [...(node.effects ?? []), ...(node.choices ?? []).flatMap((ch) => ch.effects ?? [])]) {
       if ("trust" in effect && (!Number.isInteger(effect.delta) || Math.abs(effect.delta) > 5 || effect.delta === 0)) return `confiance hors bornes dans « ${id} »`;
+      if ("item" in effect && (!Number.isInteger(effect.delta) || effect.delta === 0 || Math.abs(effect.delta) > 32)) return `objet hors bornes dans « ${id} »`;
+      if ("flag" in effect && !/^[a-z][a-z0-9_.-]{0,79}$/.test(effect.flag)) return `fait invalide « ${effect.flag} » dans « ${id} »`;
     }
+    for (const line of node.lines) if (!line.text.trim()) return `réplique vide dans « ${id} »`;
   }
   return "";
 }
@@ -123,6 +183,14 @@ export function conditionMet(when: Condition | undefined, state: SiloState): boo
     const value = state.relations[when.trust] ?? 0;
     return value >= (when.min ?? -Infinity) && value <= (when.max ?? Infinity);
   }
+  // L'enquête pose aussi ses cartes (« card.<id> ») et ses déductions en minuscules (« x9 ») dans state.flags.
+  if ("card" in when) return recordOf(state).cards.includes(when.card) || state.knows(`card.${when.card}`);
+  if ("deduction" in when) {
+    const r = recordOf(state);
+    return r.deductions.includes(when.deduction) || r.deductions.includes(when.deduction.toLowerCase()) || state.knows(when.deduction.toLowerCase());
+  }
+  if ("unlocked" in when) return recordOf(state).unlocked.includes(when.unlocked);
+  if ("item" in when) return state[when.item] >= when.min;
   if ("all" in when) return when.all.every((c) => conditionMet(c, state));
   if ("any" in when) return when.any.some((c) => conditionMet(c, state));
   return !conditionMet(when.not, state);
@@ -133,6 +201,8 @@ export function applyEffects(effects: readonly Effect[] | undefined, state: Silo
     if ("flag" in effect) state.setFlag(effect.flag, true);
     else if ("unflag" in effect) state.setFlag(effect.unflag, false);
     else if ("trust" in effect) state.changeTrust(effect.trust, effect.delta);
+    else if ("item" in effect) adjustItem(state, effect.item, effect.delta);
+    else if ("gesture" in effect) conversationHooks.gesture?.(effect.gesture, state);
     else state.remember(effect.remember);
   }
 }
@@ -161,11 +231,12 @@ export class ConversationRun {
 
   view(): ConversationView {
     const node = this.conversation.nodes[this.node];
-    const lines = node.lines.filter((l) => conditionMet(l.when, this.state));
+    const who = this.conversation.speaker.id;
+    const lines = node.lines.filter((l) => conditionMet(l.when, this.state)).map((l) => ({ ...l, text: fillText(l.text, who, this.state) }));
     const choices = this.ended ? [] : (node.choices ?? [])
       .map((choice, index) => ({ choice, index }))
       .filter(({ choice }) => conditionMet(choice.when, this.state))
-      .map(({ choice, index }) => ({ index, text: choice.text }));
+      .map(({ choice, index }) => ({ index, text: fillText(choice.text, who, this.state) }));
     return { node: this.node, lines, choices, done: this.ended || choices.length === 0 };
   }
 

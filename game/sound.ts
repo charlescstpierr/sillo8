@@ -220,7 +220,8 @@ export class SoundDirector {
           memo.growl -= dt;
           // Repéré : grognement immédiat ; sinon espacés, plus fréquents en poursuite.
           const spotted = chasing && memo.mode !== "chase";
-          if (distance < GROWL_RANGE && (spotted || memo.growl <= 0) && this.growlGap <= 0 && z.stunned <= 0) {
+          // Marceau, le Silencieux, ne grogne jamais (game/level.ts, `silent`).
+          if (!z.spawn?.silent && distance < GROWL_RANGE && (spotted || memo.growl <= 0) && this.growlGap <= 0 && z.stunned <= 0) {
             this.emit({ type: "zombie_growl", id: z.id, x: z.x, z: z.z, chasing });
             this.growlGap = 0.8;
             memo.growl = chasing ? 2.5 + Math.random() * 2 : alert ? 4 + Math.random() * 3 : 8 + Math.random() * 8;

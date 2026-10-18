@@ -42,6 +42,39 @@ export const ZOMBIE_COLORS = {
   dust: "#cfc2a2",
 } as const;
 
+/**
+ * Les 5 mordus de l'étage 1 se reconnaissent à leur tenue (docs/HISTOIRE_PROPOSITION.md § 7) : couleur des habits
+ * et un accessoire lisible de haut, lié à l'indice qu'ils portent. Clé : identifiant de game/level.ts (ENEMIES).
+ */
+export interface ZombieLook {
+  /** Nom court (tests, débogage). */
+  name: string;
+  /** Habit principal (sweat, blouse, bleu de travail, uniforme) et sa teinte sombre (lambeaux). */
+  hoodie: string;
+  hoodieDark: string;
+  /** Écharpe (ou foulard). */
+  scarf?: string;
+  /** Pantalon. */
+  cargo?: string;
+  /** Coiffe : bonnet (défaut), casquette de garde, calot de cuisine. */
+  hat?: "beanie" | "cap" | "calot";
+  /** Accessoires : brassard, bracelet d'hôpital, tablier et plateau, blouse et montre, sifflet et galons. */
+  extras: ("armband" | "bracelet" | "bandage" | "wrench" | "apron" | "tray" | "watch" | "stethoscope" | "pocketNote" | "whistle" | "chevrons")[];
+}
+
+export const ZOMBIE_LOOKS: Record<string, ZombieLook> = {
+  /** Le guetteur : veste kaki de la garde, brassard orange « GARDE » où dépasse la feuille d'expédition. */
+  walker_ext: { name: "guetteur", hoodie: "#8d8a5c", hoodieDark: "#6f6c47", scarf: "#5a4a32", extras: ["armband"] },
+  /** Marceau : bleu de travail, avant-bras bandé, bracelet d'hôpital au poignet, clé à la main. */
+  walker_gen: { name: "marceau", hoodie: "#5b7a96", hoodieDark: "#435d75", cargo: "#4c5f72", scarf: "#3d3a36", extras: ["bandage", "bracelet", "wrench"] },
+  /** Le commis : veste blanche de cuisine, tablier, calot, foulard rouge, plateau vide à la main. */
+  crawler_cafe: { name: "commis", hoodie: "#e6dfcb", hoodieDark: "#c9c0a6", scarf: "#b4473a", hat: "calot", extras: ["apron", "tray"] },
+  /** L'infirmier : blouse vert d'eau, stéthoscope, montre au poignet, un mot dans la poche. */
+  walker_control: { name: "infirmier", hoodie: "#9fc9bd", hoodieDark: "#7aa89b", cargo: "#7aa89b", scarf: "#9fc9bd", extras: ["stethoscope", "watch", "pocketNote"] },
+  /** Sgt Bérard : uniforme bleu marine, casquette, galons, sifflet ; la page arrachée dépasse de la poche. */
+  walker_dorms: { name: "berard", hoodie: "#44506a", hoodieDark: "#323b50", cargo: "#3a4256", scarf: "#2b2f38", hat: "cap", extras: ["chevrons", "whistle", "pocketNote"] },
+};
+
 /** Couleurs des yeux : ambre en patrouille, rouge en chasse, cyan sous l'ARC-3, braise éteinte endormi. */
 export const EYE = { calm: "#ffa83b", chase: "#ff3418", stun: "#77ffff", sleep: "#6b4a2a" } as const;
 export type EyeState = keyof typeof EYE;
@@ -249,7 +282,7 @@ interface HeadParts {
 }
 
 /** Tête chibi : sphère, bonnet ou capuche, yeux luisants dépareillés, mâchoire pendante, langue et bave. */
-function buildHead(head: Group, radius: number, skin: Material, hoodie: Material, eye: MeshBasicMaterial, halo: MeshBasicMaterial, crawler: boolean): HeadParts {
+function buildHead(head: Group, radius: number, skin: Material, hoodie: Material, eye: MeshBasicMaterial, halo: MeshBasicMaterial, crawler: boolean, look?: ZombieLook): HeadParts {
   const C = ZOMBIE_COLORS;
   const r = radius;
   const extras: Object3D[] = [];
@@ -258,7 +291,18 @@ function buildHead(head: Group, radius: number, skin: Material, hoodie: Material
   head.add(bobble);
   const skull = part(bobble, sphere(r, 18, 14), skin, 0, r, 0);
   skull.scale.set(1.04, 0.94, 0.96);
-  if (crawler) {
+  if (look?.hat === "cap") {
+    // Casquette de garde bleu marine à visière et insigne, cheveux courts gris sur les tempes.
+    const crown = part(bobble, dome(r * 1.02), toon(look.hoodieDark), 0, r * 1.3, -r * 0.08);
+    crown.rotation.x = -0.18;
+    crown.scale.set(1, 0.8, 1);
+    const band = part(bobble, torus(r * 0.97, r * 0.11), toon("#22283a"), 0, r * 1.32, -r * 0.06);
+    band.rotation.x = Math.PI / 2 - 0.18;
+    const visor = part(bobble, rounded(r * 1.25, r * 0.08, r * 0.7, 0.03), toon("#1d2230"), 0, r * 1.3, r * 0.92);
+    visor.rotation.x = 0.28;
+    detail(bobble, rounded(r * 0.32, r * 0.26, r * 0.06, 0.02), "#d9b75a", 0, r * 1.62, r * 0.9).rotation.x = -0.4;
+    for (const side of [-1, 1]) part(bobble, sphere(r * 0.2, 8, 6), toon("#8f8c86"), side * r * 0.93, r * 1.0, -r * 0.15).scale.set(0.7, 1.1, 0.9);
+  } else if (crawler) {
     // Capuche relevée, déchirée sur le côté, bord roulé autour du visage
     const hood = part(bobble, dome(r * 1.12), hoodie, 0, r * 1.02, -r * 0.2);
     hood.rotation.x = -0.6;
@@ -293,6 +337,13 @@ function buildHead(head: Group, radius: number, skin: Material, hoodie: Material
     seam.userData.noOutline = true;
     seam.castShadow = false;
     extras.push(seam);
+  }
+  if (look?.hat === "calot") {
+    // Calot de cuisine blanc posé de travers sur la capuche, liseré rouge.
+    const calot = part(bobble, rounded(r * 1.25, r * 0.5, r * 0.8, 0.06), toon("#f2eee2"), r * 0.08, r * 1.95, -r * 0.15);
+    calot.rotation.set(-0.35, 0.2, 0.18);
+    const piping = part(bobble, rounded(r * 1.28, r * 0.09, r * 0.83, 0.03), toon("#b4473a"), r * 0.08, r * 1.74, -r * 0.08);
+    piping.rotation.set(-0.35, 0.2, 0.18);
   }
   // Yeux : un grand œil luisant à pupille fendue et un petit (asymétrie inquiétante), halo additif lisible de haut
   const eyes: [number, number, boolean][] = crawler ? [[-0.37, 0.088, true], [0.38, 0.06, false]] : [[-0.36, 0.105, true], [0.37, 0.068, false]];
@@ -498,16 +549,17 @@ function stitchedPatch(parent: Object3D, key: string, w: number, h: number, colo
 }
 
 /** Marcheur : ~1.8 m voûté, tête énorme, bras tendus vers l'avant, jambe droite raide (boiterie). */
-export function buildWalker(): ZombieRig {
+export function buildWalker(look?: ZombieLook): ZombieRig {
   const C = ZOMBIE_COLORS;
   const root = new Group();
-  root.name = "ZombieWalker";
+  root.name = look ? `ZombieWalker:${look.name}` : "ZombieWalker";
+  const K = lookColors(look, C.hoodie);
   const body = new Group();
   root.add(body);
   const scale = 1.12;
   body.scale.setScalar(scale);
   const skin = ownToon(C.skin);
-  const hoodie = ownToon(C.hoodie);
+  const hoodie = ownToon(K.hoodie);
   const [eye, halo] = eyeMaterials();
   const flaps: Group[] = [];
   const extras: Object3D[] = [];
@@ -522,20 +574,20 @@ export function buildWalker(): ZombieRig {
     const hip = new Group();
     hip.position.set(side * 0.12, 0, 0);
     hips.add(hip);
-    limb(hip, 0.27, 0.105, toon(C.cargo));
+    limb(hip, 0.27, 0.105, toon(K.cargo));
     if (side < 0) detail(hip, rounded(0.07, 0.09, 0.03, 0.01), C.leather, -0.1, -0.14, 0.02).rotation.y = -Math.PI / 2;
     const knee = new Group();
     knee.position.y = -0.24;
     hip.add(knee);
     if (side < 0) {
-      limb(knee, 0.2, 0.095, toon(C.cargo));
+      limb(knee, 0.2, 0.095, toon(K.cargo));
       const cuff = part(knee, torus(0.1, 0.035), toon(C.cream), 0, -0.17, 0);
       cuff.rotation.x = Math.PI / 2;
       part(knee, rounded(0.2, 0.13, 0.28, 0.06), toon(C.boot), 0, -0.22, 0.04);
     } else {
-      limb(knee, 0.12, 0.095, toon(C.cargo));
+      limb(knee, 0.12, 0.095, toon(K.cargo));
       // Jambe de pantalon effilochée
-      flap(knee, flaps, 0.08, 0.09, C.cargo, 0.05, -0.1, 0.06, 0.6);
+      flap(knee, flaps, 0.08, 0.09, K.cargo, 0.05, -0.1, 0.06, 0.6);
       limb(knee, 0.22, 0.07, skin);
       part(knee, rounded(0.15, 0.08, 0.22, 0.04), skin, 0, -0.23, 0.05);
     }
@@ -553,7 +605,7 @@ export function buildWalker(): ZombieRig {
   hem.scale.y = 0.86;
   // Bas du sweat déchiré : lambeaux qui ballottent
   for (const [angle, w, h] of [[2.5, 0.11, 0.17], [-2.7, 0.09, 0.13], [0.75, 0.1, 0.14], [-1.4, 0.08, 0.1]] as const) {
-    flap(torso, flaps, w, h, C.hoodieDark, Math.sin(angle) * 0.225, 0.07, Math.cos(angle) * 0.2, angle);
+    flap(torso, flaps, w, h, K.hoodieDark, Math.sin(angle) * 0.225, 0.07, Math.cos(angle) * 0.2, angle);
   }
   const strap = part(torso, torus(0.26, 0.025), toon(C.leather), 0, 0.28, 0);
   strap.rotation.set(Math.PI / 2, 0.75, 0);
@@ -566,17 +618,17 @@ export function buildWalker(): ZombieRig {
   // Capuche rabattue dans le dos
   const hood = part(torso, sphere(0.17, 12, 8), hoodie, 0, 0.45, -0.18);
   hood.scale.set(1.3, 0.7, 0.8);
-  const scarf = part(torso, torus(0.17, 0.065), toon(C.scarf), 0, 0.48, 0.02);
+  const scarf = part(torso, torus(0.17, 0.065), toon(K.scarf), 0, 0.48, 0.02);
   scarf.rotation.x = Math.PI / 2 - 0.2;
   // Pan d'écharpe qui pend et se balance
-  const scarfTail = flap(torso, flaps, 0.09, 0.26, C.scarf, 0.12, 0.44, 0.17, 0.35);
+  const scarfTail = flap(torso, flaps, 0.09, 0.26, K.scarf, 0.12, 0.44, 0.17, 0.35);
   scarfTail.rotation.z = 0.2;
 
   // Tête énorme, relevée vers la caméra (visage lisible de haut)
   const head = new Group();
   head.position.set(0, 0.5, 0.06);
   torso.add(head);
-  const parts = buildHead(head, 0.31, skin, hoodie, eye, halo, false);
+  const parts = buildHead(head, 0.31, skin, hoodie, eye, halo, false, look);
   extras.push(...parts.extras);
 
   // Bras : manche, poignet crème effiloché, avant-bras nu, un gant, une main nue
@@ -589,7 +641,7 @@ export function buildWalker(): ZombieRig {
     limb(shoulder, 0.24, 0.09, hoodie);
     const cuff = part(shoulder, torus(0.08, 0.03), toon(C.cream), 0, -0.22, 0);
     cuff.rotation.x = Math.PI / 2;
-    if (side > 0) flap(shoulder, flaps, 0.07, 0.1, C.hoodieDark, 0.05, -0.2, -0.03, 1.8);
+    if (side > 0) flap(shoulder, flaps, 0.07, 0.1, K.hoodieDark, 0.05, -0.2, -0.03, 1.8);
     const elbow = new Group();
     elbow.position.y = -0.22;
     shoulder.add(elbow);
@@ -600,6 +652,7 @@ export function buildWalker(): ZombieRig {
     arms.push({ shoulder, elbow });
   }
 
+  if (look) dress(look, false, torso, arms);
   return finish({
     kind: "walker", root, body, hips, torso, head, jaw: parts.jaw, legs, arms, eye, halo, tint: [skin, hoodie], scale,
     bobble: parts.bobble, flaps, drool: parts.drool, sparks: parts.sparks, extras,
@@ -607,14 +660,15 @@ export function buildWalker(): ZombieRig {
 }
 
 /** Rampant : torse sans jambes (~0.65 m), capuche relevée, haillons traînants, longs bras. */
-export function buildCrawler(): ZombieRig {
+export function buildCrawler(look?: ZombieLook): ZombieRig {
   const C = ZOMBIE_COLORS;
   const root = new Group();
-  root.name = "ZombieCrawler";
+  root.name = look ? `ZombieCrawler:${look.name}` : "ZombieCrawler";
+  const K = lookColors(look, C.hoodieCrawler);
   const body = new Group();
   root.add(body);
   const skin = ownToon(C.skin);
-  const hoodie = ownToon(C.hoodieCrawler);
+  const hoodie = ownToon(K.hoodie);
   const [eye, halo] = eyeMaterials();
   const flaps: Group[] = [];
   const extras: Object3D[] = [];
@@ -629,7 +683,7 @@ export function buildCrawler(): ZombieRig {
   trunk.scale.set(1.12, 1, 0.9);
   // Moignon en haillons qui traîne derrière et fouette à chaque traction
   for (const [x, len, angle] of [[-0.11, 0.22, Math.PI + 0.35], [0.0, 0.3, Math.PI], [0.12, 0.2, Math.PI - 0.4]] as const) {
-    const rag = flap(torso, flaps, 0.1, len, C.hoodieDark, x, -0.05, -0.27, angle);
+    const rag = flap(torso, flaps, 0.1, len, K.hoodieDark, x, -0.05, -0.27, angle);
     rag.rotation.x = 1.2;
   }
   extras.push(...stitchedPatch(torso, "crawler", 0.13, 0.12, C.patch, 0.08, 0.2, -0.1, 0, -1.3));
@@ -637,16 +691,16 @@ export function buildCrawler(): ZombieRig {
   const belt = part(torso, cylinder(0.2, 0.05), toon(C.leather), 0, -0.02, -0.2);
   belt.rotation.x = Math.PI / 2 - 0.25;
   belt.scale.set(1.12, 1, 0.9);
-  const scarf = part(torso, torus(0.13, 0.055), toon(C.scarf), 0, 0.1, 0.17);
+  const scarf = part(torso, torus(0.13, 0.055), toon(K.scarf), 0, 0.1, 0.17);
   scarf.rotation.x = 0.5;
-  const scarfTail = flap(torso, flaps, 0.08, 0.3, C.scarf, -0.08, 0.15, 0.02, Math.PI - 0.3);
+  const scarfTail = flap(torso, flaps, 0.08, 0.3, K.scarf, -0.08, 0.15, 0.02, Math.PI - 0.3);
   scarfTail.rotation.x = 1.3;
 
   // Grosse tête relevée vers l'avant
   const head = new Group();
   head.position.set(0, 0.08, 0.24);
   torso.add(head);
-  const parts = buildHead(head, 0.23, skin, hoodie, eye, halo, true);
+  const parts = buildHead(head, 0.23, skin, hoodie, eye, halo, true, look);
   extras.push(...parts.extras);
 
   // Longs bras : manches retroussées, mains larges
@@ -669,14 +723,123 @@ export function buildCrawler(): ZombieRig {
     arms.push({ shoulder, elbow });
   }
 
+  if (look) dress(look, true, torso, arms);
   return finish({
     kind: "crawler", root, body, hips, torso, head, jaw: parts.jaw, legs: [], arms, eye, halo, tint: [skin, hoodie], scale: 1,
     bobble: parts.bobble, flaps, drool: parts.drool, sparks: parts.sparks, extras,
   });
 }
 
-export function buildZombie(kind: ZombieKind): ZombieRig {
-  return kind === "walker" ? buildWalker() : buildCrawler();
+/** Construit un mordu ; `id` (ENEMIES) choisit sa tenue (ZOMBIE_LOOKS), sinon la tenue générique. */
+export function buildZombie(kind: ZombieKind, id?: string): ZombieRig {
+  const look = id ? ZOMBIE_LOOKS[id] : undefined;
+  return kind === "walker" ? buildWalker(look) : buildCrawler(look);
+}
+
+function lookColors(look: ZombieLook | undefined, hoodie: string) {
+  const C = ZOMBIE_COLORS;
+  return { hoodie: look?.hoodie ?? hoodie, hoodieDark: look?.hoodieDark ?? C.hoodieDark, scarf: look?.scarf ?? C.scarf, cargo: look?.cargo ?? C.cargo };
+}
+
+/** Accessoires d'un mordu identifié : petits, mais lisibles de haut (couleurs vives sur habits délavés). */
+function dress(look: ZombieLook, crawler: boolean, torso: Group, arms: ZombieRig["arms"]): void {
+  const left = arms[0];
+  const right = arms[1];
+  const wrist = crawler ? -0.27 : -0.19;
+  for (const extra of look.extras) {
+    switch (extra) {
+      case "armband": {
+        // Brassard orange « GARDE » au bras gauche, une feuille pliée glissée dedans.
+        const band = part(left.shoulder, cylinder(0.104, 0.085), toon("#e47a2e"), 0, -0.11, 0);
+        band.scale.set(1, 1, 1);
+        detail(left.shoulder, cylinder(0.106, 0.02), "#f4ead2", 0, -0.11, 0);
+        const sheet = part(left.shoulder, rounded(0.1, 0.075, 0.016, 0.006), toon("#f3ead0"), -0.05, -0.06, 0.08);
+        sheet.rotation.set(0.2, -0.5, 0.35);
+        break;
+      }
+      case "bandage": {
+        // Avant-bras gauche bandé (« c'est la tôle »), une tache d'antiseptique.
+        part(left.elbow, cylinder(0.078, 0.13), toon("#efe8d6"), 0, -0.1, 0);
+        detail(left.elbow, sphere(0.03, 8, 6), "#c9a56a", 0.03, -0.1, 0.07).scale.set(1, 0.7, 0.4);
+        break;
+      }
+      case "bracelet": {
+        // Bracelet d'hôpital blanc au poignet droit, étiquette rouge « CHAMBRE 1 ».
+        const ring = part(right.elbow, torus(0.072, 0.02), toon("#f7f4ea"), 0, wrist, 0);
+        ring.rotation.x = Math.PI / 2;
+        detail(right.elbow, rounded(0.05, 0.035, 0.016, 0.006), "#c8453a", 0.0, wrist, 0.085);
+        break;
+      }
+      case "wrench": {
+        // Petite clé plate grise : il « règle » encore le moteur.
+        const tool = new Group();
+        tool.position.set(0, crawler ? -0.36 : -0.3, 0.06);
+        tool.rotation.x = 0.9;
+        right.elbow.add(tool);
+        part(tool, rounded(0.034, 0.22, 0.02, 0.008), toon("#b9c4c6"), 0, -0.06, 0);
+        part(tool, torus(0.035, 0.014), toon("#8d9a9e"), 0, -0.19, 0);
+        break;
+      }
+      case "apron": {
+        // Tablier blanc : cordons noués en gros nœud dans le dos (visible de haut).
+        const tie = part(torso, torus(crawler ? 0.205 : 0.25, 0.022), toon("#f6f2e6"), 0, crawler ? 0.0 : 0.1, crawler ? -0.08 : 0);
+        tie.rotation.x = crawler ? 0.25 : Math.PI / 2;
+        for (const side of [-1, 1]) {
+          const loop = part(torso, sphere(0.06, 10, 8), toon("#f6f2e6"), side * 0.07, crawler ? 0.2 : 0.12, crawler ? -0.12 : -0.24);
+          loop.scale.set(1.3, 0.5, 0.8);
+        }
+        break;
+      }
+      case "tray": {
+        // Plateau vide en inox, toujours à la main.
+        const tray = part(right.elbow, rounded(0.36, 0.026, 0.26, 0.012), toon("#b6c0c3"), 0.02, -0.34, 0.12);
+        tray.rotation.set(0.15, 0.3, 0.05);
+        detail(right.elbow, rounded(0.3, 0.008, 0.2, 0.004), "#d6dde0", 0.02, -0.322, 0.12).rotation.set(0.15, 0.3, 0.05);
+        break;
+      }
+      case "watch": {
+        // Montre au poignet gauche (arrêtée à 2 h 14).
+        const strap = part(left.elbow, torus(0.072, 0.022), toon("#5a3a24"), 0, wrist, 0);
+        strap.rotation.x = Math.PI / 2;
+        const face = part(left.elbow, cylinder(0.04, 0.02), toon("#efe6c8"), 0.0, wrist, 0.085);
+        face.rotation.x = Math.PI / 2;
+        break;
+      }
+      case "stethoscope": {
+        // Stéthoscope autour du cou, pavillon argenté sur la poitrine.
+        const tube = part(torso, torus(0.2, 0.017), toon("#2a2f33"), 0, 0.43, 0.04);
+        tube.rotation.x = Math.PI / 2 - 0.45;
+        const bell = part(torso, cylinder(0.04, 0.025), toon("#c9d1d4"), 0.07, 0.24, 0.22);
+        bell.rotation.x = Math.PI / 2;
+        break;
+      }
+      case "pocketNote": {
+        // Poche de poitrine, un papier plié qui dépasse.
+        detail(torso, rounded(0.11, 0.1, 0.02, 0.008), look.hoodieDark, -0.12, 0.31, 0.208).rotation.y = -0.25;
+        const paper = part(torso, rounded(0.08, 0.07, 0.012, 0.004), toon("#f3ead0"), -0.12, 0.37, 0.205);
+        paper.rotation.set(-0.15, -0.25, 0.12);
+        break;
+      }
+      case "chevrons": {
+        // Galons de sergent jaunes sur le bras droit.
+        for (const [i, y] of [[0, -0.06], [1, -0.1]] as const) {
+          for (const s of [-1, 1]) {
+            const bar = detail(right.shoulder, rounded(0.016, 0.07, 0.012, 0.004), "#e2bf4a", 0.09 + i * 0, y, s * 0.025);
+            bar.rotation.set(s * 0.9, Math.PI / 2, 0);
+          }
+        }
+        break;
+      }
+      case "whistle": {
+        // Cordon jaune et sifflet de garde.
+        const cord = part(torso, torus(0.17, 0.012), toon("#d8b23c"), 0, 0.4, 0.06);
+        cord.rotation.x = Math.PI / 2 - 0.6;
+        const whistle = part(torso, capsule(0.025, 0.06), toon("#d4dade"), 0.09, 0.27, 0.22);
+        whistle.rotation.z = Math.PI / 2;
+        break;
+      }
+    }
+  }
 }
 
 /** Qualité réduite : pas de coque de contour, d'ombre portée ni de petits détails (ni poussière de pas). */
