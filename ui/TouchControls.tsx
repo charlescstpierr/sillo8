@@ -71,6 +71,9 @@ export function TouchControls({ engine }: { engine: Engine }) {
   };
   // Choix explicite de l'autre arme : fonctionne avec « 1 / 2 » comme avec un échange.
   const swap = press(() => trigger(engine, nailgun ? "weapon1" : "weapon2"));
+  // Bouton désigné par la bulle du tutoriel : anneau pointillé qui respire.
+  const tutorial = hud.tutorial?.target ?? null;
+  const cue = (target: string) => (tutorial === target ? true : undefined);
   const fireUp = () => { input.touchFiring = false; };
 
   return (
@@ -81,13 +84,14 @@ export function TouchControls({ engine }: { engine: Engine }) {
             <div className={styles.stickKnob} style={{ transform: `translate(${stick.dx}px, ${stick.dy}px)` }} />
           </div>
         ) : (
-          <div className={styles.stickHint}>déplacer</div>
+          <div className={styles.stickHint} data-tutorial={cue("stick")}>déplacer</div>
         )}
       </div>
       <div className={styles.buttons}>
         <button
           className={styles.fire}
           data-weapon={extra.weapon}
+          data-tutorial={cue("fire")}
           aria-label={nailgun ? "Tirer" : "Frapper"}
           onPointerDown={(e) => { e.preventDefault(); input.device = "touch"; input.touchFiring = true; }}
           onPointerUp={fireUp}
@@ -97,16 +101,17 @@ export function TouchControls({ engine }: { engine: Engine }) {
           <Icon name={nailgun ? "nailgun" : "wrench"} />
           <span>{nailgun ? "TIRER" : "FRAPPER"}</span>
         </button>
-        <button className={styles.small} data-slot="lamp" aria-label="Éblouir" onPointerDown={tap("light")}>
+        <button className={styles.small} data-slot="lamp" data-tutorial={cue("lamp")} aria-label="Éblouir" onPointerDown={tap("light")}>
           <Icon name="lamp" />
           <span>LAMPE</span>
         </button>
         <button className={styles.small} data-slot="swap" aria-label="Changer d'arme" onPointerDown={swap}>⇄</button>
         {nailgun ? <button className={styles.small} data-slot="reload" aria-label="Recharger" onPointerDown={tap("reload")}>R</button> : null}
-        <button className={styles.small} data-slot="use" aria-label="Interagir" data-ready={hud.prompt !== null} onPointerDown={tap("interact")}>✋</button>
+        <button className={styles.small} data-slot="use" data-tutorial={cue("use")} aria-label="Interagir" data-ready={hud.prompt !== null} onPointerDown={tap("interact")}>✋</button>
         <button
           className={styles.small}
           data-slot="crouch"
+          data-tutorial={cue("crouch")}
           aria-label="S'accroupir"
           data-ready={input.touchCrouch}
           onPointerDown={(e) => { e.preventDefault(); input.touchCrouch = !input.touchCrouch; }}
@@ -118,7 +123,7 @@ export function TouchControls({ engine }: { engine: Engine }) {
           <Icon name="bag" />
           <span>SAC</span>
         </button>
-        <button className={styles.journal} onPointerDown={press(() => openJournal(engine))} aria-label="Carnet">
+        <button className={styles.journal} data-tutorial={cue("journal")} onPointerDown={press(() => openJournal(engine))} aria-label="Carnet">
           <Icon name="journal" />
           <span>CARNET</span>
         </button>

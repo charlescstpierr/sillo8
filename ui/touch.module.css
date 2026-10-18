@@ -214,3 +214,18 @@
 .journal::after {
   border-color: rgba(233, 220, 192, 0.45) !important;
 }
+
+/* Bouton désigné par la bulle du tutoriel. */
+.layer [data-tutorial="true"] {
+  outline: 3px dashed var(--mustard);
+  outline-offset: 4px;
+  animation: tutorialCue 1.1s ease-in-out infinite;
+}
+
+@keyframes tutorialCue {
+  50% { outline-color: rgba(216, 164, 58, 0.35); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer [data-tutorial="true"] { animation: none; }
+}
