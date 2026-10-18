@@ -468,7 +468,6 @@ export function dirtGroundTexture(): Texture {
   });
 }
 
-<<<<<<< HEAD
 // ——— Extérieur (entrée et zone extérieure) ———
 
 /** Sentier de terre tassée, bords fondus, ornières et cailloux. Le sentier court le long de V. */
@@ -576,7 +575,9 @@ export function extRustPlateTexture(text: string, lit = false): Texture {
       g.fillStyle = grad;
       g.fillRect(x, h * 0.6, 3 + r() * 4, h * 0.4);
     }
-=======
+  }, false);
+}
+
 // ——— Zone centre (sécurité, hub, accès étage 2) ———
 
 /** Anneaux concentriques peints au sol du hub central : disque sombre usé, liserés ocre, joints rayonnants. */
@@ -733,6 +734,5 @@ export function centerMonitorTexture(label: string, seed = 1): Texture {
     g.fillText(label, 12, 28);
     g.fillStyle = "#ff5a36";
     g.beginPath(); g.arc(w - 22, 20, 7, 0, Math.PI * 2); g.fill();
->>>>>>> worktree-agent-a4b50cd71b4a9b1df
   }, false);
 }
