@@ -48,14 +48,85 @@
   transform: rotate(0.6deg);
 }
 
-.objectivesTitle {
+.objectives {
+  pointer-events: auto;
+}
+
+.objectives[data-open="false"] {
+  width: min(240px, 46vw);
+}
+
+.objectivesToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
   margin: 0 0 6px;
+  padding: 0 0 4px;
+  border: 0;
+  border-bottom: 1.5px dashed rgba(58, 42, 28, 0.35);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.objectives[data-open="false"] .objectivesToggle {
+  margin-bottom: 4px;
+}
+
+.objectivesToggle:focus-visible {
+  outline: 2px solid var(--rust);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.objectivesCount {
+  margin-left: auto;
+  font-family: var(--font-title);
+  font-size: 13px;
+  color: var(--rust);
+}
+
+.chevron {
+  flex: 0 0 22px;
+  height: 22px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  font-size: 12px;
+  line-height: 19px;
+  text-align: center;
+}
+
+.objectivesNext {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.objectives[data-flash="true"] .objectivesToggle {
+  animation: objectiveDone 0.4s ease-in-out 4;
+}
+
+@keyframes objectiveDone {
+  50% { color: var(--rust); transform: scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .objectives[data-flash="true"] .objectivesToggle { animation: none; }
+}
+
+.objectivesTitle {
+  margin: 0;
   font-family: var(--font-title);
   font-weight: 700;
   font-size: 17px;
   color: var(--leather-light);
-  border-bottom: 1.5px dashed rgba(58, 42, 28, 0.35);
-  padding-bottom: 4px;
 }
 
 .objectives ul {
@@ -481,6 +552,16 @@
 
 @keyframes dropTop {
   from { opacity: 0; transform: translate(-50%, -8px) rotate(-0.4deg); }
+}
+
+@media (max-width: 600px) and (orientation: portrait) {
+  .objectives { width: min(230px, 56vw); padding: 7px 10px; }
+  .objectives ul, .objectivesNext { font-size: 13px; }
+  .objectivesTitle { font-size: 14px; }
+  .vitals, .hint { display: none; }
+  /* Sous la colonne pause / sac / carnet, à gauche ; les objectifs restent en haut à droite. */
+  .mini { display: block; top: calc(max(10px, env(safe-area-inset-top)) + 186px); left: max(14px, env(safe-area-inset-left)); width: 180px; }
+  .notice { bottom: auto; top: calc(max(10px, env(safe-area-inset-top)) + 186px); left: auto; right: max(14px, env(safe-area-inset-right)); transform: none; font-size: 14px; max-width: calc(100vw - 230px); }
 }
 
 @media (max-height: 480px) {

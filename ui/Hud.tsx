@@ -18,6 +18,69 @@ function Gauge({ value, max, tone }: { value: number; max: number; tone: "health
   );
 }
 
+const OBJECTIVES_KEY = "sillo8-objectives-open";
+
+/** Panneau d'objectifs pliable : le titre le replie ou le déplie ; replié, il ne montre que la prochaine étape. */
+function Objectives({ hud, touch }: { hud: ReturnType<typeof useHud>; touch: boolean }) {
+  const [open, setOpen] = useState<boolean | null>(null);
+  const [flash, setFlash] = useState(false);
+  const steps = hud.objective.steps;
+  const done = steps.filter((step) => step.done).length;
+  const next = steps.find((step) => !step.done);
+
+  // Choix mémorisé ; par défaut replié sur téléphone pour dégager l'écran.
+  useEffect(() => {
+    let saved: string | null = null;
+    try { saved = window.localStorage.getItem(OBJECTIVES_KEY); } catch { /* stockage indisponible */ }
+    const phone = window.matchMedia("(pointer: coarse)").matches;
+    setOpen(saved === null ? !phone : saved === "1");
+  }, []);
+
+  // Un objectif accompli fait clignoter l'en-tête.
+  const [seen, setSeen] = useState(done);
+  useEffect(() => {
+    if (done > seen) {
+      setFlash(true);
+      const timer = window.setTimeout(() => setFlash(false), 1600);
+      setSeen(done);
+      return () => window.clearTimeout(timer);
+    }
+    setSeen(done);
+  }, [done, seen]);
+
+  const expanded = open ?? !touch;
+  const toggle = () => {
+    const next = !expanded;
+    setOpen(next);
+    try { window.localStorage.setItem(OBJECTIVES_KEY, next ? "1" : "0"); } catch { /* stockage indisponible */ }
+  };
+
+  return (
+    <section className={styles.objectives} aria-label="Objectifs" data-open={expanded} data-flash={flash}>
+      <button type="button" className={styles.objectivesToggle} onClick={toggle} aria-expanded={expanded} aria-controls="objectifs-liste">
+        <span className={styles.objectivesTitle}>{hud.sector.split(" / ").pop()}</span>
+        <span className={styles.objectivesCount}>{done}/{steps.length}</span>
+        <span className={styles.chevron} aria-hidden>{expanded ? "▴" : "▾"}</span>
+      </button>
+      {expanded ? (
+        <ul id="objectifs-liste">
+          {steps.map((step) => (
+            <li key={step.label} data-done={step.done}>
+              <span className={styles.check} aria-hidden>{step.done ? "✓" : ""}</span>
+              {step.label}
+            </li>
+          ))}
+        </ul>
+      ) : next ? (
+        <p className={styles.objectivesNext}>
+          <span className={styles.check} aria-hidden />
+          {next.label}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 const HINT: [string, string][] = [
   ["Clic", "frapper/tirer"], ["Clic droit", "éblouir"], ["1/2", "arme"], ["R", "recharger"],
   ["E", "interagir"], ["J", "carnet"], ["Tab", "sac"],
@@ -45,17 +108,7 @@ export function Hud({ engine }: { engine: Engine }) {
       <div className={styles.vignette} />
       {danger ? <div className={styles.hurt} data-level={danger} /> : null}
 
-      <section className={styles.objectives} aria-label="Objectifs">
-        <h2 className={styles.objectivesTitle}>{hud.sector.split(" / ").pop()}</h2>
-        <ul>
-          {hud.objective.steps.map((step) => (
-            <li key={step.label} data-done={step.done}>
-              <span className={styles.check} aria-hidden>{step.done ? "✓" : ""}</span>
-              {step.label}
-            </li>
-          ))}
-        </ul>
-      </section>
+      <Objectives hud={hud} touch={touch} />
 
       {!touch && hud.device === "keyboard" ? (
         <p className={styles.hint} aria-label={HINT.map(([k, a]) => `${k} : ${a}`).join(" · ")}>
