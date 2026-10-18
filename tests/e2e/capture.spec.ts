@@ -9,6 +9,8 @@ async function boot(page: Page, query = "") {
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
   await page.goto("/" + query);
   await page.waitForFunction(() => Boolean((window as any).__silo), null, { timeout: 30_000 });
+  // Le jeu s'ouvre sur le menu principal : on lance une descente.
+  await page.evaluate(() => (window as any).__silo.newGame());
   await page.waitForTimeout(800);
   return errors;
 }

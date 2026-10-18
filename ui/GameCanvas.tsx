@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Engine } from "@/game/engine";
-import { Hud } from "./Hud";
+import { Hud, Notice } from "./Hud";
+import { Overlay } from "./Overlay";
+import { applyStartupSettings } from "./settings";
 import { TouchControls } from "./TouchControls";
 
 function storage() {
@@ -32,9 +34,12 @@ export default function GameCanvas() {
       document.fonts.load("40px 'Patrick Hand'"),
     ])).catch(() => undefined).then(() => {
       if (cancelled) return;
-      instance = new Engine(canvas, { lowQuality: params.get("low") === "1" || (coarse && params.get("low") !== "0"), storage: storage() });
+      const urlLow = params.get("low");
+      instance = new Engine(canvas, { lowQuality: urlLow === "1" || (coarse && urlLow !== "0"), storage: storage() });
+      applyStartupSettings(instance, urlLow);
+      // On démarre sur le menu ; newGame() envoie lui-même le message d'accueil.
+      instance.setMode("menu");
       instance.start();
-      instance.notify("MÈRE : Bienvenue au niveau 09. Trouvez le relais et rétablissez l'alimentation.");
       (window as unknown as { __silo?: Engine }).__silo = instance;
       setEngine(instance);
     });
@@ -49,6 +54,8 @@ export default function GameCanvas() {
       <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block", touchAction: "none" }} tabIndex={0} />
       {engine ? <Hud engine={engine} /> : null}
       {engine ? <TouchControls engine={engine} /> : null}
+      {engine ? <Overlay engine={engine} /> : null}
+      {engine ? <Notice engine={engine} /> : null}
     </div>
   );
 }

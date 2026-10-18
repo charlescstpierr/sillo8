@@ -6,6 +6,12 @@
   font-family: var(--font-body);
   color: var(--ink);
   user-select: none;
+  transition: opacity 0.18s ease;
+}
+
+.layer[data-hidden="true"] {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .vignette {
@@ -15,14 +21,25 @@
 }
 
 .card {
+  position: relative;
   background: var(--paper);
   border: 2px solid var(--ink);
   border-radius: 10px;
   box-shadow: 0 3px 0 rgba(30, 20, 13, 0.35), inset 0 0 18px rgba(160, 120, 70, 0.18);
 }
 
+/* Couture de cuir */
+.stitched::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1.5px dashed rgba(106, 69, 40, 0.35);
+  border-radius: 7px;
+  pointer-events: none;
+}
+
 .objectives {
-  composes: card;
+  composes: card stitched;
   position: absolute;
   top: max(14px, env(safe-area-inset-top));
   right: max(14px, env(safe-area-inset-right));
@@ -36,7 +53,7 @@
   font-family: var(--font-title);
   font-weight: 700;
   font-size: 17px;
-  color: var(--rust);
+  color: var(--leather-light);
   border-bottom: 1.5px dashed rgba(58, 42, 28, 0.35);
   padding-bottom: 4px;
 }
@@ -76,7 +93,7 @@
 }
 
 .vitals {
-  composes: card;
+  composes: card stitched;
   position: absolute;
   left: max(14px, env(safe-area-inset-left));
   bottom: max(14px, env(safe-area-inset-bottom));
@@ -133,28 +150,117 @@
   background: #45bfae;
 }
 
-.ammo {
-  margin-top: 4px;
+.weapon {
+  margin-top: 5px;
   font-size: 15px;
   display: flex;
-  gap: 4px;
+  gap: 5px;
   align-items: baseline;
+  white-space: nowrap;
 }
 
-.ammo b {
+.weapon b {
   font-family: var(--font-title);
   font-size: 19px;
+  color: var(--leather-light);
+}
+
+.weapon em {
   color: var(--rust);
 }
 
-.ammo em {
-  color: var(--rust);
-}
-
-.parts {
-  margin-left: auto;
+.weaponName {
+  padding: 0 6px;
   font-family: var(--font-title);
+  font-size: 13px;
+  color: var(--cream);
+  background: var(--olive);
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
 }
+
+.weapon[data-weapon="1"] .weaponName {
+  background: var(--teal);
+}
+
+.weapon[data-weapon="1"] span:last-child {
+  font-family: var(--font-stamp);
+  font-size: 12.5px;
+  color: var(--teal);
+}
+
+.counts {
+  display: flex;
+  gap: 12px;
+  margin-top: 3px;
+  font-family: var(--font-title);
+  font-size: 13px;
+  color: rgba(58, 42, 28, 0.8);
+}
+
+/* Vignette rouge quand la vie baisse */
+.hurt {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(196, 40, 20, 0.45) 100%);
+  animation: hurt 1.6s ease-in-out infinite;
+}
+
+.hurt[data-level="critical"] {
+  background: radial-gradient(ellipse at 50% 50%, transparent 32%, rgba(196, 30, 15, 0.62) 100%);
+  animation-duration: 0.9s;
+}
+
+@keyframes hurt {
+  50% { opacity: 0.45; }
+}
+
+.mini {
+  composes: card;
+  display: none;
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: calc(max(14px, env(safe-area-inset-left)) + 54px);
+  width: 158px;
+  padding: 4px 8px 4px;
+  transform: rotate(-0.6deg);
+}
+
+.miniRow {
+  display: grid;
+  grid-template-columns: 1fr 26px;
+  gap: 5px;
+  align-items: center;
+  font-family: var(--font-title);
+  font-size: 11px;
+  text-align: right;
+}
+
+.miniRow .gauge {
+  height: 8px;
+}
+
+.miniWeapon {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.miniWeapon i {
+  font-style: normal;
+}
+
+.miniWeapon b {
+  font-family: var(--font-title);
+  color: var(--leather-light);
+}
+
+.miniWeapon span {
+  font-family: var(--font-title);
+  font-size: 10.5px;
+}
+
 
 .tooltip {
   composes: card;
@@ -201,6 +307,10 @@
 .notice {
   composes: card;
   position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  font-family: var(--font-body);
+  color: var(--ink);
   left: 50%;
   bottom: max(16px, env(safe-area-inset-bottom));
   transform: translateX(-50%) rotate(-0.4deg);
@@ -225,50 +335,15 @@
   font-size: 13px;
 }
 
-.pause {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(30, 20, 13, 0.55);
-  pointer-events: auto;
+/* Hors jeu, l'avis passe en haut pour ne pas couvrir les fiches. */
+.notice[data-mode]:not([data-mode="playing"]) {
+  bottom: auto;
+  top: max(14px, env(safe-area-inset-top));
+  animation-name: dropTop;
 }
 
-.sheet {
-  composes: card;
-  position: relative;
-  width: min(420px, 86vw);
-  padding: 22px 26px;
-  transform: rotate(-1deg);
-}
-
-.sheet h1 {
-  margin: 0 0 6px;
-  font-family: var(--font-title);
-  font-size: 30px;
-}
-
-.sheet p {
-  margin: 0 0 14px;
-  font-size: 17px;
-}
-
-.sheetStamp {
-  composes: stamp;
-  top: 14px;
-  right: 16px;
-}
-
-.sheet button {
-  font-family: var(--font-title);
-  font-size: 18px;
-  padding: 6px 16px;
-  color: var(--ink);
-  background: #fff9ea;
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-  box-shadow: 0 3px 0 var(--ink);
-  cursor: pointer;
+@keyframes dropTop {
+  from { opacity: 0; transform: translate(-50%, -8px) rotate(-0.4deg); }
 }
 
 @media (max-height: 480px) {
@@ -276,5 +351,8 @@
   .objectives ul { font-size: 13px; }
   .objectivesTitle { font-size: 14px; }
   .vitals { display: none; }
-  .notice { bottom: auto; top: 12px; font-size: 14px; max-width: 40vw; }
+  .mini { display: block; }
+  .notice { bottom: auto; top: 12px; font-size: 14px; max-width: 36vw; }
+  /* Hors jeu sur téléphone : bandeau discret en bas, sous les fiches */
+  .notice[data-mode]:not([data-mode="playing"]) { top: auto; bottom: 4px; padding: 3px 10px; font-size: 13px; max-width: 60vw; }
 }
