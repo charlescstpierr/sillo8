@@ -2,7 +2,7 @@
 // tiroir), petits décors nécessaires à l'histoire (armoire, raclures, craie), et effets des événements étranges
 // (lueur au loin, silhouette). Style jouet : formes simples, contour d'encre, papier crème.
 import {
-  AdditiveBlending, CanvasTexture, CapsuleGeometry, Group, Mesh, MeshBasicMaterial, PlaneGeometry, PointLight,
+  AdditiveBlending, CanvasTexture, CapsuleGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, PlaneGeometry, PointLight,
   SphereGeometry, SRGBColorSpace, Texture,
 } from "three";
 import type { InvestigationContent, Prop, WorldMarker } from "../investigation/types";
@@ -174,6 +174,72 @@ function marker(m: WorldMarker, label: string): { group: Group; height: number }
       height = 0.6;
       break;
     }
+    case "glint": {
+      // L'objet est déjà dessiné par le décor (game/render/storyProps.ts) : un disque invisible à sa hauteur, que le
+      // contour blanc entoure quand Lou est à portée.
+      const y = m.y ?? 0.05;
+      const disc = mesh(new CylinderGeometry(0.24, 0.24, 0.02, 20), new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }), 0, y, 0, false);
+      g.add(disc);
+      height = y + 0.9;
+      break;
+    }
+    case "bolts": {
+      // Trois gros verrous sur une platine, du côté dehors.
+      const y = m.y ?? 1.0;
+      block(g, 0.34, 1.0, 0.05, "#6d6152", 0, y - 0.5, 0, 0.01);
+      for (const dy of [-0.32, 0, 0.32]) {
+        cylinder(g, 0.05, 0.42, "#9a8f7c", 0, y + dy, 0.07, 10).rotation.z = Math.PI / 2;
+        block(g, 0.1, 0.12, 0.08, "#4e4337", 0.14, y + dy - 0.06, 0.05, 0.01);
+      }
+      height = y + 0.8;
+      break;
+    }
+    case "lantern": {
+      // Lanterne d'enfant posée sur une caisse, verre blanc.
+      block(g, 0.44, 0.34, 0.36, PALETTE.wood, 0, 0, 0, 0.03);
+      cylinder(g, 0.1, 0.05, "#5c5244", 0, 0.34, 0, 12);
+      g.add(mesh(new SphereGeometry(0.09, 12, 10), toon("#f4f1e6"), 0, 0.47, 0, false));
+      cylinder(g, 0.07, 0.04, "#5c5244", 0, 0.56, 0, 10);
+      height = 1.0;
+      break;
+    }
+    case "levers": {
+      // Tableau de 4 leviers au mur.
+      const y = m.y ?? 1.0;
+      block(g, 1.2, 0.8, 0.08, "#5d6a72", 0, y - 0.4, 0, 0.02);
+      for (let i = 0; i < 4; i++) {
+        const x = -0.42 + i * 0.28;
+        block(g, 0.06, 0.32, 0.06, "#2c2c2c", x, y - 0.1, 0.07, 0.01);
+        g.add(mesh(new SphereGeometry(0.05, 10, 8), toon(PALETTE.danger), x, y + 0.24, 0.1, false));
+      }
+      height = y + 0.7;
+      break;
+    }
+    case "terminal": {
+      // Petit terminal sur un pupitre, écran vert éteint, post-it jaune.
+      block(g, 0.7, 0.75, 0.5, "#6a5a48", 0, 0, 0, 0.03);
+      block(g, 0.5, 0.38, 0.36, "#d8d0bb", 0, 0.75, -0.04, 0.04);
+      block(g, 0.36, 0.24, 0.02, "#22302a", 0, 0.82, 0.15, 0.01);
+      block(g, 0.09, 0.09, 0.01, "#ffe36b", 0.15, 0.97, 0.165, 0.004);
+      height = 1.5;
+      break;
+    }
+    case "locker": {
+      // Armoire métallique étroite, avec cadenas.
+      block(g, 0.75, 1.7, 0.5, "#7c8a6a", 0, 0, 0, 0.03);
+      block(g, 0.02, 1.5, 0.02, INK, 0, 0.1, 0.26, 0.005);
+      block(g, 0.1, 0.12, 0.05, "#d8a43a", 0.08, 0.9, 0.28, 0.01);
+      height = 2.0;
+      break;
+    }
+    case "lamp": {
+      // Petite lampe (chevet ou lampe de poche) sur un support.
+      block(g, 0.4, 0.5, 0.4, "#7a5a3a", 0, 0, 0, 0.03);
+      cylinder(g, 0.05, 0.25, "#5c5244", 0, 0.5, 0, 10);
+      g.add(mesh(new SphereGeometry(0.1, 12, 10), toon("#d9e6c9"), 0, 0.8, 0, false));
+      height = 1.2;
+      break;
+    }
   }
   return { group: g, height };
 }
@@ -221,6 +287,7 @@ export class InquiryView {
     this.glowLight.castShadow = false;
     this.root.add(this.glowLight);
     for (const e of content.examinables) {
+      if (e.carried) continue;
       const built = marker(e.marker, e.marker.label ?? e.name);
       built.group.position.set(e.x, 0, e.z);
       built.group.rotation.y = e.marker.yaw ?? 0;

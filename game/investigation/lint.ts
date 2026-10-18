@@ -4,7 +4,7 @@
 import { NOTES } from "../notes";
 import { ROOMS } from "../level";
 import { parseSentence } from "./logic";
-import type { Condition, InvestigationContent, Trigger } from "./types";
+import type { Condition, EventAction, InvestigationContent, Trigger, Unlock } from "./types";
 
 export function lintContent(c: InvestigationContent): string[] {
   const problems: string[] = [];
@@ -24,6 +24,7 @@ export function lintContent(c: InvestigationContent): string[] {
   const traces = ids(c.traces, "trace");
   ids(c.events, "événement");
   const deductions = ids(c.deductions, "déduction");
+  const puzzles = ids(c.puzzles ?? [], "énigme");
   const rooms = new Set<string>(ROOMS.map((r) => r.id));
 
   const card = (id: string | undefined, where: string) => { if (id && !cards.has(id)) problems.push(`${where} : carte inconnue « ${id} »`); };
@@ -38,7 +39,20 @@ export function lintContent(c: InvestigationContent): string[] {
     if ((t.on === "examine" || t.on === "reveal") && !examinables.has(t.examinable)) problems.push(`${where} : objet inconnu « ${t.examinable} »`);
     if (t.on === "uv" && !traces.has(t.trace)) problems.push(`${where} : trace inconnue « ${t.trace} »`);
     if (t.on === "card") card(t.card, where);
-    if (t.on === "deduction" && !deductions.has(t.deduction)) problems.push(`${where} : déduction inconnue « ${t.deduction} »`);
+    if ((t.on === "deduction" || t.on === "ready") && !deductions.has(t.deduction)) problems.push(`${where} : déduction inconnue « ${t.deduction} »`);
+    if (t.on === "ready" && c.deductions.find((d) => d.id === t.deduction)?.kind !== "sentence") problems.push(`${where} : « ready » attend une phrase à trous`);
+  };
+  const actions = (list: EventAction[] | undefined, where: string) => {
+    for (const a of list ?? []) {
+      if (a.do === "thought") thought(a.thought, where);
+      if (a.do === "card") card(a.card, where);
+    }
+  };
+  const unlock = (u: Unlock, where: string) => {
+    if (u.kind === "card") card(u.card, where);
+    if (u.kind === "examinable" && !examinables.has(u.id)) problems.push(`${where} : objet inconnu « ${u.id} »`);
+    if (u.kind === "thought") thought(u.id, where);
+    if ((u.kind === "fact" || u.kind === "dialogue") && !/^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(u.id)) problems.push(`${where} : fait invalide « ${u.id} »`);
   };
 
   for (const k of c.cards) {
@@ -56,6 +70,20 @@ export function lintContent(c: InvestigationContent): string[] {
       thought(d.thought, `objet ${e.id} détail ${i}`);
       if (d.reveal.by === "loupe" && d.reveal.face === "back" && !e.closeup.back) problems.push(`objet ${e.id} : loupe sur un verso absent`);
     });
+    if (e.puzzle && !puzzles.has(e.puzzle)) problems.push(`objet ${e.id} : énigme inconnue « ${e.puzzle} »`);
+    if (!e.carried && !rooms.has(e.room)) problems.push(`objet ${e.id} : pièce inconnue « ${e.room} »`);
+    if (!e.carried && !e.carrier && rooms.has(e.room)) {
+      const r = ROOMS.find((room) => room.id === e.room)!;
+      if (e.x < r.x0 || e.x > r.x1 || e.z < r.z0 || e.z > r.z1) problems.push(`objet ${e.id} : hors de sa pièce « ${e.room} »`);
+    }
+  }
+  for (const p of c.puzzles ?? []) {
+    for (const u of p.unlocks) unlock(u, `énigme ${p.id}`);
+    actions(p.onError, `énigme ${p.id}`);
+    actions(p.onSolve, `énigme ${p.id}`);
+    if (p.answer.length === 0) problems.push(`énigme ${p.id} : réponse vide`);
+    if (p.kind === "levers" && (!p.options || p.answer.some((a) => !p.options!.includes(a)))) problems.push(`énigme ${p.id} : levier inconnu`);
+    if (!c.examinables.some((e) => e.puzzle === p.id)) problems.push(`énigme ${p.id} : aucun objet ne la porte`);
   }
   for (const t of c.thoughts) {
     trigger(t.trigger, `pensée ${t.id}`);
@@ -68,23 +96,20 @@ export function lintContent(c: InvestigationContent): string[] {
   for (const e of c.events) {
     trigger(e.trigger, `événement ${e.id}`);
     cond(e.requires, `événement ${e.id}`);
-    for (const a of e.actions) if (a.do === "thought") thought(a.thought, `événement ${e.id}`);
+    actions(e.actions, `événement ${e.id}`);
   }
 
   // Mots gagnables : ceux des cartes et des déblocages.
   const words = new Set<string>();
   for (const k of c.cards) for (const w of k.words ?? []) words.add(w);
   for (const d of c.deductions) for (const u of d.unlocks) if (u.kind === "word") words.add(u.word);
+  for (const p of c.puzzles ?? []) for (const u of p.unlocks) if (u.kind === "word") words.add(u.word);
 
   for (const d of c.deductions) {
     if (!questions.has(d.question)) problems.push(`déduction ${d.id} : question inconnue « ${d.question} »`);
     cond(d.requires, `déduction ${d.id}`);
     if (d.hints.length !== 3 || d.hints.some((h) => !h.trim())) problems.push(`déduction ${d.id} : il faut 3 paliers d'aide`);
-    for (const u of d.unlocks) {
-      if (u.kind === "card") card(u.card, `déduction ${d.id}`);
-      if (u.kind === "examinable" && !examinables.has(u.id)) problems.push(`déduction ${d.id} : objet inconnu « ${u.id} »`);
-      if (u.kind === "thought") thought(u.id, `déduction ${d.id}`);
-    }
+    for (const u of d.unlocks) unlock(u, `déduction ${d.id}`);
     if (d.kind === "contradiction") {
       if (d.pairs.length === 0) problems.push(`déduction ${d.id} : aucune paire`);
       for (const [a, b] of d.pairs) { card(a, `déduction ${d.id}`); card(b, `déduction ${d.id}`); if (a === b) problems.push(`déduction ${d.id} : paire d'une carte avec elle-même`); }

@@ -30,8 +30,13 @@ export interface Condition {
   traces?: Id[];
   /** Déblocages obtenus, sous la forme « type:id » (ex. « examinable:okafor_drawer »). */
   unlocked?: string[];
-  /** Faits de progression de l'étage (FACT_IDS de game/state.ts, ex. « generator_powered »). */
+  /**
+   * Faits de progression de l'étage (FACT_IDS de game/state.ts, ex. « generator_powered »), ou faits posés par
+   * les conversations (state.flags, ex. « m1 »).
+   */
   facts?: string[];
+  /** Au moins un de ces faits. */
+  anyFacts?: string[];
 }
 
 // ——— Cartes du carnet ———
@@ -61,6 +66,11 @@ export interface Card {
   note?: string;
   /** Illustration facultative : nom d'un dessin du registre `ui/inquiry/art.tsx`. */
   image?: string;
+  /**
+   * Vrai : obtenir la carte pose aussi le fait `card.<id>` (state.flags), lisible par les conversations
+   * (ex. « Si Lou porte la lanterne de Lila »).
+   */
+  flag?: boolean;
 }
 
 /** Question ouverte du tableau : les cartes y sont rangées. */
@@ -78,7 +88,9 @@ export interface Question {
 // ——— Objets examinables et gros plans ———
 
 /** Forme de l'objet dans le décor (rendu game/render/uv.ts → marqueurs d'enquête). */
-export type MarkerShape = "poster" | "photo" | "step" | "drawer" | "sheet" | "plaque";
+export type MarkerShape = "poster" | "photo" | "step" | "drawer" | "sheet" | "plaque" | "bolts" | "lantern" | "levers" | "terminal" | "locker" | "lamp"
+  /** Objet déjà dessiné par le décor (STORY_PROPS) : seulement un repère invisible, pour le contour à portée. */
+  | "glint";
 
 export interface WorldMarker {
   shape: MarkerShape;
@@ -150,6 +162,49 @@ export interface Examinable {
   requires?: Condition;
   /** Visible mais verrouillé tant que la condition n'est pas remplie ; `message` s'affiche en avis. */
   locked?: { until: Condition; message: string };
+  /**
+   * Objet porté par un mordu (identifiant de ENEMIES, game/level.ts) : examinable seulement quand ce mordu est figé
+   * par la lampe (de loin, rayon `radius`) ou abattu (l'objet reste au sol, là où il est tombé). Si le mordu n'existe
+   * pas dans le monde, l'objet reste posé à (x, z).
+   */
+  carrier?: Id;
+  /** Objet de la sacoche de Lou : pas dans le monde, examiné depuis le sac. */
+  carried?: boolean;
+  /** Énigme jouée dans le gros plan (Puzzle.id). */
+  puzzle?: Id;
+}
+
+// ——— Énigmes ———
+
+/**
+ * Énigme pilotée par des données, jouée dans le gros plan d'un objet :
+ * - `letters` : cadenas à molettes de lettres (`answer` : le mot, une molette par lettre) ;
+ * - `password` : clavier à lettres (`answer` : le mot) ;
+ * - `levers` : leviers à abaisser dans l'ordre (`options` : étiquettes, `answer` : ordre attendu).
+ * Les accents et la casse ne comptent pas.
+ */
+export interface Puzzle {
+  id: Id;
+  kind: "letters" | "password" | "levers";
+  /** Consigne affichée au-dessus de l'énigme. */
+  prompt: string;
+  answer: string[];
+  /** Leviers : étiquettes, dans l'ordre d'affichage. */
+  options?: string[];
+  /** Pensée de Lou pour une mauvaise réponse quelconque. */
+  error: string;
+  /** Mauvaises réponses prévues, avec leur pensée (ex. GUETTEUR). */
+  wrongs?: { answer: string; text: string }[];
+  /** Ce qui se passe en cas d'erreur (bruit du disjoncteur…), en plus de la pensée. */
+  onError?: EventAction[];
+  /** Ce qui se passe à la réussite (avis, sons). */
+  onSolve?: EventAction[];
+  /** Ce que l'énigme ouvre (cartes, faits…). Le fait `puzzle_<id>` est toujours posé dans state.flags. */
+  unlocks: Unlock[];
+  /** Objets donnés à la réussite (piles, trousse…). */
+  items?: { kind: "cell" | "medkit" | "bandage" | "can" | "ammo"; amount: number }[];
+  /** Ligne affichée une fois l'énigme résolue. */
+  solved: string;
 }
 
 // ——— Pensées de Lou ———
@@ -169,6 +224,12 @@ export type Trigger =
   | { on: "card"; card: Id }
   /** Réussir une déduction. */
   | { on: "deduction"; deduction: Id }
+  /** Un fait devient vrai (objectif, fait de conversation, énigme résolue « puzzle_<id> »). */
+  | { on: "fact"; fact: string }
+  /** S'approcher d'un mordu vivant (identifiant de ENEMIES). */
+  | { on: "nearEnemy"; enemy: Id; radius: number }
+  /** Une phrase à trous est prête : visible, avec assez d'indices (« Défi au joueur »). */
+  | { on: "ready"; deduction: Id }
   /** Seulement appelée par une autre pensée (`then`) ou un événement. */
   | { on: "chain" };
 
@@ -233,7 +294,11 @@ export type EventAction =
   | { do: "silhouette"; x: number; z: number; toX: number; toZ: number; duration: number; delay?: number }
   /** Ligne affichée en avis (paroles à la radio, sous-titre). */
   | { do: "notice"; text: string; delay?: number }
-  | { do: "thought"; thought: Id; delay?: number };
+  | { do: "thought"; thought: Id; delay?: number }
+  /** Carte donnée (paroles entendues, enregistrement). */
+  | { do: "card"; card: Id; delay?: number }
+  /** Bruit qui attire les mordus du rayon (disjoncteur…). */
+  | { do: "noise"; x: number; z: number; radius: number; delay?: number };
 
 export interface StrangeEvent {
   id: Id;
@@ -337,4 +402,5 @@ export interface InvestigationContent {
   errors: ErrorThought[];
   generic: GenericThoughts;
   props: Prop[];
+  puzzles: Puzzle[];
 }

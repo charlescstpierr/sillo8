@@ -3,6 +3,7 @@
 // Style papier et encre ; chaque dessin reçoit l'inclinaison de l'objet et les détails déjà révélés, pour
 // cacher un détail jusqu'au bon angle (seuil en lumière rasante) ou le rendre minuscule hors de la loupe.
 import type { ReactNode } from "react";
+import { FLOOR1_ART } from "./floor1Art";
 
 export interface ArtProps {
   /** Inclinaison avant / arrière (degrés, 0 = face au joueur). */
@@ -177,6 +178,8 @@ const ART: Record<string, (props: ArtProps) => ReactNode> = {
   notice: Notice,
   plan: Plan,
   draft: Draft,
+  // Étage 1 : tous les autres gros plans (ui/inquiry/floor1Art.tsx).
+  ...FLOOR1_ART,
 };
 
 /** Dessine une face ; `lines` seules donnent une feuille manuscrite. */

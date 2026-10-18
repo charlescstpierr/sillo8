@@ -2,14 +2,19 @@
 // validation des contradictions et des phrases à trous, déblocages, aide en trois paliers.
 import { addOnce, type InquiryRecord } from "./record";
 import type {
-  Card, Condition, Contradiction, Deduction, Examinable, Id, InvestigationContent, Sentence, Unlock,
+  Card, Condition, Contradiction, Deduction, Examinable, Id, InvestigationContent, Puzzle, Sentence, Unlock,
 } from "./types";
 
 /** Ce que l'enquête lit du reste du jeu. */
 export interface WorldFacts {
   /** Faits de progression de l'étage (state.facts). */
   facts: readonly string[];
+  /** Faits posés par les conversations et l'enquête (state.flags). */
+  flags?: readonly string[];
 }
+
+/** Vrai si le fait est connu : objectif atteint (facts) ou fait posé (flags). */
+export const knowsFact = (world: WorldFacts, id: string): boolean => world.facts.includes(id) || Boolean(world.flags?.includes(id));
 
 export function conditionMet(cond: Condition | undefined, r: InquiryRecord, world: WorldFacts): boolean {
   if (!cond) return true;
@@ -18,7 +23,8 @@ export function conditionMet(cond: Condition | undefined, r: InquiryRecord, worl
   if (cond.deductions && !cond.deductions.every((id) => r.deductions.includes(id))) return false;
   if (cond.traces && !cond.traces.every((id) => r.traces.includes(id))) return false;
   if (cond.unlocked && !cond.unlocked.every((id) => r.unlocked.includes(id))) return false;
-  if (cond.facts && !cond.facts.every((id) => world.facts.includes(id))) return false;
+  if (cond.facts && !cond.facts.every((id) => knowsFact(world, id))) return false;
+  if (cond.anyFacts && !cond.anyFacts.some((id) => knowsFact(world, id))) return false;
   return true;
 }
 
@@ -36,10 +42,12 @@ export class ContentIndex {
   readonly cards = new Map<Id, Card>();
   readonly deductions = new Map<Id, Deduction>();
   readonly examinables = new Map<Id, Examinable>();
+  readonly puzzles = new Map<Id, Puzzle>();
   constructor(readonly content: InvestigationContent) {
     for (const c of content.cards) this.cards.set(c.id, c);
     for (const d of content.deductions) this.deductions.set(d.id, d);
     for (const e of content.examinables) this.examinables.set(e.id, e);
+    for (const p of content.puzzles) this.puzzles.set(p.id, p);
   }
 }
 
@@ -75,6 +83,11 @@ export function parseSentence(text: string): SentencePart[] {
 
 export function slotCount(sentence: Sentence): number {
   return parseSentence(sentence.text).filter((p) => typeof p !== "string").length;
+}
+
+/** Une phrase est prête : sa condition est remplie et assez d'indices sont trouvés (« Défi au joueur »). */
+export function sentenceReady(sentence: Sentence, r: InquiryRecord, world: WorldFacts): boolean {
+  return !r.deductions.includes(sentence.id) && conditionMet(sentence.requires, r, world) && cluesFound(sentence, r) >= sentence.minClues;
 }
 
 /** Cartes de soutien déjà trouvées. */
@@ -205,6 +218,41 @@ export function takeHint(index: ContentIndex, r: InquiryRecord, world: WorldFact
 /** Le tableau suggère l'aide après 3 erreurs ou 150 s sans progrès (jamais imposée). */
 export function hintSuggested(mistakes: number, idleSeconds: number): boolean {
   return mistakes >= 3 || idleSeconds >= 150;
+}
+
+// ——— Énigmes ———
+
+/** Réponse normalisée : majuscules, sans accents ni espaces. */
+export const normalizeAnswer = (s: string): string => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+
+export type PuzzleVerdict = { ok: true } | { ok: false; thought: string };
+
+/** Vérifie une réponse : lettres (un mot), ou ordre des leviers (liste d'étiquettes). */
+export function checkPuzzle(puzzle: Puzzle, input: readonly string[]): PuzzleVerdict {
+  const given = puzzle.kind === "levers" ? input.map(normalizeAnswer) : [normalizeAnswer(input.join(""))];
+  const expected = puzzle.kind === "levers" ? puzzle.answer.map(normalizeAnswer) : [normalizeAnswer(puzzle.answer.join(""))];
+  if (given.length === expected.length && given.every((g, i) => g === expected[i])) return { ok: true };
+  const joined = given.join(" ");
+  const known = puzzle.wrongs?.find((w) => normalizeAnswer(w.answer) === joined.replace(/ /g, ""));
+  return { ok: false, thought: known?.text ?? puzzle.error };
+}
+
+/** Une énigme est-elle résolue ? */
+export const puzzleSolved = (r: InquiryRecord, id: Id): boolean => r.unlocked.includes(`puzzle:${id}`);
+
+/** Enregistre une énigme résolue et ce qu'elle ouvre (comme une déduction). */
+export function applyPuzzle(index: ContentIndex, r: InquiryRecord, id: Id): Applied {
+  const applied: Applied = { cards: [], thoughts: [], unlocked: [] };
+  const p = index.puzzles.get(id);
+  if (!p || !addOnce(r, "unlocked", `puzzle:${id}`)) return applied;
+  applied.unlocked.push(`puzzle:${id}`);
+  for (const u of p.unlocks) {
+    const key = unlockKey(u);
+    if (addOnce(r, "unlocked", key)) applied.unlocked.push(key);
+    if (u.kind === "card" && addOnce(r, "cards", u.card)) applied.cards.push(u.card);
+    if (u.kind === "thought") applied.thoughts.push(u.id);
+  }
+  return applied;
 }
 
 export type { Contradiction, Sentence };

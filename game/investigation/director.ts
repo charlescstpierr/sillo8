@@ -13,12 +13,17 @@ import type { InteractableView } from "../render/world";
 import { UvView } from "../render/uv";
 import { UV, litFraction, placeBubble, tracePoints, type BubbleSide, type Rect } from "./geometry";
 import {
-  applyDeduction, checkContradiction, checkSentence, conditionMet, examinableState, hintSuggested, takeHint,
-  type Applied, type Hint, type Verdict,
+  applyDeduction, applyPuzzle, checkContradiction, checkPuzzle, checkSentence, conditionMet, examinableState, hintSuggested,
+  knowsFact, puzzleSolved, sentenceReady, takeHint,
+  type Applied, type Hint, type PuzzleVerdict, type Verdict,
 } from "./logic";
 import { addOnce, emptyRecord, recordOf } from "./record";
-import { CONTENT, EXAMINABLE_DEFS, INDEX } from "./world";
-import type { Point, Thought, Trigger } from "./types";
+import { CARRIER_REACH, CARRIERS, CONTENT, DROPPED_RADIUS, EXAMINABLE_DEFS, INDEX } from "./world";
+import { CARD_FLAG, DEDUCTION_FLAG, PUZZLE_FLAG } from "./content/links";
+import { AREAS, CABINET_SLIDE, POS } from "./content/positions";
+import { getStoryObject } from "../render/storyProps";
+import type { Box } from "../collision";
+import type { EventAction, Point, Thought, Trigger } from "./types";
 
 export interface InquiryHost {
   scene: Scene;
@@ -26,6 +31,12 @@ export interface InquiryHost {
   notify(text: string): void;
   emit(event: GameEvent): void;
   setMode(mode: UiMode, character?: string): void;
+  /** Bruit qui attire les mordus (disjoncteur de l'énigme 2). */
+  noise?(x: number, z: number, radius: number): void;
+  /** Obstacles du monde (pour faire glisser l'armoire de la chambre 1 avec son obstacle). */
+  colliders?(): readonly Box[];
+  /** Où est ce mordu (identifiant de ENEMIES) ? null s'il n'existe pas dans le monde. */
+  locate?(enemy: string): { x: number; z: number; alive: boolean; frozen: boolean } | null;
 }
 
 export interface ThoughtShown {
@@ -68,6 +79,8 @@ export const thoughtDuration = (text: string | null) => (text ? Math.min(4.5, Ma
 interface Pending { at: number; run: () => void }
 
 const THOUGHTS = new Map(CONTENT.thoughts.map((t) => [t.id, t]));
+const CARRIED = CONTENT.examinables.filter((e) => e.carrier);
+const DEFS = new Map(EXAMINABLE_DEFS.map((d) => [d.examine!, d]));
 const TRACE_POINTS = new Map(CONTENT.traces.map((t) => [t.id, tracePoints(t.shape)]));
 const HEAD = new Vector3();
 
@@ -126,6 +139,8 @@ export class InquiryDirector {
     this.mistakes = 0;
     this.lastProgress = Date.now();
     this.store.patch({ thought: null, toast: null, uv: false, boardThought: null, hintSuggested: false, version: this.store.get().version + 1 });
+    // L'armoire reprend la place que dit la partie chargée (glisse d'un coup).
+    this.updateStoryDecor(this.host.state.playerPosition[0], this.host.state.playerPosition[2], 0);
   }
 
   // ——— Lampe UV ———
@@ -169,6 +184,8 @@ export class InquiryDirector {
     const room = roomAt(x, z)?.id ?? null;
     const entered = room !== this.room ? room : null;
     this.room = room;
+    this.updateCarriers();
+    this.updateStoryDecor(x, z, dt);
     for (const t of CONTENT.thoughts) if (this.matches(t.trigger, x, z, entered) && conditionMet(t.requires, this.record, s)) this.think(t.id);
     for (const e of CONTENT.events) {
       if (this.record.events.includes(e.id) || !this.matches(e.trigger, x, z, entered) || !conditionMet(e.requires, this.record, s)) continue;
@@ -200,9 +217,83 @@ export class InquiryDirector {
   }
 
   private matches(trigger: Trigger, x: number, z: number, entered: string | null): boolean {
-    if (trigger.on === "near") return Math.hypot(x - trigger.x, z - trigger.z) <= trigger.radius;
-    if (trigger.on === "enter") return entered === trigger.room;
-    return false;
+    switch (trigger.on) {
+      case "near": return Math.hypot(x - trigger.x, z - trigger.z) <= trigger.radius;
+      case "enter": return entered === trigger.room;
+      case "fact": return knowsFact(this.host.state, trigger.fact);
+      case "nearEnemy": {
+        const e = this.host.locate?.(trigger.enemy);
+        return Boolean(e && e.alive && Math.hypot(x - e.x, z - e.z) <= trigger.radius);
+      }
+      case "ready": {
+        const d = INDEX.deductions.get(trigger.deduction);
+        return Boolean(d && d.kind === "sentence" && sentenceReady(d, this.record, this.host.state));
+      }
+      default: return false;
+    }
+  }
+
+  /** Armoire de la chambre 1 : déplacement courant (m vers le nord) et son obstacle. */
+  private cabinetShift = 0;
+  private cabinetBox: { box: Box; minZ: number; maxZ: number } | null = null;
+
+  /**
+   * Décor narratif piloté par l'enquête (game/render/storyProps.ts) : l'armoire de la chambre 1 glisse quand on la
+   * pousse (avec son obstacle), les plafonds de la chambre 1 et du local technique se lèvent quand Lou y est, et la
+   * lueur verte sous la porte de l'opératrice s'éteint quand Lou est disculpé (C5).
+   */
+  private updateStoryDecor(x: number, z: number, dt: number): void {
+    const r = this.record;
+    const target = r.events.includes("room1_push") ? CABINET_SLIDE : 0;
+    if (this.cabinetShift !== target) {
+      const step = Math.sign(target - this.cabinetShift) * Math.min(Math.abs(target - this.cabinetShift), dt > 0 ? dt * 1.2 : Infinity);
+      this.cabinetShift += step;
+      const cabinet = getStoryObject("room1_cabinet");
+      if (cabinet) cabinet.position.z = POS.room1_cabinet.z + this.cabinetShift;
+      if (!this.cabinetBox) {
+        const box = this.host.colliders?.().find((b) => Math.abs((b.minX + b.maxX) / 2 - POS.room1_cabinet.x) < 0.05 && Math.abs((b.minZ + b.maxZ) / 2 - POS.room1_cabinet.z) < 0.05);
+        if (box) this.cabinetBox = { box, minZ: box.minZ, maxZ: box.maxZ };
+      }
+      if (this.cabinetBox) {
+        this.cabinetBox.box.minZ = this.cabinetBox.minZ + this.cabinetShift;
+        this.cabinetBox.box.maxZ = this.cabinetBox.maxZ + this.cabinetShift;
+      }
+    }
+    const inside = (a: { x0: number; x1: number; z0: number; z1: number }) => x > a.x0 && x < a.x1 && z > a.z0 && z < a.z1;
+    const room1 = getStoryObject("room1_ceiling");
+    if (room1) room1.visible = !inside(AREAS.room1);
+    const local = getStoryObject("local_ceiling");
+    if (local) local.visible = !inside(AREAS.local);
+    const glowLine = getStoryObject("operator_glow");
+    if (glowLine) glowLine.visible = !knowsFact(this.host.state, "accused_cleared");
+  }
+
+  /**
+   * Objets portés par un mordu : ils suivent le mordu ; examinables de loin quand il est figé par la lampe, ou au sol
+   * quand il est abattu. Un mordu absent du monde laisse l'objet posé à sa place (x, z du contenu).
+   */
+  private updateCarriers(): void {
+    for (const e of CARRIED) {
+      const where = this.host.locate?.(e.carrier!);
+      const def = DEFS.get(e.id);
+      const marker = this.view.markers.get(e.id);
+      if (!where) {
+        CARRIERS.delete(e.carrier!);
+        if (marker) marker.group.visible = true;
+        continue;
+      }
+      const dropped = !where.alive;
+      CARRIERS.set(e.carrier!, { x: where.x, z: where.z, ready: dropped || where.frozen, dropped });
+      if (def) {
+        def.x = where.x;
+        def.z = where.z;
+        def.radius = dropped ? DROPPED_RADIUS : e.radius + CARRIER_REACH;
+      }
+      if (marker) {
+        marker.group.position.set(where.x, 0, where.z);
+        marker.group.visible = dropped;
+      }
+    }
   }
 
   /** Chaque image, même en pause : pensées, rendu UV, bulle. */
@@ -304,13 +395,19 @@ export class InquiryDirector {
   /** Ajoute une carte au carnet ; `toast` : petite animation « nouvel indice ». */
   grantCard(id: string, toast = true): boolean {
     if (!INDEX.cards.has(id) || !addOnce(this.record, "cards", id)) return false;
+    this.cardGained(id, toast);
+    return true;
+  }
+
+  /** Suites d'une carte nouvellement rangée au carnet (déjà ajoutée à l'enregistrement). */
+  private cardGained(id: string, toast: boolean): void {
+    if (INDEX.cards.get(id)?.flag) this.host.state.setFlag(CARD_FLAG(id));
     this.progress();
     if (toast) {
       this.toastAge = 0;
       this.store.patch({ toast: { card: id, key: ++this.toastKey } });
     }
     this.fire({ on: "card", card: id });
-    return true;
   }
 
   private seeTrace(id: string): void {
@@ -326,7 +423,12 @@ export class InquiryDirector {
   private runEvent(id: string): void {
     const e = CONTENT.events.find((ev) => ev.id === id)!;
     if (!addOnce(this.record, "events", id)) return;
-    for (const a of e.actions) {
+    this.runActions(e.actions);
+    this.host.state.markChanged();
+  }
+
+  private runActions(actions: readonly EventAction[] | undefined): void {
+    for (const a of actions ?? []) {
       const run = () => {
         switch (a.do) {
           case "sound": this.host.emit({ type: "cue", name: a.cue, x: a.x, z: a.z }); break;
@@ -334,12 +436,42 @@ export class InquiryDirector {
           case "thought": this.think(a.thought); break;
           case "light": this.view.glow(a.x, a.z, a.y ?? 0.2, a.color, a.duration); break;
           case "silhouette": this.view.silhouette(a.x, a.z, a.toX, a.toZ, a.duration); break;
+          case "card": this.grantCard(a.card); break;
+          case "noise": this.host.noise?.(a.x, a.z, a.radius); break;
         }
       };
       if (a.delay) this.pending.push({ at: this.clock + a.delay, run });
       else run();
     }
-    this.host.state.markChanged();
+  }
+
+  // ——— Énigmes ———
+
+  puzzleSolved(id: string): boolean {
+    return puzzleSolved(this.record, id);
+  }
+
+  /** Essaie une réponse (lettres, mot de passe, ordre des leviers). Une erreur ne punit jamais : une pensée. */
+  solvePuzzle(id: string, input: readonly string[]): PuzzleVerdict & { applied?: Applied } {
+    const p = INDEX.puzzles.get(id);
+    if (!p) return { ok: false, thought: "…" };
+    if (this.puzzleSolved(id)) return { ok: true };
+    const verdict = checkPuzzle(p, input);
+    if (!verdict.ok) {
+      this.runActions(p.onError);
+      return verdict;
+    }
+    const applied = applyPuzzle(INDEX, this.record, id);
+    const s = this.host.state;
+    p.items?.forEach((item, i) => s.collect(`puzzle_${id}_${i}`, item.kind, item.amount));
+    s.setFlag(PUZZLE_FLAG(id));
+    for (const u of p.unlocks) if (u.kind === "fact" || u.kind === "dialogue") s.setFlag(u.id.toLowerCase());
+    this.runActions(p.onSolve);
+    for (const card of applied.cards) this.cardGained(card, true);
+    for (const t of applied.thoughts) this.think(t);
+    this.host.emit({ type: "cue", name: "objective" });
+    this.progress();
+    return { ok: true, applied };
   }
 
   // ——— Gros plans ———
@@ -399,7 +531,11 @@ export class InquiryDirector {
     }
     const applied = applyDeduction(INDEX, this.record, verdict.deduction.id);
     this.mistakes = 0;
-    for (const card of applied.cards) this.fire({ on: "card", card });
+    // Faits lisibles par les conversations : « x8 », « c5 », et les déblocages `fact` / `dialogue` (links.ts).
+    const s = this.host.state;
+    s.setFlag(DEDUCTION_FLAG(verdict.deduction.id));
+    for (const u of verdict.deduction.unlocks) if (u.kind === "fact" || u.kind === "dialogue") s.setFlag(u.id.toLowerCase());
+    for (const card of applied.cards) this.cardGained(card, false);
     for (const t of applied.thoughts) this.think(t);
     this.fire({ on: "deduction", deduction: verdict.deduction.id });
     this.host.emit({ type: "cue", name: "objective" });

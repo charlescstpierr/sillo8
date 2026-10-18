@@ -485,6 +485,22 @@ const SOUNDS: Record<string, SoundDef> = {
       }
     },
   },
+  // Signal tapé à la main à la radio (enquête, d11) : V · I · E · N · S en morse, un peu irrégulier.
+  morse: {
+    gain: 0.12, bus: "amb", echo: 0.3, gap: 6,
+    recipe(v, t, d) {
+      const dot = 0.09;
+      let at = t;
+      for (const letter of ["...-", "..", ".", "-.", "..."]) {
+        for (const mark of letter) {
+          const dur = mark === "-" ? dot * 3 : dot;
+          v.tone({ type: "square", freq: 820, start: at, dur, peak: 0.35, attack: 0.005, dest: d });
+          at += dur + dot * rnd(0.9, 1.3);
+        }
+        at += dot * 3;
+      }
+    },
+  },
 };
 
 /** Noms de tous les sons jouables (effets, ambiance, mystère). */

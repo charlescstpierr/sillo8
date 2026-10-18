@@ -99,6 +99,10 @@ export function InventorySheet({ engine, touch }: { engine: Engine; touch: boole
             <li><span>Presse à clous · 1 → {NAILS_PER_SCRAP} clous · hors réserve</span><b>1</b></li>
             <li><span>Amélioration de la lampe · hors réserve</span><b>{UPGRADE_PARTS}</b></li>
           </ul>
+          {/* Secret de Lou (L1) : un paquet noué, là depuis le début, qu'on ne peut pas ouvrir. */}
+          <Item icon="bag" name="Paquet noué" detail="Un chiffon noué, lourd.">
+            <PaperButton className={styles.useBtn} variant="ghost" aria-label="Examiner le paquet noué" onClick={() => engine.inquiry.examine("a16")}>Examiner</PaperButton>
+          </Item>
         </Pocket>
       </div>
 

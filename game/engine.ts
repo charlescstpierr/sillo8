@@ -15,7 +15,7 @@ import { safeSpot } from "./safety";
 import { CONVERSATIONS } from "./conversation";
 import { HudStore, type HudSnapshot } from "./hud";
 import { UiStore, type UiMode } from "./ui";
-import { createHorde } from "./enemy";
+import { createHorde, type ZombieHorde } from "./enemy";
 import { Combat, LAMP, WRENCH } from "./combat";
 import { checkTriggers, interactWith, type ProgressEffects } from "./progress";
 import type { Horde, HordeContext } from "./types";
@@ -154,6 +154,13 @@ export class Engine {
     this.inquiry = new InquiryDirector({
       scene: this.scene, state: this.state, notify: (text) => this.notify(text),
       emit: (event) => this.events.emit(event), setMode: (mode, id) => this.setMode(mode, id),
+      noise: (x, z, radius) => this.horde.hearNoise(x, z, radius),
+      colliders: () => this.world.colliders,
+      // Mordus porteurs d'indices : figés par la lampe (étourdis) ou abattus.
+      locate: (id) => {
+        const z = (this.horde as Partial<ZombieHorde>).get?.(id);
+        return z ? { x: z.x, z: z.z, alive: z.alive, frozen: z.alive && (z.stunned > 0 || z.freeze > 0) } : null;
+      },
     });
     this.inquiry.attach(this.world.interactables);
     this.progressEffects = {

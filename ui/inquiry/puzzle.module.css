@@ -1,0 +1,266 @@
+/* Énigmes (cadenas, mot de passe, leviers) : papier crème, encre, gros boutons au doigt. */
+.panel {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  color: var(--ink, #3a2a1c);
+  background: var(--paper, #f4ecd6);
+  border: 2px solid #2a1a0e;
+  border-radius: 10px;
+  box-shadow: 0 3px 0 rgba(30, 20, 13, 0.35);
+  overflow: hidden;
+}
+
+.prompt {
+  margin: 0;
+  font-family: var(--font-stamp, "Special Elite", monospace);
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.word {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wheels {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.wheel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.roll {
+  width: 40px;
+  height: 30px;
+  font-size: 13px;
+  color: var(--ink, #3a2a1c);
+  background: #e7dcc0;
+  border: 2px solid #2a1a0e;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.letter {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font-family: var(--font-stamp, "Special Elite", monospace);
+  font-size: 24px;
+  color: #fff6e2;
+  background: linear-gradient(#3b2a1d, #5a4330 50%, #3b2a1d);
+  border: 2px solid #2a1a0e;
+  border-radius: 6px;
+}
+
+.screen {
+  margin: 0;
+  padding: 6px 12px;
+  min-height: 38px;
+  font-family: var(--font-stamp, "Special Elite", monospace);
+  font-size: 22px;
+  letter-spacing: 4px;
+  color: #8ff0a8;
+  background: #22302a;
+  border: 2px solid #2a1a0e;
+  border-radius: 8px;
+}
+
+.caret {
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.typeRow {
+  display: flex;
+  gap: 6px;
+}
+
+.field {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  font-family: var(--font-stamp, "Special Elite", monospace);
+  font-size: 16px;
+  text-transform: uppercase;
+  color: var(--ink, #3a2a1c);
+  background: #fffaf0;
+  border: 2px solid #2a1a0e;
+  border-radius: 8px;
+}
+
+.go,
+.reset {
+  height: 36px;
+  padding: 0 14px;
+  font-family: var(--font-stamp, "Special Elite", monospace);
+  font-size: 15px;
+  color: #fff6e2;
+  background: #b4532a;
+  border: 2px solid #2a1a0e;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.reset {
+  align-self: center;
+  color: var(--ink, #3a2a1c);
+  background: #e7dcc0;
+}
+
+.reset:disabled {
+  opacity: 0.45;
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.key {
+  height: 34px;
+  min-width: 0;
+  padding: 0;
+  font-family: var(--font-stamp, "Special Elite", monospace);
+  font-size: 16px;
+  color: var(--ink, #3a2a1c);
+  background: #fffaf0;
+  border: 2px solid #2a1a0e;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.key[data-wide] {
+  grid-column: span 1;
+  background: #e7dcc0;
+}
+
+.levers {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.levers .reset {
+  grid-column: 1 / -1;
+}
+
+.lever {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 2px 4px;
+  color: var(--ink, #3a2a1c);
+  background: #e7dcc0;
+  border: 2px solid #2a1a0e;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.leverSlot {
+  position: relative;
+  width: 12px;
+  height: 46px;
+  background: #2c2c2c;
+  border-radius: 6px;
+}
+
+.leverKnob {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  background: #c4412a;
+  border: 2px solid #2a1a0e;
+  border-radius: 50%;
+  transition: top 0.18s ease-out;
+}
+
+.lever[data-down] .leverKnob {
+  top: 22px;
+}
+
+.leverLabel {
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--font-stamp, "Special Elite", monospace);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leverRank {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  font-family: var(--font-stamp, "Special Elite", monospace);
+  font-size: 13px;
+  color: #b4532a;
+}
+
+.thought {
+  margin-top: 4px;
+}
+
+.solved {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.solvedStamp {
+  flex: none;
+  padding: 2px 8px;
+  font-family: var(--font-stamp, "Special Elite", monospace);
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #2f7a43;
+  border: 2.5px solid #2f7a43;
+  border-radius: 6px;
+  transform: rotate(-6deg);
+}
+
+/* Le disjoncteur claque : un instant de noir. */
+.blackout {
+  position: absolute;
+  inset: 0;
+  background: #0b0806;
+  pointer-events: none;
+  animation: blackout 1.4s ease-out forwards;
+}
+
+@keyframes blackout {
+  0% { opacity: 0.95; }
+  70% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret, .blackout { animation: none; opacity: 0; }
+}

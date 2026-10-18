@@ -43,8 +43,9 @@ describe("contenu de l'étage 1", () => {
   });
 
   it("garde les identifiants et les textes du document d'histoire", () => {
-    expect(FLOOR1.deductions.map((d) => d.id)).toEqual(["X1", "C1", "X4"]);
-    expect(FLOOR1.traces.map((t) => t.id)).toEqual(["c1", "c2", "c3", "c5"]);
+    // Contenu complet de l'étage 1 : les déductions du prototype restent en tête (X1, C1, X4).
+    expect(FLOOR1.deductions.map((d) => d.id).slice(0, 3)).toEqual(["X1", "C1", "X4"]);
+    expect(FLOOR1.traces.map((t) => t.id)).toEqual(["c1", "c2", "c3", "c4", "c5", "c8"]);
     expect(index.cards.get("poster_notice")!.text).toContain("des mordus sont entrés par la porte de service");
     expect(index.examinables.get("a15")!.closeup.details![0].card).toBe("service_threshold");
     // Au moins deux gros plans avec un détail caché, 3 à 4 traces, 5 pensées ou plus, un événement étrange.
