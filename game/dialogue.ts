@@ -182,7 +182,7 @@ export class SiloDialogue {
 
   offlineReply(character: Character, text: string): string {
     const state = this.state;
-    if (state === null) return "Connexion au SILO 9 indisponible.";
+    if (state === null) return "Connexion indisponible.";
     const question = text.toLowerCase().slice(0, 1000);
     const prefix = character === "mother" ? "Opérateur. " : "Écoute. ";
     if (question.includes("surface") || question.includes("mensonge")) {
@@ -191,7 +191,7 @@ export class SiloDialogue {
       return "Les archives pourraient expliquer ce qui s'est passé. Pour l'instant, je n'ai pas de preuve sur la surface.";
     }
     if (question.includes("énergie") || question.includes("batterie") || question.includes("recharge")) {
-      return prefix + "L'ascenseur recharge gratuitement ta batterie. ARC-3 et SCAN ÉCHO partagent cette réserve. Garde 20 unités pour un scan.";
+      return prefix + "La borne du poste de sécurité recharge ta lampe gratuitement. Garde une pile de rechange pour les coups durs.";
     }
     if (question.includes("autonomie") && character === "n7") return "Je veux décider par moi-même. Le noyau pourrait lever ma restriction. Ce choix t'appartient.";
     if (state.phase === Phase.COMPLETE) {

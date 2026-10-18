@@ -16,7 +16,6 @@ export const FACT_IDS = [
   "secret_revealed",
   "keycard",
   "floor2",
-  "arc_lock_disabled",
 ] as const;
 export type FactId = (typeof FACT_IDS)[number];
 

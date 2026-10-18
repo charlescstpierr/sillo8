@@ -1,6 +1,7 @@
-// Contrôleur de l'opérateur vu de dessus : déplacement, course, accroupi, orientation vers la visée,
-// tir et rechargement du D9 (cadence et durée reprises de data/weapons/d9.tres).
+// Contrôleur du bricoleur vu de dessus : déplacement, course, accroupi, orientation vers la visée,
+// cadence des armes et rechargement du lance-clous.
 import type { Box } from "./collision";
+import { NAIL_CAPACITY } from "./state";
 import { moveCircle } from "./collision";
 import { turnTowards } from "./aim";
 
@@ -13,7 +14,8 @@ export const PLAYER = {
   turnSpeed: 14,
 };
 
-export const D9 = { cooldown: 0.23, reloadDuration: 1.35, capacity: 12, noiseRadius: 28 };
+/** Lance-clous : cadence, durée de rechargement, chargeur, rayon du bruit. */
+export const NAILGUN = { cooldown: 0.16, reloadDuration: 1.1, capacity: NAIL_CAPACITY, noiseRadius: 10 };
 
 export interface MoveIntent {
   /** Direction monde (x, z), longueur ≤ 1. */
@@ -104,23 +106,29 @@ export class PlayerController {
     return done;
   }
 
-  /** Tente un tir du D9. `spendRound` décrémente le chargeur de l'état de partie. */
+  /** Tente un tir du lance-clous. `spendRound` décrémente le chargeur de l'état de partie. */
   tryFire(spendRound: () => boolean): boolean {
     if (this.cooldown > 0 || this.reloading) return false;
     if (!spendRound()) return false;
-    this.cooldown = D9.cooldown;
+    this.cooldown = NAILGUN.cooldown;
     this.shotTime = 0.18;
     return true;
   }
 
   startReload(canReload: boolean): boolean {
     if (this.reloading || !canReload) return false;
-    this.reloadTime = D9.reloadDuration;
+    this.reloadTime = NAILGUN.reloadDuration;
     return true;
+  }
+
+  /** Interrompt le rechargement (changement d'arme) : aucun clou n'est chargé. */
+  cancelReload(): void {
+    this.reloadTime = 0;
+    this.reloadCompleted = false;
   }
 
   /** Avancement du rechargement, de 0 à 1. */
   get reloadProgress(): number {
-    return this.reloading ? 1 - this.reloadTime / D9.reloadDuration : 0;
+    return this.reloading ? 1 - this.reloadTime / NAILGUN.reloadDuration : 0;
   }
 }

@@ -1,14 +1,22 @@
 // Entrées unifiées : clavier + souris, manette (twin-stick) et commandes tactiles.
 // Les touches de déplacement utilisent les codes physiques : WASD en QWERTY devient ZQSD en AZERTY
-// sans réglage, et la touche « Q / A » du SCAN ÉCHO reste celle à gauche de la touche avancer.
+// sans réglage, et la touche « Q / A » du carnet reste celle à gauche de la touche avancer.
 
-export type Action = "interact" | "reload" | "scan" | "inventory" | "pause" | "weapon1" | "weapon2" | "save" | "load" | "arc" | "heal" | "cell" | "perf";
+export type Action =
+  | "interact" | "reload" | "journal" | "inventory" | "pause" | "weapon1" | "weapon2" | "swap"
+  | "save" | "load" | "light" | "heal" | "cell" | "perf"
+  | LegacyAction;
+
+/** Anciens noms tolérés le temps que l'interface migre (à retirer ensuite) : "arc" → "light", "scan" → "journal". */
+type LegacyAction = "arc" | "scan";
+const LEGACY: Record<LegacyAction, Action> = { arc: "light", scan: "journal" };
 export type Device = "keyboard" | "gamepad" | "touch";
 
 const KEY_ACTIONS: Record<string, Action> = {
   KeyE: "interact",
   KeyR: "reload",
-  KeyQ: "scan",
+  KeyQ: "journal",
+  KeyJ: "journal",
   Tab: "inventory",
   Escape: "pause",
   Digit1: "weapon1",
@@ -56,7 +64,7 @@ export class InputState {
   }
 
   trigger(action: Action): void {
-    this.pressed.add(action);
+    this.pressed.add(LEGACY[action as LegacyAction] ?? action);
   }
 
   clearPressed(): void {
@@ -114,7 +122,12 @@ export class InputState {
       this.device = "keyboard";
       onMove(e);
       if (e.button === 0) this.mouseFiring = true;
-      if (e.button === 2) this.pressed.add("arc");
+      if (e.button === 2) this.pressed.add("light");
+      // Boutons latéraux de la souris (précédent / suivant) : changer d'arme.
+      if (e.button === 3 || e.button === 4) {
+        e.preventDefault();
+        this.pressed.add("swap");
+      }
     };
     const onUp = (e: PointerEvent) => {
       if (e.button === 0) this.mouseFiring = false;
@@ -126,6 +139,8 @@ export class InputState {
     const onLeave = () => { this.pointer = null; };
     const onBlur = () => this.releaseAll();
     const noMenu = (e: Event) => e.preventDefault();
+    // Évite la navigation précédent / suivant du navigateur avec les boutons latéraux.
+    const noHistory = (e: MouseEvent) => { if (e.button === 3 || e.button === 4) e.preventDefault(); };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
     window.addEventListener("blur", onBlur);
@@ -135,6 +150,7 @@ export class InputState {
     target.addEventListener("pointerleave", onLeave);
     target.addEventListener("wheel", onWheel, { passive: false });
     target.addEventListener("contextmenu", noMenu);
+    target.addEventListener("mouseup", noHistory);
     this.detach = () => {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
@@ -145,6 +161,7 @@ export class InputState {
       target.removeEventListener("pointerleave", onLeave);
       target.removeEventListener("wheel", onWheel);
       target.removeEventListener("contextmenu", noMenu);
+      target.removeEventListener("mouseup", noHistory);
     };
   }
 
@@ -183,7 +200,7 @@ export class InputState {
         sprint = sprint || button(10);
         crouch = crouch || button(1);
         firing = firing || button(7);
-        const edges: [number, Action][] = [[0, "interact"], [2, "reload"], [3, "scan"], [6, "arc"], [4, "weapon1"], [5, "weapon2"], [8, "inventory"], [9, "pause"]];
+        const edges: [number, Action][] = [[0, "interact"], [2, "reload"], [3, "journal"], [6, "light"], [4, "swap"], [5, "swap"], [8, "inventory"], [9, "pause"]];
         for (const [index, action] of edges) {
           if (button(index) && !this.gamepadPrev[index]) this.pressed.add(action);
         }

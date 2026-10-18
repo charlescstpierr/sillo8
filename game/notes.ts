@@ -40,7 +40,7 @@ export const NOTES: Record<string, Note> = {
     id: "note_control",
     title: "Relève radio",
     author: "Opératrice de nuit",
-    text: "Le relais a grillé pendant l'orage. Un module de rechange se bricole à l'atelier avec deux pièces, puis il suffit de l'enficher dans la console.",
+    text: "L'émetteur a grillé pendant l'orage. Un module de rechange se bricole à l'atelier avec deux pièces, puis il suffit de l'enficher dans la console.",
   },
   note_storage: {
     id: "note_storage",

@@ -9,7 +9,7 @@ class MemoryStore implements KeyValueStore {
 }
 
 describe("ressources", () => {
-  it("applique les règles d'énergie, de soins et du D9", () => {
+  it("applique les règles de la lampe, des soins et des clous", () => {
     const s = new SiloState();
     expect(s.spendEnergy(20)).toBe(true);
     expect(s.energy).toBe(80);

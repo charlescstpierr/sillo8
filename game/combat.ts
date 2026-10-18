@@ -1,129 +1,94 @@
-// Armes et SCAN ÉCHO (port de player.gd : fire, activate_scan ; world.gd : scan).
-// D9 : tir automatique tant que la gâchette est tenue. ARC-3 : décharge électrique (énergie), étourdit et coupe
-// le verrou électrique. SCAN ÉCHO : onde au sol, révèle les zones secrètes et marque objets et zombies pendant 5 s.
+// Armes du bricoleur (docs/MECHANICS.md) : clé à molette au corps à corps, lance-clous, et lampe qui éblouit.
 // Le moteur appelle update() à chaque image avec les commandes du joueur ; le rechargement reste dans engine.ts.
-import { Mesh, MeshBasicMaterial, SphereGeometry, Vector3, type Scene } from "three";
-import { D9, type PlayerController } from "./player";
+import { Vector3, type Scene } from "three";
+import { NAILGUN, type PlayerController } from "./player";
 import type { SiloState } from "./state";
 import type { Horde } from "./types";
-import { rayDistance } from "./collision";
-import { SECRET } from "./level";
-
-// Valeurs héritées, en attendant le combat du bricoleur.
-const SCAN_RADIUS = 18;
-const SCAN_NOISE = 24;
-import type { WorldView } from "./render/world";
-import type { OperatorRig } from "./render/operator";
+import { angleDifference, yawTowards } from "./aim";
+import { rayDistance, segmentClear, type Box } from "./collision";
 import { CombatFx } from "./render/fx";
 
 export interface CombatHost {
   scene: Scene;
   state: SiloState;
   player: PlayerController;
-  operator: OperatorRig;
   horde: Horde;
-  world: WorldView;
+  /** Murs, portes fermées et décor solide (lu à chaque coup). */
+  world: { colliders: readonly Box[] };
   notify(text: string): void;
-  /** Propage un bruit aux zombies (tir, scan). */
+  /** Propage un bruit aux zombies. */
   noise(x: number, z: number, radius: number): void;
-  /** Dessine les marqueurs sur canvas. Par défaut : vrai si `document` existe (faux en tests). */
-  visuals?: boolean;
 }
 
 export interface CombatInput {
-  /** Gâchette maintenue (clic gauche, RT, bouton TIR). */
+  /** Gâchette maintenue (clic gauche, RT, bouton FRAPPER / TIRER). */
   firing: boolean;
-  /** Décharge ARC-3 directe (clic droit, LT, bouton ARC). */
-  arc: boolean;
-  scan: boolean;
+  /** Lampe : éblouir (clic droit, LT, bouton LAMPE). */
+  light: boolean;
+  /** Arme suivante (LB / RB, boutons 4-5 de la souris, ⇄ au tactile). */
+  swap: boolean;
   weapon1: boolean;
   weapon2: boolean;
 }
 
-/** Caractéristiques reprises de data/weapons/*.tres. */
-export const WEAPONS = {
-  d9: { name: "D9 · SERVICE", damage: 28, stun: 0, cooldown: D9.cooldown, noise: D9.noiseRadius, reach: 70 },
-  arc: { name: "ARC-3 · INDUCTION", damage: 39, stun: 2.3, energy: 12, cooldown: 0.52, noise: 16, reach: 22 },
-} as const;
+export type WeaponIndex = 0 | 1;
 
-export const SCAN = { cooldown: 2.5, energy: 20, radius: SCAN_RADIUS, noise: SCAN_NOISE, markerTime: 5 } as const;
+const DEG = Math.PI / 180;
 
-/** Distance au boîtier du verrou à laquelle la décharge le coupe. */
-export const ARC_LOCK_RADIUS = 0.8;
-/** Hauteur des tirs (main de l'opérateur). */
-const SHOT_HEIGHT = 1.0;
-/** Une pression ARC pendant la cadence d'une autre arme est gardée un court instant. */
-const ARC_BUFFER = 0.3;
+export const WRENCH = { name: "Clé à molette", damage: 26, stun: 0.25, cooldown: 0.5, noise: 4, reach: 1.7, halfAngle: 35 * DEG, swing: 0.32 } as const;
+export const NAIL = { name: "Lance-clous", damage: 16, stun: 0, cooldown: NAILGUN.cooldown, noise: NAILGUN.noiseRadius, reach: 16 } as const;
+export const LAMP = { energy: 15, halfAngle: 20 * DEG, range: 8, stun: 1.8, cooldown: 1.2, flash: 0.25 } as const;
+export const WEAPONS = [WRENCH, NAIL] as const;
+
+/** Hauteur des coups (main du bricoleur). */
+const HAND_HEIGHT = 1.0;
 
 export interface ShotResult {
   /** Distance parcourue jusqu'au point d'impact. */
   distance: number;
   x: number;
   z: number;
-  target: "zombie" | "wall" | "device" | "none";
+  target: "zombie" | "wall" | "none";
   zombieId?: string;
 }
 
 export class Combat {
-  /** 0 = D9, 1 = ARC-3. */
-  weapon: 0 | 1 = 0;
-  /** Temps avant le prochain SCAN ÉCHO. */
-  scanCooldown = 0;
-  /** Temps restant d'affichage des marqueurs d'écho. */
-  markerTime = 0;
-  /** Zombies marqués par le dernier scan (suivis à chaque image). */
-  readonly markedZombies = new Set<string>();
-  /** Objets marqués par le dernier scan. */
-  readonly markedItems = new Set<string>();
+  /** 0 = clé à molette, 1 = lance-clous. */
+  weapon: WeaponIndex = 0;
+  /** Secondes restantes du coup de clé (0,32 s → 0). */
+  swingTime = 0;
+  /** Secondes restantes de l'éclair de la lampe (0,25 s → 0). */
+  dazzleTime = 0;
+  /** Temps avant de pouvoir éblouir à nouveau. */
+  lightCooldown = 0;
   readonly fx: CombatFx;
 
-  private flash: Mesh;
-  private flashMaterial: MeshBasicMaterial;
-  private flashTime = 0;
-  private arcQueued = 0;
   private clock = 0;
   private lastNotice = new Map<string, number>();
   private readonly muzzle = new Vector3();
   private readonly hit = new Vector3();
   private readonly result: ShotResult = { distance: 0, x: 0, z: 0, target: "none" };
+  private readonly targets: string[] = [];
 
   constructor(private host: CombatHost) {
-    this.flashMaterial = new MeshBasicMaterial({ color: "#ffe28a", transparent: true, opacity: 0.95, toneMapped: false });
-    this.flash = new Mesh(new SphereGeometry(0.11, 8, 6), this.flashMaterial);
-    this.flash.visible = false;
-    this.flash.position.set(0, -0.36, 0.02);
-    host.operator.gun.add(this.flash);
-    this.fx = new CombatFx(host.visuals ?? typeof document !== "undefined", SCAN.radius);
+    this.fx = new CombatFx();
     host.scene.add(this.fx.root);
   }
 
   update(dt: number, input: CombatInput): void {
     this.clock += dt;
-    this.scanCooldown = Math.max(0, this.scanCooldown - dt);
-    this.arcQueued = Math.max(0, this.arcQueued - dt);
+    this.swingTime = Math.max(0, this.swingTime - dt);
+    this.dazzleTime = Math.max(0, this.dazzleTime - dt);
+    this.lightCooldown = Math.max(0, this.lightCooldown - dt);
 
-    if (input.weapon1 && this.weapon !== 0) {
-      this.weapon = 0;
-      this.host.notify(WEAPONS.d9.name);
+    if (input.swap) this.select(this.weapon === 0 ? 1 : 0);
+    if (input.weapon1) this.select(0);
+    if (input.weapon2) this.select(1);
+    if (input.light) this.dazzle();
+    if (input.firing) {
+      if (this.weapon === 0) this.swing();
+      else this.fireNail();
     }
-    if (input.weapon2 && this.weapon !== 1) {
-      this.weapon = 1;
-      this.host.notify(WEAPONS.arc.name);
-    }
-
-    if (input.arc) this.arcQueued = ARC_BUFFER;
-    if (this.arcQueued > 0 && this.fireArc()) this.arcQueued = 0;
-    else if (input.firing) {
-      if (this.weapon === 0) this.fireD9();
-      else this.fireArc();
-    }
-    if (input.scan) this.scan();
-
-    // Éclat du canon.
-    this.flashTime = Math.max(0, this.flashTime - dt);
-    this.flash.visible = this.flashTime > 0;
-    if (this.flash.visible) this.flash.rotation.y += 2.1;
-    this.updateMarkers(dt);
     this.fx.update(dt);
   }
 
@@ -131,82 +96,77 @@ export class Combat {
     this.fx.setLowQuality(low);
   }
 
-  // ——— Armes ———
+  /** Change d'arme ; un rechargement en cours est abandonné. Vrai si l'arme change. */
+  select(weapon: WeaponIndex): boolean {
+    if (weapon === this.weapon) return false;
+    this.weapon = weapon;
+    this.host.player.cancelReload();
+    this.swingTime = 0;
+    this.host.notify(WEAPONS[weapon].name);
+    return true;
+  }
 
-  /** Tir du D9 si la cadence le permet. Vrai si une balle part. */
-  fireD9(): boolean {
+  // ——— Clé à molette ———
+
+  /** Coup en arc devant le bricoleur : touche tous les zombies à portée. Retourne le nombre touché, −1 si pas de coup. */
+  swing(): number {
+    const { player, horde, world } = this.host;
+    if (player.cooldown > 0 || player.reloading) return -1;
+    player.cooldown = WRENCH.cooldown;
+    this.swingTime = WRENCH.swing;
+    const ids = this.targets;
+    ids.length = 0;
+    let hx = 0;
+    let hz = 0;
+    for (const c of horde.aimCandidates()) {
+      const distance = Math.hypot(c.x - player.x, c.z - player.z);
+      if (distance > WRENCH.reach) continue;
+      if (distance > 0.2 && Math.abs(angleDifference(player.yaw, yawTowards(player.x, player.z, c.x, c.z))) > WRENCH.halfAngle) continue;
+      if (!segmentClear(player.x, player.z, c.x, c.z, world.colliders)) continue;
+      ids.push(c.id);
+      hx += c.x;
+      hz += c.z;
+    }
+    for (const id of ids) horde.damage(id, WRENCH.damage, WRENCH.stun);
+    this.host.noise(player.x, player.z, WRENCH.noise);
+    if (ids.length > 0) {
+      // Point d'impact : entre le joueur et le centre des cibles.
+      const x = (player.x + hx / ids.length) / 2 + Math.sin(player.yaw) * 0.3;
+      const z = (player.z + hz / ids.length) / 2 + Math.cos(player.yaw) * 0.3;
+      this.fx.bonk(x, HAND_HEIGHT + 0.2, z);
+      this.fx.impact(x, HAND_HEIGHT, z, "zombie", -Math.sin(player.yaw), -Math.cos(player.yaw));
+    }
+    return ids.length;
+  }
+
+  // ——— Lance-clous ———
+
+  /** Un clou si la cadence et le chargeur le permettent. Vrai si un clou part. */
+  fireNail(): boolean {
     const { player, state } = this.host;
     if (player.cooldown > 0 || player.reloading) return false;
     if (!player.tryFire(() => state.fireRound())) {
-      if (state.ammo === 0) this.notifyThrottled("Chargeur vide · R pour recharger", 1.5);
+      if (state.ammo === 0 && state.reserve === 0) this.notifyThrottled("Plus de clous · presse à clous ou boîte de clous", 1.5);
       return false;
     }
-    const w = WEAPONS.d9;
-    const shot = this.resolve(w.reach, false);
-    if (shot.target === "zombie") this.host.horde.damage(shot.zombieId!, w.damage, w.stun);
-    this.host.noise(player.x, player.z, w.noise);
-    this.showShot(shot, false);
+    const shot = this.resolve(NAIL.reach);
+    if (shot.target === "zombie") this.host.horde.damage(shot.zombieId!, NAIL.damage, NAIL.stun);
+    this.host.noise(player.x, player.z, NAIL.noise);
+    this.showShot(shot);
     return true;
   }
 
-  /** Décharge de l'ARC-3, quelle que soit l'arme en main. Vrai si elle part. */
-  fireArc(): boolean {
-    const { player, state } = this.host;
-    if (player.cooldown > 0 || player.reloading) return false;
-    const w = WEAPONS.arc;
-    if (!state.spendEnergy(w.energy)) {
-      this.arcQueued = 0;
-      this.notifyThrottled("Énergie insuffisante · borne de recharge ou cellule", 1.5);
-      return false;
-    }
-    player.cooldown = w.cooldown;
-    player.shotTime = 0.18;
-    const shot = this.resolve(w.reach, true);
-    if (shot.target === "zombie") {
-      this.host.horde.damage(shot.zombieId!, w.damage, w.stun);
-      this.host.notify("ÉLECTROCUTÉ");
-    } else if (shot.target === "device") {
-      state.addFact("arc_lock_disabled");
-      state.remember("Le verrou ARC a été désactivé.");
-      this.host.notify("Verrou électrique hors tension.");
-    }
-    this.host.noise(player.x, player.z, w.noise);
-    this.showShot(shot, true);
-    return true;
-  }
-
-  /**
-   * Résout un tir sur le plan XZ depuis le joueur, dans la direction de son lacet : le plus proche
-   * entre mur, zombie et (pour l'ARC) le boîtier du verrou électrique.
-   */
-  resolve(reach: number, arc: boolean): ShotResult {
-    const { player, horde, world, state } = this.host;
+  /** Résout un tir sur le plan XZ depuis le joueur, dans la direction de son lacet : le plus proche entre mur et zombie. */
+  resolve(reach: number): ShotResult {
+    const { player, horde, world } = this.host;
     const dx = Math.sin(player.yaw);
     const dz = Math.cos(player.yaw);
     const r = this.result;
     r.zombieId = undefined;
     const wall = rayDistance(player.x, player.z, dx, dz, reach, world.colliders);
-    let limit = wall;
     r.target = wall < reach ? "wall" : "none";
-    if (arc && !state.facts.includes("arc_lock_disabled")) {
-      const device = world.interactables.get("device")?.def;
-      if (device) {
-        // Entrée du rayon dans le disque de 0,8 m autour du boîtier (le boîtier lui-même est un obstacle).
-        const ox = device.x - player.x;
-        const oz = device.z - player.z;
-        const along = ox * dx + oz * dz;
-        const across = Math.abs(ox * dz - oz * dx);
-        if (along > 0 && across <= ARC_LOCK_RADIUS) {
-          const entry = Math.max(0, along - Math.sqrt(ARC_LOCK_RADIUS * ARC_LOCK_RADIUS - across * across));
-          if (entry <= limit + 1e-6 && entry <= reach) {
-            limit = Math.min(limit, Math.max(entry, Math.min(along, wall)));
-            r.target = "device";
-          }
-        }
-      }
-    }
-    const zombie = horde.raycast(player.x, player.z, dx, dz, limit);
-    if (zombie && zombie.distance <= limit) {
+    const zombie = horde.raycast(player.x, player.z, dx, dz, wall);
+    if (zombie && zombie.distance <= wall) {
       r.target = "zombie";
       r.zombieId = zombie.id;
       r.distance = zombie.distance;
@@ -214,95 +174,50 @@ export class Combat {
       r.z = zombie.z;
       return r;
     }
-    r.distance = limit;
-    r.x = player.x + dx * limit;
-    r.z = player.z + dz * limit;
+    r.distance = wall;
+    r.x = player.x + dx * wall;
+    r.z = player.z + dz * wall;
     return r;
   }
 
-  /** Visuels d'un tir : éclat, traçante ou éclair, impact. */
-  private showShot(shot: ShotResult, arc: boolean): void {
-    const { operator, player } = this.host;
-    operator.gun.updateWorldMatrix(true, false);
-    operator.gun.localToWorld(this.muzzle.set(0, -0.3, 0.02));
-    // Repli si l'arme n'est pas encore placée (premier tir) : main devant l'opérateur.
-    if (Math.hypot(this.muzzle.x - player.x, this.muzzle.z - player.z) > 1.5) {
-      this.muzzle.set(player.x + Math.sin(player.yaw) * 0.5, SHOT_HEIGHT, player.z + Math.cos(player.yaw) * 0.5);
-    }
-    this.hit.set(shot.x, shot.target === "device" ? 0.9 : SHOT_HEIGHT, shot.z);
-    this.flashMaterial.color.set(arc ? "#9ffcff" : "#ffe28a");
-    this.flash.scale.setScalar(arc ? 1.5 : 1);
-    this.flashTime = arc ? 0.1 : 0.06;
-    this.fx.flash(this.muzzle, arc ? "#3fe6ff" : "#ffa94d", arc ? 5 : 3.5);
-    if (arc) this.fx.bolt(this.muzzle, this.hit);
-    else this.fx.tracer(this.muzzle, this.hit);
-    if (shot.target !== "none") {
-      const bx = -Math.sin(player.yaw);
-      const bz = -Math.cos(player.yaw);
-      this.fx.impact(this.hit.x, this.hit.y, this.hit.z, arc ? "arc" : shot.target === "zombie" ? "zombie" : "wall", bx, bz);
-    }
+  /** Visuels d'un clou : éclat, trait, impact. */
+  private showShot(shot: ShotResult): void {
+    const { player } = this.host;
+    const fx = Math.sin(player.yaw);
+    const fz = Math.cos(player.yaw);
+    // Bouche du lance-clous : main droite (côté −X local), devant le bricoleur.
+    this.muzzle.set(player.x + fx * 0.55 - fz * 0.18, HAND_HEIGHT, player.z + fz * 0.55 + fx * 0.18);
+    this.hit.set(shot.x, HAND_HEIGHT, shot.z);
+    this.fx.flash(this.muzzle, "#ffe2a8", 2.5);
+    this.fx.tracer(this.muzzle, this.hit);
+    if (shot.target !== "none") this.fx.impact(this.hit.x, this.hit.y, this.hit.z, shot.target, -fx, -fz);
   }
 
-  // ——— SCAN ÉCHO ———
+  // ——— Lampe ———
 
-  /** Vrai si le scan part (cadence et énergie). */
-  scan(): boolean {
+  /** Éblouit les zombies du cône (ligne de vue). Retourne le nombre figé, −1 si la lampe ne s'allume pas. */
+  dazzle(): number {
     const { player, state, horde, world } = this.host;
-    if (this.scanCooldown > 0) return false;
-    if (!state.spendEnergy(SCAN.energy)) {
-      this.host.notify("SCAN ÉCHO requiert 20 énergie · borne de recharge ou cellule");
-      return false;
+    if (this.lightCooldown > 0) return -1;
+    if (!state.spendEnergy(LAMP.energy)) {
+      this.notifyThrottled("Pas assez de charge · pile ou borne de recharge", 1.5);
+      return -1;
     }
-    this.scanCooldown = SCAN.cooldown;
-    this.host.notify("SCAN ÉCHO · signatures révélées");
-    if (Math.hypot(player.x - SECRET.x, player.z - SECRET.z) <= SCAN.radius && state.openSecretWall()) {
-      this.host.notify("ÉCHO : un mur creux derrière les dortoirs. Une pièce cachée s'ouvre.");
+    this.lightCooldown = LAMP.cooldown;
+    this.dazzleTime = LAMP.flash;
+    const ids = this.targets;
+    ids.length = 0;
+    for (const c of horde.aimCandidates()) {
+      const distance = Math.hypot(c.x - player.x, c.z - player.z);
+      if (distance > LAMP.range) continue;
+      if (distance > 0.2 && Math.abs(angleDifference(player.yaw, yawTowards(player.x, player.z, c.x, c.z))) > LAMP.halfAngle) continue;
+      if (!segmentClear(player.x, player.z, c.x, c.z, world.colliders)) continue;
+      ids.push(c.id);
     }
-    this.host.noise(player.x, player.z, SCAN.noise);
-    this.fx.scanWave(player.x, player.z);
-    this.markerTime = SCAN.markerTime;
-    this.markedItems.clear();
-    this.markedZombies.clear();
-    for (const view of world.interactables.values()) {
-      const def = view.def;
-      // La visibilité suit l'état : un objet révélé à l'instant n'apparaît qu'au prochain rafraîchissement.
-      const visible = view.group.visible || (def.id === "keycard" && state.has("secret_revealed"));
-      if (!visible || Math.hypot(def.x - player.x, def.z - player.z) > SCAN.radius) continue;
-      this.markedItems.add(def.id);
-      this.fx.mark("i:" + def.id, "item", def.x, view.tooltipHeight + 0.55, def.z);
-    }
-    for (const z of horde.aimCandidates()) {
-      if (Math.hypot(z.x - player.x, z.z - player.z) >= SCAN.radius) continue;
-      this.markedZombies.add(z.id);
-      this.fx.mark("z:" + z.id, "zombie", z.x, 2.1, z.z);
-    }
-    return true;
-  }
-
-  /** Les marqueurs de zombies suivent leur cible ; un zombie disparu perd le sien. */
-  private updateMarkers(dt: number): void {
-    if (this.markerTime <= 0) return;
-    this.markerTime = Math.max(0, this.markerTime - dt);
-    if (this.markerTime === 0) {
-      this.markedItems.clear();
-      this.markedZombies.clear();
-      return;
-    }
-    if (this.markedZombies.size === 0) return;
-    const alive = this.host.horde.aimCandidates();
-    for (const id of this.markedZombies) {
-      let found = false;
-      for (const c of alive) {
-        if (c.id !== id) continue;
-        this.fx.moveMarker("z:" + id, c.x, c.z);
-        found = true;
-        break;
-      }
-      if (!found) {
-        this.markedZombies.delete(id);
-        this.fx.hideMarker("z:" + id);
-      }
-    }
+    // Silencieux : aucun bruit propagé.
+    for (const id of ids) horde.damage(id, 0, LAMP.stun);
+    this.fx.dazzle(player.x, player.z, player.yaw);
+    return ids.length;
   }
 
   private notifyThrottled(text: string, interval: number): void {

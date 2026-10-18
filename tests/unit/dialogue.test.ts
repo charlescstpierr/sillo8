@@ -1,6 +1,6 @@
 // Port de tests/test_dialogue.gd : le serveur HTTP local est remplacé par un fetch simulé.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SiloDialogue } from "@/game/dialogue";
+import { NARRATIVE, SiloDialogue } from "@/game/dialogue";
 import { SiloState } from "@/game/state";
 
 type Reply = { character: string; text: string; mode: string };
@@ -23,6 +23,8 @@ function fixture(content: unknown) {
 
 function setup() {
   const state = new SiloState();
+  // Interlocuteurs de l'histoire à venir : la confiance part de zéro.
+  state.relations = { mother: 0, n7: 0 };
   const chat = new SiloDialogue(fakeFetch);
   chat.setup(state);
   const replies: Reply[] = [];
@@ -52,8 +54,8 @@ describe("SiloDialogue", () => {
   });
 
   it("répond hors ligne immédiatement", () => {
-    const { chat, replies } = setup();
-    expect(chat.offlineReply("mother", "où aller ?")).toContain("ÉCHO");
+    const { chat, replies, state } = setup();
+    expect(chat.offlineReply("mother", "où aller ?")).toContain(state.objective());
     expect(chat.offlineReply("n7", "surface")).not.toBe("");
     chat.ask("mother", "Que dois-je faire ?");
     expect(replies).toHaveLength(1);
@@ -68,7 +70,7 @@ describe("SiloDialogue", () => {
     chat.ask("mother", "Où est le relais ?");
     const reply = await next(0);
     expect(reply.mode).toBe("IA connectée");
-    expect(reply.text).toBe("Voici ce que je peux confirmer.\n\nLe relais est dissimulé derrière un panneau de maintenance. SCAN ÉCHO révèle son accès.");
+    expect(reply.text).toBe("Voici ce que je peux confirmer.\n\n" + NARRATIVE.canon.relay_location);
     expect(captured!.url).toBe("http://127.0.0.1:18193/v1/chat/completions");
     expect(JSON.stringify(captured!.init.headers)).not.toContain("Authorization");
     expect(String(captured!.init.body)).not.toContain("signal récent attribué");

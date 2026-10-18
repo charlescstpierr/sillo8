@@ -22,7 +22,6 @@ export function doorOpen(door: Door, state: SiloState): boolean {
     case "power": return state.has("generator_powered");
     case "key": return state.has("keycard");
     case "secret": return state.has("secret_revealed");
-    case "arc": return state.has("arc_lock_disabled");
     default: return true;
   }
 }

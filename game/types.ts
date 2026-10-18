@@ -11,7 +11,7 @@ export interface HordeContext {
   /** Vrai si la porte (id de DOORS) est franchissable. */
   doorOpen(doorId: string): boolean;
   damagePlayer(amount: number): void;
-  /** Fin N-7 : les zombies tombent en sommeil. */
+  /** Zombies endormis (réservé à l'histoire des étages suivants). */
   dormant: boolean;
 }
 
@@ -22,17 +22,17 @@ export interface RayHit {
   z: number;
 }
 
-/** Les zombies (port de enemy.gd : patrouille, ouïe, poursuite, recherche, retour, recul du rampant). */
+/** Les zombies : patrouille, ouïe, poursuite, recherche, retour, recul du rampant. */
 export interface Horde {
   readonly root: Object3D;
   update(dt: number, ctx: HordeContext): void;
-  /** Bruit (tir, scan) : les zombies dans le rayon viennent enquêter. */
+  /** Bruit (coup, clou) : les zombies dans le rayon viennent enquêter. */
   hearNoise(x: number, z: number, radius: number): void;
-  /** Zombies vivants, pour la visée assistée et les marqueurs du scan. */
+  /** Zombies vivants, pour la visée assistée, la clé à molette et la lampe. */
   aimCandidates(): AimCandidate[];
   /** Premier zombie touché par un rayon horizontal partant de (x, z) dans la direction (dx, dz) normalisée. */
   raycast(x: number, z: number, dx: number, dz: number, maxDistance: number): RayHit | null;
-  /** Dégâts + étourdissement (ARC-3). Marque le zombie vaincu dans l'état à 0 PV. */
+  /** Dégâts + étourdissement (clé, lampe). Marque le zombie vaincu dans l'état à 0 PV. */
   damage(id: string, amount: number, stun: number): void;
   /** Retire les zombies déjà vaincus (chargement de sauvegarde). */
   sync(state: SiloState): void;

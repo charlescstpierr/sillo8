@@ -26,6 +26,12 @@ const INVESTIGATE_TIME = 7;
 /** Distance parcourue au-delà d'une porte avant de viser la suite. */
 const DOOR_PAST = 1.2;
 const DOOR_APPROACH = 0.7;
+/** Écart latéral toléré avant de franchir une porte (> 0,4 m, la tolérance d'arrivée à un point). */
+const DOOR_ALIGN = 0.45;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
 
 export interface Zombie {
   readonly id: string;
@@ -316,24 +322,59 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
     const to = roomIndexAt(z.destX, z.destZ);
     z.waypointX = z.destX;
     z.waypointZ = z.destZ;
-    if (from < 0 || to < 0 || from === to) return true;
+    if (from < 0 || to < 0 || from === to) {
+      if (from >= 0) leaveDoorway(z, from, -1);
+      return true;
+    }
     const index = firstDoor(from, to, ctx.doorOpen);
     if (index < 0) {
       z.waypointX = z.x;
       z.waypointZ = z.z;
       return false;
     }
+    if (leaveDoorway(z, from, index)) return true;
     const door: Door = DOORS[index];
     // « x » : mur est-ouest, on traverse selon Z ; « z » : mur nord-sud, on traverse selon X.
     const crossX = door.axis === "z";
     const dir = Math.sign(roomCenter(nextRoom, crossX ? "x" : "z") - (crossX ? door.x : door.z)) || 1;
     const along = crossX ? z.x - door.x : z.z - door.z;
     const lateral = crossX ? z.z - door.z : z.x - door.x;
-    const lane = door.width / 2 - ZOMBIE[z.kind].radius - 0.05;
-    const offset = along * dir < 0 && Math.abs(lateral) > lane ? -DOOR_APPROACH : DOOR_PAST;
-    z.waypointX = crossX ? door.x + dir * offset : door.x;
-    z.waypointZ = crossX ? door.z : door.z + dir * offset;
+    // Couloir de passage : un large passage (place extérieure) se traverse tout droit, une porte étroite par son milieu.
+    const lane = Math.max(0, door.width / 2 - ZOMBIE[z.kind].radius - 0.05);
+    const side = lane > DOOR_ALIGN * 2 ? clamp(lateral, -(lane - DOOR_ALIGN), lane - DOOR_ALIGN) : 0;
+    // Pas encore aligné : point d'approche devant la porte. Le seuil dépasse la tolérance d'arrivée (0,4 m)
+    // pour qu'un zombie arrivé au point d'approche passe toujours à la suite.
+    const offset = along * dir < 0 && Math.abs(lateral - side) > DOOR_ALIGN ? -DOOR_APPROACH : DOOR_PAST;
+    z.waypointX = crossX ? door.x + dir * offset : door.x + side;
+    z.waypointZ = crossX ? door.z + side : door.z + dir * offset;
     return true;
+  }
+
+  /**
+   * Un zombie qui vient de franchir une porte a le corps encore dans l'embrasure : s'il file de biais vers
+   * une cible loin sur le côté, il se coince contre le montant. On le fait d'abord entrer dans la salle.
+   * `except` : porte qu'il s'apprête justement à franchir.
+   */
+  function leaveDoorway(z: Zombie, room: number, except: number): boolean {
+    const radius = ZOMBIE[z.kind].radius;
+    for (const link of links[room]) {
+      if (link.door === except) continue;
+      const door = DOORS[link.door];
+      const crossX = door.axis === "z";
+      const along = crossX ? z.x - door.x : z.z - door.z;
+      const lateral = crossX ? z.z - door.z : z.x - door.x;
+      if (Math.abs(along) > radius + 0.15 || Math.abs(lateral) > door.width / 2) continue;
+      // Cible dans l'axe de l'ouverture : la ligne droite passe, rien à faire.
+      const targetLateral = crossX ? z.waypointZ - door.z : z.waypointX - door.x;
+      if (Math.abs(targetLateral) <= door.width / 2) return false;
+      const inward = Math.sign(roomCenter(room, crossX ? "x" : "z") - (crossX ? door.x : door.z)) || 1;
+      const lane = Math.max(0, door.width / 2 - radius - 0.05);
+      const side = clamp(lateral, -lane, lane);
+      z.waypointX = crossX ? door.x + inward * DOOR_PAST : door.x + side;
+      z.waypointZ = crossX ? door.z + side : door.z + inward * DOOR_PAST;
+      return true;
+    }
+    return false;
   }
 
   function step(z: Zombie, ctx: HordeContext, dt: number): void {

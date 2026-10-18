@@ -22,7 +22,7 @@ export interface Room {
 
 export interface Wall { x0: number; z0: number; x1: number; z1: number; outdoor: boolean; }
 
-export type LockKind = "power" | "key" | "secret" | "arc";
+export type LockKind = "power" | "key" | "secret";
 
 export interface Door {
   id: string;
@@ -35,7 +35,7 @@ export interface Door {
   rooms: [RoomId, RoomId];
   /**
    * "power" : s'ouvre quand la génératrice tourne ; "key" : clé d'accès de l'étage 2 ;
-   * "secret" : mur creux, ouvert en le poussant après avoir lu l'indice ; "arc" : verrou électrique (inutilisé).
+   * "secret" : mur creux, ouvert en le poussant après avoir lu l'indice.
    */
   lock?: LockKind;
   /** Passage large sans encadrement (entre deux zones extérieures, verrière brisée…). */

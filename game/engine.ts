@@ -1,5 +1,5 @@
 // Boucle de jeu three.js, hors de React. L'interface lit `hud` et `ui`, et positionne l'infobulle via `tooltipEl`.
-// Port de main.gd (modes, partie, fins) et de SiloWorld.interact.
+// Modes, partie, armes du bricoleur et interactions (la progression pure est dans progress.ts).
 import {
   Clock, Color, DirectionalLight, Fog, HemisphereLight, NeutralToneMapping, PCFSoftShadowMap,
   PerspectiveCamera, Scene, SRGBColorSpace, Vector3, WebGLRenderer, type Mesh,
@@ -8,14 +8,15 @@ import { CAMERA, CameraRig } from "./camera";
 import { AIM_HEIGHT, assistTarget, groundPoint, yawTowards } from "./aim";
 import { InputState } from "./input";
 import { PlayerController } from "./player";
-import { SiloState, type Character, type KeyValueStore } from "./state";
+import { NAIL_CAPACITY, SiloState, type Character, type KeyValueStore } from "./state";
 import { SiloDialogue } from "./dialogue";
-import { DOORS, ENTRANCE_TRIGGER, roomAt, sectorAt, type InteractableDef } from "./level";
+import { DOORS, sectorAt, type InteractableDef } from "./level";
 import { doorOpen, interactableAvailable } from "./rules";
 import { HudStore, type HudSnapshot } from "./hud";
 import { UiStore, type UiMode } from "./ui";
 import { createHorde } from "./enemy";
-import { Combat } from "./combat";
+import { Combat, LAMP, WRENCH } from "./combat";
+import { checkTriggers, interactWith, type ProgressEffects } from "./progress";
 import type { Horde, HordeContext } from "./types";
 import { buildWorld, type WorldView } from "./render/world";
 import { animateOperator, buildOperator, type OperatorRig } from "./render/operator";
@@ -72,6 +73,7 @@ export class Engine {
   private readonly aimTmp = new Vector3();
   private resizeObserver: ResizeObserver | null = null;
   private hordeContext: HordeContext;
+  private progressEffects: ProgressEffects;
 
   constructor(readonly canvas: HTMLCanvasElement, options: EngineOptions = {}) {
     this.lowQuality = options.lowQuality ?? false;
@@ -122,12 +124,17 @@ export class Engine {
       scene: this.scene,
       state: this.state,
       player: this.player,
-      operator: this.operator,
       horde: this.horde,
       world: this.world,
       notify: (text) => this.notify(text),
       noise: (x, z, radius) => this.horde.hearNoise(x, z, radius),
     });
+    this.progressEffects = {
+      notify: (text) => this.notify(text),
+      shudder: () => this.world.shudder(),
+      showNote: (id) => this.setMode("note", id),
+      floor2: () => this.openFloor2(),
+    };
 
     this.dialogue.setup(this.state);
     this.state.subscribe(() => { this.worldDirty = true; });
@@ -271,7 +278,10 @@ export class Engine {
     this.player.z = z;
     this.player.vx = this.player.vz = 0;
     this.player.yaw = this.state.playerYaw;
-    this.player.reloadTime = 0;
+    this.player.cancelReload();
+    this.player.cooldown = 0;
+    this.combat.weapon = 0;
+    this.combat.swingTime = this.combat.dazzleTime = this.combat.lightCooldown = 0;
     this.horde.sync(this.state);
     this.refreshWorld();
     this.rig.snap(new Vector3(x, 0, z));
@@ -285,6 +295,16 @@ export class Engine {
     this.setMode("inventory");
   }
 
+  /** Carnet des notes lues (touche J ou Q/A, bouton CARNET). */
+  openJournal(): void {
+    this.setMode("journal");
+  }
+
+  /** Relit une note du carnet (fiche de lecture). */
+  readNote(id: string): void {
+    if (this.state.notes.includes(id)) this.setMode("note", id);
+  }
+
   openConversation(character: Character): void {
     this.setMode("dialogue", character);
   }
@@ -295,7 +315,7 @@ export class Engine {
       this.notify("Accès verrouillé. Il faut une clé d'accès.");
       return;
     }
-    this.saveGame();
+    if (this.storage) this.saveGame();
     this.setMode("conclusion", "floor2");
   }
 
@@ -306,16 +326,48 @@ export class Engine {
     return false;
   }
 
-  useMedkit(): boolean {
-    const ok = this.state.heal();
-    this.notify(ok ? "Santé restaurée." : "Aucune trousse utilisable.");
+  // ——— Soins et lampe (touches H et B, inventaire) ———
+
+  /** Soigne avec le meilleur objet adapté (bandage pour une égratignure, trousse sinon). */
+  heal(): boolean {
+    const s = this.state;
+    const bandages = s.bandages;
+    const ok = s.heal();
+    if (ok) this.notify(s.bandages < bandages ? `Bandage posé · santé ${Math.round(s.health)}.` : `Trousse de soins utilisée · santé ${Math.round(s.health)}.`);
+    else this.notify(this.cannotHeal(s.bandages + s.medkits > 0));
     return ok;
   }
 
-  useCell(): boolean {
-    const ok = this.state.useCell();
-    this.notify(ok ? "Batterie rechargée." : "Aucune cellule utilisable.");
+  useBandage(): boolean {
+    const ok = this.state.useBandage();
+    this.notify(ok ? `Bandage posé · santé ${Math.round(this.state.health)}.` : this.cannotHeal(this.state.bandages > 0, "Plus de bandage."));
     return ok;
+  }
+
+  useMedkit(): boolean {
+    const ok = this.state.useMedkit();
+    this.notify(ok ? `Trousse de soins utilisée · santé ${Math.round(this.state.health)}.` : this.cannotHeal(this.state.medkits > 0, "Plus de trousse de soins."));
+    return ok;
+  }
+
+  eatCan(): boolean {
+    const ok = this.state.eatCan();
+    this.notify(ok ? `Conserve avalée · santé ${Math.round(this.state.health)}.` : this.cannotHeal(this.state.cans > 0, "Plus de conserve."));
+    return ok;
+  }
+
+  /** Pile de rechange dans la lampe. */
+  useCell(): boolean {
+    const s = this.state;
+    const ok = s.useCell();
+    if (ok) this.notify(`Pile changée · lampe ${Math.round(s.energy)}/${s.maxEnergy()}.`);
+    else this.notify(s.cells <= 0 ? "Plus de pile de rechange." : "La lampe est déjà chargée.");
+    return ok;
+  }
+
+  private cannotHeal(hasItem: boolean, empty = "Rien pour se soigner."): string {
+    if (!hasItem) return empty;
+    return this.state.health >= 100 ? "Santé déjà au maximum." : "Impossible de se soigner maintenant.";
   }
 
   notify(text: string): void {
@@ -349,6 +401,8 @@ export class Engine {
       if (mode === "playing") this.openPause();
       else if (mode !== "menu" && mode !== "death" && mode !== "ending") this.resume();
     } else if (mode === "inventory" && this.input.consume("inventory")) this.resume();
+    else if (mode === "journal" && this.input.consume("journal")) this.resume();
+    else if (mode === "note" && (this.input.consume("interact") || this.input.consume("journal"))) this.resume();
     if (this.ui.get().mode === "playing") this.simulate(dt);
     else this.input.clearPressed();
     this.render(dt);
@@ -387,42 +441,38 @@ export class Engine {
     // Déplacement (le haut de l'écran est le nord, −Z)
     this.player.update(dt, { x: input.move.x, z: -input.move.y, sprint: input.sprint, crouch: input.crouch, aimYaw }, this.world.colliders);
 
-    // Armes et scan
-    if (input.consume("reload")) this.startReload(false);
-    if (input.firing && this.combat.weapon === 0 && this.state.ammo === 0 && !this.player.reloading) this.startReload(true);
-    if (this.player.takeReloadCompleted()) this.state.reloadRounds(12);
+    // Armes et lampe
     this.combat.update(dt, {
       firing: input.firing,
-      arc: input.consume("arc"),
-      scan: input.consume("scan"),
+      light: input.consume("light"),
+      swap: input.consume("swap"),
       weapon1: input.consume("weapon1"),
       weapon2: input.consume("weapon2"),
     });
+    if (input.consume("reload")) this.startReload(false);
+    // Lance-clous vide : rechargement automatique s'il reste des clous dans la sacoche.
+    if (this.combat.weapon === 1 && this.state.ammo === 0 && this.state.reserve > 0 && !this.player.reloading) this.startReload(true);
+    if (this.player.takeReloadCompleted() && this.combat.weapon === 1) this.state.reloadRounds(NAIL_CAPACITY);
 
     // Interaction et raccourcis
     this.focus = this.findFocus();
     if (input.consume("interact") && this.focus) this.interact(this.focus);
     if (input.consume("save")) this.saveGame();
     if (input.consume("load")) this.loadGame();
-    if (input.consume("heal")) this.useMedkit();
+    if (input.consume("heal")) this.heal();
     if (input.consume("cell")) this.useCell();
     if (input.consume("inventory")) this.openInventory();
+    else if (input.consume("journal")) this.openJournal();
 
     // Zombies
     this.hordeContext.player.x = this.player.x;
     this.hordeContext.player.z = this.player.z;
     this.hordeContext.player.crouched = this.player.crouched;
     this.hordeContext.player.alive = this.state.health > 0;
-    this.hordeContext.dormant = this.state.ending === "n7";
     this.horde.update(dt, this.hordeContext);
 
     // Objectifs déclenchés en se déplaçant
-    if (!this.state.has("entrance_explored") && Math.hypot(this.player.x - ENTRANCE_TRIGGER.x, this.player.z - ENTRANCE_TRIGGER.z) < ENTRANCE_TRIGGER.radius && this.state.exploreEntrance()) {
-      this.notify("La porte de sécurité est morte. Plus de courant. La génératrice doit être à l'ouest.");
-    }
-    if (!this.state.has("hub_reached") && roomAt(this.player.x, this.player.z)?.id === "hub" && this.state.reachHub()) {
-      this.notify("HUB CENTRAL. Toutes les ailes partent d'ici. Le relais radio est en salle de contrôle.");
-    }
+    for (const message of checkTriggers(this.state, this.player.x, this.player.z)) this.notify(message);
 
     this.noticeTime = Math.max(0, this.noticeTime - dt);
     this.state.playerPosition = [this.player.x, 0, this.player.z];
@@ -439,17 +489,22 @@ export class Engine {
       shotTime: this.player.shotTime,
       reload: this.player.reloadProgress,
       aiming,
+      weapon: this.combat.weapon,
+      swing: this.combat.swingTime > 0 ? 1 - this.combat.swingTime / WRENCH.swing : 0,
+      dazzle: this.combat.dazzleTime,
     }, dt);
     this.world.update(dt, this.elapsed, this.player.x, this.player.z);
     this.updateHighlights();
   }
 
+  /** Rechargement du lance-clous (la clé à molette ne se recharge pas). */
   private startReload(silent: boolean): void {
-    const canReload = this.combat.weapon === 0 && this.state.ammo < 12 && this.state.reserve > 0;
+    if (this.combat.weapon !== 1) return;
+    const canReload = this.state.ammo < NAIL_CAPACITY && this.state.reserve > 0;
     if (this.player.startReload(canReload)) {
-      if (!silent) this.notify("Rechargement du D9…");
+      if (!silent) this.notify("Rechargement du lance-clous…");
     } else if (!silent && !this.player.reloading) {
-      this.notify(this.state.reserve === 0 ? "Plus de munitions en réserve." : "Chargeur plein.");
+      this.notify(this.state.reserve === 0 ? "Plus de clous dans la sacoche." : "Chargeur plein.");
     }
   }
 
@@ -477,44 +532,7 @@ export class Engine {
   }
 
   interact(def: InteractableDef): void {
-    const s = this.state;
-    if (def.kind) {
-      if (s.collect(def.id, def.kind, def.amount ?? 1)) this.notify(def.kind === "components" ? `Pièce récupérée · ${s.components} en poche.` : "Ressource récupérée.");
-      return;
-    }
-    switch (def.id) {
-      case "security_door":
-        this.notify("Hors tension. Il faut relancer la génératrice (3 pièces).");
-        break;
-      case "generator":
-        if (s.powerGenerator()) {
-          this.world.shudder();
-          this.notify("La génératrice tousse… puis tourne. Les portes de sécurité s'ouvrent.");
-        } else this.notify(`Il manque des pièces : ${s.components}/3. Fouillez la zone extérieure et la serre.`);
-        break;
-      case "workbench":
-        this.notify(s.craftRadioModule() ? "Module radio fabriqué. Direction la salle de contrôle." : `L'établi demande 2 pièces (${s.components} en poche).`);
-        break;
-      case "upgrade":
-        this.notify(s.upgrade() ? "Batterie améliorée : 150 énergie." : "Le banc demande 3 pièces, amélioration unique.");
-        break;
-      case "comms":
-        this.notify(s.repairComms() ? "Communication rétablie. Un signal faible répond… quelque part plus bas." : "Le relais radio est grillé. Fabriquez un module à l'atelier.");
-        break;
-      case "keycard":
-        if (s.takeKeycard()) this.notify("Clé d'accès de l'étage 2 récupérée.");
-        break;
-      case "stairs":
-        this.openFloor2();
-        break;
-      case "recharge":
-        s.recharge();
-        this.notify("Batterie rechargée.");
-        break;
-      case "device":
-        this.notify("Verrou sous tension. Une décharge d'ARC-3 (clic droit) le coupera.");
-        break;
-    }
+    interactWith(def, this.state, this.progressEffects);
   }
 
   private updateHighlights(): void {
@@ -581,9 +599,13 @@ export class Engine {
       reserve: s.reserve,
       components: s.components,
       medkits: s.medkits,
+      bandages: s.bandages,
+      cans: s.cans,
       cells: s.cells,
+      notesCount: s.notes.length,
       weapon: this.combat?.weapon ?? 0,
       reloading: this.player?.reloading ?? false,
+      lightReady: (this.combat?.lightCooldown ?? 0) <= 0 && s.energy >= LAMP.energy,
       notice: this.noticeTime > 0 ? this.notice : "",
       noticeId: this.noticeId,
       prompt: this.focus ? { name: this.focus.name, action: this.focus.action } : null,

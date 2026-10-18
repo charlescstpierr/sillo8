@@ -6,16 +6,27 @@ export interface HudSnapshot {
   sector: string;
   objective: Objective;
   health: number;
+  /** Charge de la lampe (0 → maxEnergy : 100, 150 après amélioration). */
   energy: number;
   maxEnergy: number;
+  /** Clous dans le lance-clous (chargeur de NAIL_CAPACITY) et dans la sacoche. */
   ammo: number;
   reserve: number;
+  /** Ferraille. */
   components: number;
   medkits: number;
+  bandages: number;
+  cans: number;
+  /** Piles de rechange pour la lampe. */
   cells: number;
-  /** 0 = D9, 1 = ARC-3. */
+  /** Notes de survivants lues (carnet). */
+  notesCount: number;
+  /** 0 = clé à molette, 1 = lance-clous. */
   weapon: 0 | 1;
+  /** Rechargement du lance-clous en cours. */
   reloading: boolean;
+  /** Vrai quand la lampe peut éblouir (charge suffisante et cadence écoulée). */
+  lightReady: boolean;
   notice: string;
   noticeId: number;
   prompt: { name: string; action: string } | null;

@@ -99,7 +99,7 @@ describe("opérateur", () => {
     expect(p.z).toBeGreaterThan(22);
   });
 
-  it("tire et recharge au rythme du D9", () => {
+  it("tire et recharge au rythme du lance-clous", () => {
     const p = new PlayerController(0, 0, 0);
     let rounds = 2;
     const spend = () => (rounds > 0 ? (rounds--, true) : false);

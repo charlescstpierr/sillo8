@@ -1,13 +1,16 @@
 // Mode d'interface courant (port des modes de main.gd). La simulation ne tourne qu'en mode "playing".
 import type { Character } from "./state";
 
-export type UiMode = "menu" | "playing" | "pause" | "settings" | "inventory" | "dialogue" | "ending" | "conclusion" | "death";
+export type UiMode =
+  | "menu" | "playing" | "pause" | "settings" | "inventory" | "dialogue" | "ending" | "conclusion" | "death"
+  /** Fiche de lecture d'une note (identifiant dans `character`) et carnet des notes lues. */
+  | "note" | "journal";
 
 export interface UiSnapshot {
   mode: UiMode;
   /** Mode d'où l'on vient (retour depuis les réglages). */
   previous: UiMode;
-  /** Interlocuteur du dialogue, ou identifiant de la conclusion (ex. "floor2"). */
+  /** Interlocuteur du dialogue, note lue (ex. "note_storage"), ou identifiant de la conclusion (ex. "floor2"). */
   character: Character;
 }
 
