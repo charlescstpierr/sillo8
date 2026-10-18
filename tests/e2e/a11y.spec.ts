@@ -198,7 +198,7 @@ test("portrait : sous-titres des sons (auto quand le son est coupé, toujours, j
   expect(box.y).toBeGreaterThan(760 / 2);
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(390);
-  for (const name of ["Frapper", "Éblouir", "Interagir"]) {
+  for (const name of ["Frapper", "Éblouir", "Examiner", "Lampe UV"]) {
     const b = await page.getByRole("button", { name, exact: true }).boundingBox();
     if (!b) continue;
     const apart = box.y + box.height <= b.y || b.y + b.height <= box.y || box.x + box.width <= b.x || b.x + b.width <= box.x;
