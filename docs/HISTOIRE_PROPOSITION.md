@@ -6,7 +6,8 @@
 > mot pour mot), la carte de l'étage 1, le héros de la fiche personnage, les 5 objectifs, le signal
 > radio qui répond d'en bas. Les mordus sont de **vrais zombies**. L'enquête porte sur **ce qui s'est
 > passé** dans le silo, construite comme un roman d'Agatha Christie, et suit les principes de
-> `docs/RECHERCHE_ENQUETE.md` (checklist en annexe).
+> `docs/RECHERCHE_ENQUETE.md` (checklist en annexe). La méfiance des survivants envers Lou et le
+> secret de Lou sont détaillés dans `docs/MEFIANCE_SURVIVANTS.md`.
 
 **Sommaire**
 0. Ce qui est repris, ce qui est ajouté · 1. Résumé · 2. L'arc sur 4 étages · 3. Principes de
@@ -70,6 +71,16 @@ existe déjà dans les notes). C'est le premier mordu de l'étage 1. On ne le re
 de Bérard, un commis de la cuisine, un infirmier d'Okafor. Ce sont trois des cinq mordus, reconnus à
 leur badge de fonction.
 
+**La méfiance envers Lou** (détail dans `MEFIANCE_SURVIVANTS.md`) : les deux survivants soupçonnent
+« l'étranger » d'avoir laissé entrer les mordus. Lou doit se disculper par l'enquête, pendant que la
+vraie coupable, gentille avec lui, laisse faire. Un système de confiance sans jauge (le nom qu'on lui
+donne, la porte, l'arme, ce qu'on partage).
+
+**Le secret de Lou** : il n'est pas venu seulement chercher un abri. Il a fait une promesse à un vieux
+serrurier du dehors (proposé : « le vieux Gaspard », **jamais nommé à l'étage 1**), qui a posé les
+verrous côté dehors. Lou n'est coupable de rien. Le secret est révélé aux étages 3 et 4 ; l'étage 1
+n'en plante que 3 indices dormants.
+
 **Le reste :**
 - Un prénom pour le héros (proposé, à choisir).
 - De nouveaux documents, objets et traces (§ 12, § 13).
@@ -82,9 +93,9 @@ leur badge de fonction.
 ## 1. Résumé en 5 lignes
 
 1. Un jeune bricoleur venu du dehors entre dans SILLO 8. Sur la grande porte, quelqu'un a écrit à la craie : « ILS SONT DESCENDUS. PAS TOUS. »
-2. L'affiche officielle accuse des mordus entrés par la porte de service pendant l'orage. Les traces disent autre chose : le premier mordu est sorti de l'infirmerie.
+2. L'affiche officielle accuse des mordus entrés par la porte de service pendant l'orage. Le héros est entré par cette porte, et les mordus se remettent à marcher « depuis qu'il est là » : les survivants soupçonnent « l'étranger ». Les traces disent autre chose : le premier mordu est sorti de l'infirmerie, neuf jours avant son arrivée.
 3. Marceau, le chef technique, avait été mordu en expédition. Bérard l'a fait entrer, Okafor l'a gardé sous des lampes, Lila portait les piles, Cuisine les a enfermées.
-4. La nuit de l'orage, quelqu'un a ouvert sa porte. Le joueur écarte les suspects un par un et démasque celle qui l'a guidé depuis le début : l'opératrice de nuit, sa femme.
+4. La nuit de l'orage, quelqu'un a ouvert sa porte. Disculpé, le joueur écarte les suspects un par un et démasque celle qui l'a guidé depuis le début, et qui l'a laissé accuser : l'opératrice de nuit, sa femme.
 5. La radio réparée capte la voix d'Okafor (« ne descendez pas ») et un signal tapé à la main, venu de **plus bas que l'étage 2** : « VIENS ».
 
 ---
@@ -101,6 +112,18 @@ une réponse qui crée une nouvelle question.
 | **2. Les réserves** *(esquisse)* | Stocks, hôpital de fortune, le refuge du groupe d'Okafor | Le groupe descendu s'est divisé. Pourquoi Okafor dit-elle « ne descendez pas » ? | Okafor a scellé l'accès à l'étage 3 sous ses pieds : le signal vient de là, et des mordus aussi. Lila est passée par les conduits d'aération. | Qui vit à l'étage 3, derrière une porte soudée bien avant l'épidémie ? |
 | **3. Les machines** *(esquisse)* | Air, eau, pompes, la salle des fondateurs | Le secteur muré : qui l'a muré, et quand ? | Une **première épidémie**, à la fondation, étouffée par les fondateurs. La personne de dos sur la photo de l'inauguration (étage 1) est identifiée. | Qu'ont-ils enfermé au fond ? |
 | **4. Le fond** *(esquisse)* | Archives, la plus vieille partie du silo | L'origine | **SILLO 8 n'a pas été construit pour protéger des mordus, mais pour les garder.** La règle n° 1 (« aucun mordu ne franchit la porte ») voulait d'abord dire : *aucun ne sort*. Les verrous de la grande porte, côté dehors, prennent leur sens. | Fin du jeu : que fait-on de la vérité, et de ceux qui sont encore en bas ? |
+
+**Le fil de Lou : sa réputation et son secret** (détail dans `MEFIANCE_SURVIVANTS.md`)
+
+| Étage | Ce qu'on croit de Lou | Ce qu'on apprend de son secret |
+|---|---|---|
+| **1** | « L'étranger » qui a laissé entrer les mordus. Il se disculpe par l'enquête (C5). | Rien, sauf 3 indices dormants : un paquet noué qu'il n'ouvre pas, son trouble devant le triangle de la photo, son gant sur les verrous. |
+| **2** | Sa réputation le précède par le message radio de l'opératrice : « Lou » ou « l'étranger de la porte de service ». Okafor, autrice de l'avis mensonger, est tentée de le désigner à nouveau. | Les survivants sentent qu'il cache quelque chose. |
+| **3** | Pour ceux d'en bas, « l'étranger » veut dire : ceux qui ont fermé la porte. | Le triangle est la marque des fondateurs. **Le paquet est ouvert : une clé de laiton au triangle**, la clé des verrous du dehors. Lou doit dire sa promesse. |
+| **4** | Le silo gardait le mal dedans : l'homme du dehors était venu tenir la porte. | Le mot du vieux serrurier : « Si le 8 tombe, ferme-le. De dehors. » Choix final : tenir la promesse, ou non, avec des vivants en bas. |
+
+**Le thème qui relie tout :** dans un silo, on croit que le mal vient du dehors. À l'étage 1, il venait
+de l'infirmerie ; à l'étage 4, il venait du fond. Et l'étranger qu'on accuse était le gardien.
 
 **Règle d'or pour l'étage 1** : le joueur repart **satisfait** (il a résolu l'affaire de la chambre 1,
 il sait qui a menti et pourquoi) **et intrigué** (il ne sait ni d'où viennent vraiment les mordus, ni
@@ -127,6 +150,9 @@ seulement élargi.
 - **Les mordus servent l'enquête** : cinq seulement, chacun porte un indice et refait une habitude.
   On peut les éviter. Aucun passage clé n'exige de les vaincre.
 - **La survie sert la tension** (§ 8) : la rareté des piles est le cœur du drame, et le joueur la vit.
+- **Le héros est lui-même une fausse piste.** Les survivants soupçonnent l'étranger ; il se disculpe
+  avec des preuves (C5), et ce retournement relance la vraie question. La coupable, elle, a intérêt à
+  ce qu'on l'accuse.
 
 ---
 
@@ -157,8 +183,8 @@ Chaque pièce pose une petite question et donne une petite réponse, en moins de
 | Zone extérieure | Pourquoi une lanterne d'enfant si loin de la porte ? | Quelqu'un (Lila) est sorti chercher des pièces. Un garde mordu porte une feuille d'expédition. |
 | Génératrice | Pourquoi ce mordu ne fait-il aucun bruit ? | Il porte un bracelet d'infirmerie : « Chambre 1 ». Il était soigné avant de mourir. |
 | Sécurité | Que notait Bérard ? | Il a menti sur une expédition (énigme 3). |
-| Hub | Comment est-ce arrivé ? | Version officielle : « par la porte de service ». Le joueur a une affirmation à vérifier. |
-| Cafétéria | Qui frappe dans la chambre froide ? | Un vivant : Cuisine. Il accuse Lila d'avoir volé les piles. |
+| Hub | Comment est-ce arrivé ? | Version officielle : « par la porte de service ». Le joueur a une affirmation à vérifier. Plus tard, Cuisine y accuse Lou, devant l'affiche. |
+| Cafétéria | Qui frappe dans la chambre froide ? | Un vivant : Cuisine. Il se méfie de « l'étranger » (« depuis que t'es là… ») et accuse Lila d'avoir volé les piles. |
 | Entrepôt | Pourquoi un cadenas sur des piles ? | Les piles étaient comptées ; le cuisinier en a refusé une, le soir de l'orage. |
 | Infirmerie | Qu'y a-t-il derrière l'armoire ? | La chambre 1 : on y gardait un mordu sous des lampes. |
 | Atelier | Qui était Marceau ? | Le meilleur ami de Bérard. Une photo signée « N. ». |
@@ -175,11 +201,21 @@ Chaque pièce pose une petite question et donne une petite réponse, en moins de
 - Un jeune homme, tel que sur la fiche : bonnet olive, veste moutarde, gants et bottes, sacoche en cuir.
 - **Venu du dehors.** On ne sait presque rien de lui, et il n'en dit pas plus. Il a l'habitude d'être
   seul et répare tout ce qu'il touche.
-- **Sa motivation est simple :** trouver un abri, puis savoir qui est encore vivant (« pas tous »).
-- **Pas de famille, pas de lien avec le silo.** Il découvre tout en même temps que le joueur.
-- **Prénom : Lou** (choisi par l'auteur). Les survivants l'appellent « Lou », « l'étranger », « le bricoleur » ou « mon garçon ».
+- **Ce qu'il dit :** il cherche un abri, puis il veut savoir qui est encore vivant (« pas tous »).
+- **Ce qu'il tait (son secret, révélé aux étages 3 et 4) :** il a appris son métier auprès d'un vieux
+  serrurier du dehors (proposé : « le vieux Gaspard »), qui avait posé les **verrous côté dehors** de
+  SILLO 8. Avant de mourir, le vieux lui a confié un paquet noué (une clé de laiton marquée d'un
+  **triangle**, et un mot) et une promesse : « Si un jour le 8 tombe, va le fermer. De dehors. Et
+  n'entre pas. » Lou ne sait pas pourquoi. Devant la porte, il lit « PAS TOUS » : des vivants sont
+  dedans. **Il désobéit et entre.** Il n'est coupable de rien.
+  *Deux autres options étudiées (le message reçu, la lettre à remettre) : voir `MEFIANCE_SURVIVANTS.md` § 4.*
+- **Pas de famille dans le silo.** Il découvre l'histoire de l'étage en même temps que le joueur.
+- **Prénom : Lou** (choisi par l'auteur). Comment on l'appelle dit la confiance qu'on lui fait :
+  « **l'étranger** » (méfiance), « **le bricoleur** » (prudence), « **Lou** » (confiance). L'opératrice
+  dit « **mon garçon** » en face et « l'étranger » dans son dos ; elle ne dit « Lou » qu'après son aveu.
 - **Ses pensées** (§ 12 b) : courtes, pratiques, un peu ironiques. Elles **posent des questions**, elles
-  ne donnent jamais la réponse avant le joueur.
+  ne donnent jamais la réponse avant le joueur. Sur son passé, il **se tait** mais ne pense jamais
+  quelque chose de faux (comme le narrateur du *Meurtre de Roger Ackroyd*, il omet sans mentir).
 
 ### Les cinq suspects et leur secret
 
@@ -191,7 +227,7 @@ La question de l'étage : **qui a ouvert la chambre 1, la nuit de l'orage ?**
 | **Dr Okafor**, infirmerie | Rapport n° 12 : les mordus craignent la lumière vive. | Elle a gardé Marceau dans la chambre 1, sous deux lampes, et l'a étudié en secret (rapports 1 à 11). Le n° 12 vient de lui. Elle a décidé de le « sortir à l'aube », puis a fait descendre tout le monde et condamné l'étage. | C'est sa chambre, son patient. | Note de l'infirmier : « Dr O. dort enfin. » Et elle écrit « *elle* lui parle » : elle parle de quelqu'un d'autre. |
 | **Cuisine**, cafétéria | « On les compte, maintenant. » | Il a cadenassé les piles et en a refusé une à Lila le soir de l'orage. Sans piles, les lampes de la chambre 1 ont faibli. Il s'en veut. | Rancune contre la « voleuse », clés de tout, mensonge par omission. | Feuille de comptage : à 2 h 10, il vérifie son cadenas **à l'entrepôt**, dans l'aile ouest. |
 | **Lila**, aide de l'infirmerie | Elle a caché la clé ; « ne fais pas confiance au silence ». | Elle « piquait » les piles, pour Okafor. Elle a vu passer quelqu'un. Elle est restée pour ceux qu'on avait oubliés. | L'infirmier écrit : « ça doit être la petite avec les piles ». | Sa liste : « ma lampe aussi est morte ». La personne qui passe a une lampe **allumée**, et **verte**. |
-| **L'opératrice de nuit**, salle de contrôle | Relève radio : « l'émetteur a grillé pendant l'orage ». | **La femme de Marceau.** Il l'appelait « ma Nuit ». À 1 h 50, elle entend à la radio interne : « À l'aube, on le sort. » À 2 h 05, elle quitte son poste avec sa lampe verte pour lui dire adieu. L'orage a coupé le courant : la porte électrique de la chambre 1 s'ouvre d'une poussée. Elle pose sa lampe près de lui ; il reste calme… jusqu'à ce que la pile meure. Elle s'enfuit, s'enferme, et ne dit plus rien. | Personne : c'est la voix gentille de la première minute, et elle aide le héros. | Lampe verte, alliance, signature, trou dans son cahier, verrou fermé de l'intérieur (§ 16). |
+| **L'opératrice de nuit**, salle de contrôle | Relève radio : « l'émetteur a grillé pendant l'orage ». | **La femme de Marceau.** Il l'appelait « ma Nuit ». À 1 h 50, elle entend à la radio interne : « À l'aube, on le sort. » À 2 h 05, elle quitte son poste avec sa lampe verte pour lui dire adieu. L'orage a coupé le courant : la porte électrique de la chambre 1 s'ouvre d'une poussée. Elle pose sa lampe près de lui ; il reste calme… jusqu'à ce que la pile meure. Elle s'enfuit, s'enferme, et ne dit plus rien. | Personne : c'est la voix gentille de la première minute, et elle aide le héros. Elle oriente même les soupçons vers « l'étranger ». | Lampe verte, alliance, signature, trou dans son cahier, verrou fermé de l'intérieur, faux voyant de la porte de service (§ 16). |
 
 **Son mobile** : l'amour et la peur, pas la méchanceté. Elle voulait un adieu, pas une catastrophe. Elle
 se tait par honte. C'est ce qui rend la révélation triste plutôt que choquante.
@@ -209,8 +245,30 @@ se tait par honte. C'est ce qui rend la révélation triste plutôt que choquant
 
 | Qui | Où | Comment on le rencontre |
 |---|---|---|
-| **Cuisine** (« Tout le monde m'appelle Cuisine, alors… ») | Barricadé dans la chambre froide de la **cafétéria** | Il frappe quand on approche. Il n'ouvre qu'après une question : « Les mordus, ça parle pas. Dis-moi un truc que seul un vivant dirait. » |
+| **Cuisine** (« Tout le monde m'appelle Cuisine, alors… ») | Barricadé dans la chambre froide de la **cafétéria** | Il frappe quand on approche. Il n'ouvre qu'après une question : « Les mordus, ça parle pas. Dis-moi un truc que seul un vivant dirait. » Et seulement sur la chaîne, couperet à la main. |
 | **L'opératrice de nuit** (« Mon nom ? Ça fait longtemps que plus personne ne l'utilise. ») | Enfermée dans le **local technique** de la salle de contrôle | Entendue dès la première minute ; muette ensuite (pile morte). Elle reparle quand on rallume le circuit CONTRÔLE (énigme 2). |
+
+**Leur méfiance envers Lou** (détail dans `MEFIANCE_SURVIVANTS.md`)
+- **Cuisine** : méfiance **franche et bourrue**. Il compte tout, même les jours (9 traits sur sa porte
+  depuis l'orage), et il compte Lou. Il l'accuse, puis devient son allié s'il est disculpé.
+- **L'opératrice** : **gentille en face, elle laisse accuser.** Tant qu'on soupçonne l'étranger, personne
+  ne cherche qui a ouvert la chambre 1. Elle ne fabrique aucune preuve : elle dit des choses vraies qui
+  orientent, et ment une seule fois, de façon vérifiable (X9).
+
+**Le système de confiance (Cuisine)** : quatre niveaux, sans jauge.
+
+| Niveau | Il appelle Lou… | Porte et arme | Ce qu'il partage |
+|---|---|---|---|
+| Hostile | « l'étranger », « toi, là » | Fermée ; couperet levé | Échanges par la fente, rien de gratuit |
+| **Méfiant** (départ) | « l'étranger » | Sur la chaîne ; couperet baissé | Des infos sur lui |
+| Prudent | « le bricoleur » | Ouverte ; couperet posé | Témoignage, échanges justes ; il demande le nom de Lou |
+| Confiant | « Lou » | Il sort, il tourne le dos | Clé de la réserve, sa honte, des pêches pour la route |
+
+**Ce qui fait monter** : partager une ressource rare, dire la vérité quand elle coûte, montrer le bon
+indice, tenir parole (refermer la porte de service), sauver de mordus. **Ce qui fait baisser** : mentir
+et être démasqué, fouiller ses affaires sous ses yeux, faire du bruit qui attire les mordus, promettre
+sans tenir, fuir devant un mordu. On n'atteint **Confiant** qu'une fois disculpé. La méfiance ne bloque
+**jamais** les 5 objectifs.
 
 ---
 
@@ -232,12 +290,12 @@ Le joueur ne lit jamais ce tableau tel quel : il le reconstitue.
 | **2 h 14** | La pile de la lampe verte meurt. Dans le noir, Marceau se lève sans un bruit. L'infirmier est le premier mordu. L'opératrice s'enfuit et s'enferme dans le local technique. | Montre de l'infirmier arrêtée à 2 h 14, traînées UV. |
 | **Le lendemain** | Okafor et Bérard affichent : « des mordus sont entrés par la porte de service pendant l'orage ». Le commis est mordu. Okafor organise la descente et condamne l'étage 1. Bérard couvre la retraite dans le couloir nord et y est mordu. | Avis officiel (hub), brouillon (tiroir d'Okafor), Bérard devant l'escalier. |
 | **La descente** | Okafor confie la clé de l'étage 2 à Lila : « ferme derrière toi ». Lila ne descend pas : Cuisine et l'opératrice sont restés. Elle cache la clé, écrit ses notes, frappe à la porte de la radio (pas de réponse, mais du vert sous la porte), et écrit à la craie sur la grande porte : « ILS SONT DESCENDUS. PAS TOUS. » | Notes de Lila (canon), liste n° 3, message à la craie. |
-| **Après** | Lila sort chercher les 3 ferrailles pour rallumer l'étage. Elle n'est pas revenue. | Liste de Lila n° 4, lanterne près des épaves. |
-| **Jour 0** | Le bricoleur arrive. Il finit, sans le savoir, ce que Lila avait commencé. | — |
+| **Après** | Lila sort par la porte de service chercher les 3 ferrailles pour rallumer l'étage. Elle n'est pas revenue. Cuisine trace un trait par jour sur sa porte. | Liste de Lila n° 4, lanterne près des épaves, petits pas qui sortent sur le seuil, traits de Cuisine. |
+| **J+9 (le jour du jeu)** | Le bricoleur arrive. Il entre par la porte de service et la laisse entrouverte. Il relance la génératrice : le bruit remet les mordus en marche. Au retour du courant, l'opératrice voit « PORTE DE SERVICE : OUVERTE » et désigne « l'étranger » ; Cuisine l'accuse. Lou finit, sans le savoir, ce que Lila avait commencé. | Seuil (une seule paire de bottes qui entre), boue rouge, M1 à M5 (§ 15). |
 
 **Ce que l'étage 1 ne dit pas** (volontairement) : pourquoi Okafor connaissait déjà si bien les mordus ;
 pourquoi les verrous de la grande porte sont dehors ; qui est la personne de dos sur la photo ; où est
-Lila ; qui tape le signal (§ 20).
+Lila ; qui tape le signal ; ce que Lou garde dans son paquet noué (§ 20).
 
 ---
 
@@ -304,7 +362,7 @@ finir l'étage en jouant prudemment, un petit surplus pour qui observe bien ; la
 
 | Couche | Question | Réponse donnée à l'étage 1 |
 |---|---|---|
-| 1. Entrée → génératrice → hub | *Qui est resté ? Comment les mordus sont-ils entrés ?* | Deux vivants sont restés. Les mordus ne sont **pas** entrés par la porte de service : le premier venait de l'infirmerie. |
+| 1. Entrée → génératrice → hub | *Qui est resté ? Comment les mordus sont-ils entrés ? Est-ce l'étranger ?* | Deux vivants sont restés. Les mordus ne sont **pas** entrés par la porte de service : le premier venait de l'infirmerie, neuf jours avant Lou. |
 | 2. Cafétéria, entrepôt, infirmerie, atelier | *Qui était dans la chambre 1, et qui l'a caché ?* | Marceau, mordu en expédition, caché par Bérard et Okafor ; Lila portait les piles. |
 | 3. Salle de contrôle, dortoirs, pièce cachée | *Qui a ouvert la chambre 1 ?* | L'opératrice de nuit. |
 
@@ -317,6 +375,7 @@ Puis **une seule grande question ouverte** : qui tape « VIENS », plus bas que 
 | **La porte de service** (version officielle) | Bérard et Okafor protégeaient leur secret. | Aucune trace UV au seuil ; brouillon de l'avis de la main d'Okafor. |
 | **Lila, voleuse de piles** (l'infirmier la croit coupable) | Elle volait pour les lampes d'Okafor. | « Ma lampe aussi est morte. » |
 | **Cuisine** (rancune, cadenas) | Il a refusé une pile et s'en veut. | Sa feuille de comptage : à 2 h 10 il est à l'entrepôt. |
+| **L'étranger, Lou** (Cuisine l'accuse, l'opératrice laisse faire) | Lou est vraiment entré par la porte de service, l'a laissée ouverte, a relancé la génératrice (le bruit remet les mordus en marche), porte peut-être la lanterne de Lila… et cache un secret, sans rapport avec l'orage. | Le seuil (poussière et UV), la montre à 2 h 14, les 9 traits de Cuisine : C5. |
 
 **Contradictions à repérer (le geste de base du tableau) :**
 - Avis officiel (« porte de service ») ↔ seuil de la porte de service à la lampe UV (rien).
@@ -324,6 +383,9 @@ Puis **une seule grande question ouverte** : qui tape « VIENS », plus bas que 
 - Plan de l'infirmerie (« chambre 1 condamnée ») ↔ ticket de plateau (« chambre 1 : frapper deux fois »).
 - Mot de l'infirmier (« ça doit être la petite ») ↔ liste de Lila (« ma lampe aussi est morte »).
 - L'opératrice dit qu'elle était « coincée » ↔ le loquet manuel est fermé **de l'intérieur**.
+- Cuisine : « c'est l'étranger » ↔ le seuil, la montre à 2 h 14 et les 9 traits (tout a commencé neuf jours avant Lou).
+- L'opératrice : « j'ai vu le voyant de la porte de service, la nuit de l'orage » ↔ cahier de relève : « 2 h 00 : orage, coupure ».
+- La lanterne de Lila dans la sacoche de Lou ↔ liste de Lila n° 4 et petits pas qui sortent.
 
 ---
 
@@ -333,13 +395,13 @@ Suit l'ordre des objectifs. ⭐ = facultatif pour finir l'étage, mais utile à 
 
 | Pièce | Objectif | Ce qu'on y trouve | Mordu |
 |---|---|---|---|
-| **Entrée (extérieur)** | 1 | Craie « ILS SONT DESCENDUS. PAS TOUS. », voix de l'opératrice (première minute). Consigne de Bérard (canon). ⭐ Affiche de la règle n° 1, verrous côté dehors, photo de l'inauguration à la guérite. | — |
+| **Entrée (extérieur)** | 1 | Craie « ILS SONT DESCENDUS. PAS TOUS. », voix de l'opératrice (première minute). Consigne de Bérard (canon). ⭐ Affiche de la règle n° 1, verrous côté dehors, photo de l'inauguration à la guérite. ⭐ Seuil de la porte de service (a15 : poussière, deux séries de pas). | — |
 | **Zone extérieure** | 2 | Ferrailles dans les épaves. ⭐ Lanterne de Lila et une ferraille posée à côté. | Le guetteur |
 | **Génératrice** | 2 | Journal de maintenance (canon). ⭐ **Énigme 2** une fois le courant revenu. ⭐ Moitié de consigne. | Marceau, le Silencieux |
 | **Sécurité** | 3 | Borne de recharge : **point sûr**. ⭐ **Énigme 3** (terminal de Bérard). ⭐ Autre moitié de consigne. | — |
-| **Hub central** | 3 | ⭐ Avis officiel. Valises abandonnées en file vers le nord. | — |
+| **Hub central** | 3 | ⭐ Avis officiel. Valises abandonnées en file vers le nord. **Scène M3 : Cuisine accuse Lou** devant l'avis. | — |
 | **Couloir nord / Accès étage 2** | fin | Porte de l'étage 2, verrouillée. | Bérard |
-| **Cafétéria** | — | Menu du jour (canon). ⭐ Post-it de Cuisine. **Survivant : Cuisine.** | Le commis |
+| **Cafétéria** | — | Menu du jour (canon). ⭐ Post-it de Cuisine. ⭐ 9 traits sur la porte de la chambre froide. **Survivant : Cuisine.** | Le commis |
 | **Entrepôt** | 5 | **Liste de Lila (canon).** ⭐ **Énigme 1** : armoire à piles. | — |
 | **Dortoirs** | 5 | Mur creux (canon). ⭐ Liste de Lila n° 3. | — |
 | **Pièce cachée** | 5 | Clé, dernier mot de Lila (canon). ⭐ Dessin de Lila. | — |
@@ -356,12 +418,12 @@ Chaque pièce raconte une scène **sans texte**, lisible en vue de dessus, qui p
 
 | Pièce | Scène muette | La question qu'elle pose | Lumière / son |
 |---|---|---|---|
-| **Entrée** | Craie sur la porte. Gros verrous côté dehors. Une marelle d'enfant qui s'arrête à la case 4. | Qui est resté ? Pourquoi verrouiller de dehors ? | Lanterne de guérite qui grésille ; vent. |
+| **Entrée** | Craie sur la porte. Gros verrous côté dehors. Une marelle d'enfant qui s'arrête à la case 4. Au seuil de la porte de service, de petits pas qui sortent, à demi effacés. | Qui est resté ? Pourquoi verrouiller de dehors ? Qui est sorti ? | Lanterne de guérite qui grésille ; vent. |
 | **Zone extérieure** | Une lanterne d'enfant posée sur une épave, à côté d'une ferraille bien rangée. Des pas qui vont vers les épaves, aucun qui revient. | Qui est sorti, et pourquoi pas rentré ? | Corbeaux, tôle qui grince. |
 | **Génératrice** | Une chaise et une gamelle à côté du moteur ; une silhouette qui le tapote en silence. | Pourquoi celui-là ne fait-il aucun bruit ? | Noir, puis vague d'allumage des néons. |
 | **Sécurité** | Registre ouvert, stylo tombé, borne qui clignote. | Que s'est-il passé à 2 h 15 ? | Bip régulier de la borne : le seul son rassurant. |
 | **Hub** | Valises en file vers le nord, une sur le côté, ouverte. L'avis officiel bien droit au milieu. | Pourquoi sont-ils partis si vite ? | Ventilation qui « respire ». |
-| **Cafétéria** | Un plateau vide posé devant la chambre froide, et un autre, et un autre : une pile de plateaux. | Qui apporte des plateaux à une porte fermée ? | Couverts qui tintent. |
+| **Cafétéria** | Un plateau vide posé devant la chambre froide, et un autre, et un autre : une pile de plateaux. Sur la porte, 9 traits à la craie. | Qui apporte des plateaux à une porte fermée ? Qui compte les jours ? | Couverts qui tintent. |
 | **Entrepôt** | Une armoire cadenassée ; à côté, un panier à piles vide, retourné. | Pourquoi enfermer des piles ? | Ampoule nue qui se balance. |
 | **Dortoirs** | Des lits faits au carré ; un seul défait, avec un petit oreiller de travers (celui de Lila). | Qui dormait là, et a fui en pleine nuit ? | Silence total, même la ventilation s'arrête. |
 | **Infirmerie** | Des raclures au sol devant une armoire ; deux lampes neuves visibles au-dessus, par une fente. | Pourquoi cette armoire a-t-elle tant bougé ? | Néon qui clignote. |
@@ -383,7 +445,7 @@ détail caché devient une carte du tableau. Tout objet examinable a un **contou
 
 | # | Pièce | Objet | Au premier regard | Le détail caché |
 |---|---|---|---|---|
-| a1 | Entrée | Photo de l'inauguration (guérite) | Trente personnes souriantes devant la porte neuve. | Au dos : « Jour de la porte. » Au premier plan, quelqu'un de **dos**, en blouse, tient une valise marquée d'un triangle. *(Dormant : étage 3.)* |
+| a1 | Entrée | Photo de l'inauguration (guérite) | Trente personnes souriantes devant la porte neuve. | Au dos : « Jour de la porte. » Au premier plan, quelqu'un de **dos**, en blouse, tient une valise marquée d'un triangle. En zoomant sur le triangle, la main de Lou se pose sur sa sacoche. *(Dormants : étage 3 ; L2.)* |
 | a2 | Génératrice | Journal de maintenance (canon) | La note de l'équipe technique, page arrachée. | À la loupe, sur la page suivante : l'empreinte en creux du texte arraché. |
 | a3 | Génératrice | Alliance de Marceau *(mordu figé)* | Un anneau terni. | À l'intérieur : « M. — à ma Nuit ». |
 | a4 | Génératrice | Bracelet de Marceau | Bracelet d'hôpital. | « CHAMBRE 1 — DR O. — PATIENT n° 1 ». |
@@ -397,6 +459,8 @@ détail caché devient une carte du tableau. Tout objet examinable a un **contou
 | a12 | Couloir nord | Page arrachée *(sur Bérard)* | Une feuille pliée. | Le texte entier, et en bas : « Ne rien dire. — B. » |
 | a13 | Pièce cachée | Clé d'accès | Carte-clé. | Étiquette : « Pour Lila — ferme derrière toi. — Dr O. » |
 | a14 | Pièce cachée | Dessin de Lila | Le silo dessiné en coupe. | **Quatre** étages ; une croix sur le dernier ; une flèche « ICI ÇA TAPE » au troisième. *(Dormant : étages 3 et 4.)* |
+| a15 | Entrée | Seuil de la porte de service | Une marche usée, de la poussière. | De petits pas d'enfant qui **sortent**, anciens, à demi recouverts ; une seule paire de bottes qui **entre**, toute fraîche, avec de la boue rouge des épaves : celles de Lou. À la lampe UV, rien (c1). |
+| a16 | Sacoche de Lou | Paquet noué dans un chiffon | Un chiffon noué, lourd. | **Rien** : Lou ne le défait pas (« Pas maintenant. »). *(Dormant L1 : étage 3.)* |
 
 ### (b) Pensées du héros, en bulle
 
@@ -407,7 +471,9 @@ posent des questions ; elles ne concluent jamais à la place du joueur.
 |---|---|---|
 | Entrée | Craie sur la porte | « Pas tous. Alors quelqu'un est encore là-dedans. » |
 | Entrée | Voix à la radio, puis silence | « Elle a dit “la relève”. À qui parle-t-elle ? » |
-| Entrée | Verrous | « Drôle de porte. On dirait qu'elle ferme de l'extérieur. » |
+| Entrée | Verrous | « Drôle de porte. On dirait qu'elle ferme de l'extérieur. » Puis Lou passe le gant sur un verrou, une seconde, sans rien penser. *(Dormant L3.)* |
+| Entrée | Triangle de la photo (a1) | « Ce triangle… » puis « Non. Rien. » *(Dormant L2.)* |
+| Sacoche | Examiner le paquet (a16) | « Pas maintenant. » *(Dormant L1.)* |
 | Entrée | Affiche de la règle n° 1 | « Aucun mordu ne franchit la porte. Et pourtant… » |
 | Extérieur | Lanterne + ferraille | « Une lanterne de gamin et une pièce bien rangée. Quelqu'un faisait le même boulot que moi. » |
 | Extérieur | Le guetteur | « Un brassard de garde. Il gardait la porte… de dehors ? » |
@@ -418,6 +484,10 @@ posent des questions ; elles ne concluent jamais à la place du joueur.
 | Hub | Avis officiel | « “Par la porte de service.” Ça se vérifie, une porte. » |
 | Cafétéria | Coups dans la chambre froide | « Un mordu ne frappe pas en rythme. » |
 | Cafétéria | Le commis et ses plateaux | « Il pose un plateau, frappe deux fois, repart. Il a fait ça souvent. Pour qui ? » |
+| Cafétéria | « Depuis que t'es là » (M1) | « Le moteur fait du bruit. Le bruit les attire. …Il n'a pas tout à fait tort. » |
+| Hub | Accusation (M3) | « Je sais que ce n'est pas moi. Eux, il faut le leur montrer. » |
+| Cafétéria | Les 9 traits | « Neuf traits. Neuf jours. Moi, je suis arrivé ce matin. Ça se prouve, ça ? » |
+| Partout | L'opératrice au haut-parleur (M2) | « Elle dit vrai. Presque tout. » |
 | Entrepôt | Armoire cadenassée | « Un cadenas sur des piles. Ici, la lumière valait de l'or. » |
 | Dortoirs | Lits vides | « “Là où personne ne dort plus.” » |
 | Infirmerie | Raclures au sol | « Cette armoire a bougé. Souvent. » |
@@ -497,6 +567,10 @@ nouveau document fait **5 lignes au plus**.
 > une valise marquée d'un triangle à la main.
 > *Verso :* « Jour de la porte. »
 
+**Seuil de la porte de service** *(gros plan a15, carte du tableau)*
+> De petits pas qui sortent, anciens. Une seule paire de bottes qui entre, fraîche : les miennes.
+> À la lampe UV : rien.
+
 ### ZONE EXTÉRIEURE
 
 **📝 `note_expedition` — Feuille d'expédition** *(sur le guetteur)*
@@ -551,6 +625,10 @@ nouveau document fait **5 lignes au plus**.
 **📝 `note_cook_postit` — Post-it de Cuisine** *(énigme 1)*
 > Code de l'armoire à piles : ce qu'on mange ENCORE.
 > (Comme ça, même le commis s'en souviendra.)
+
+**Traits sur la porte de la chambre froide** *(décor, carte du tableau)*
+> Neuf traits à la craie, un par jour depuis l'orage.
+> *(Facultatif : en dessous, une colonne au titre changeant, « L'ÉTRANGER », puis « LE BRICOLEUR », puis « LOU ».)*
 
 **📝 `note_tray_ticket` — Ticket de plateau** *(sur le commis)*
 > Plateau — chambre 1. Le poser devant la porte, frapper deux fois.
@@ -639,6 +717,15 @@ nouveau document fait **5 lignes au plus**.
 > confiance au silence.
 > — Lila
 
+### PAROLES (cartes de témoignage)
+
+**🎙️ `say_cook_accuse` — Accusation de Cuisine** *(M1, M3)*
+> « T'es rentré par la porte de service. Depuis que t'es là, ils marchent. »
+
+**🎙️ `say_operator_door` — Déclaration de l'opératrice** *(haut-parleur, M2)*
+> « Mon tableau dit que la porte de service est ouverte. L'étranger est entré par là.
+> La nuit de l'orage aussi, j'ai vu le voyant s'allumer. J'étais à ma console. »
+
 ### RADIO (après la réparation)
 
 **🎙️ `audio_below` — La voix qui grésille** *(après le message canon)*
@@ -692,35 +779,81 @@ Chacune s'ouvre avec **une information**, pas un objet.
 
 Dialogues écrits à l'avance. Entre crochets : les choix du joueur.
 
+### Le ton
+
+Cuisine parle un **français familier québécois léger** (« T'es qui, toi ? », « C'est-tu toi qui… ? »,
+« ben », « icitte », un ou deux marqueurs par réplique au plus). L'opératrice parle un **français
+standard, poli, au vouvoiement** : sa politesse fait partie de son masque. Lou et tous les documents
+restent en français standard. Entre crochets : les choix du joueur.
+
 ### Cuisine — la chambre froide (CAFÉTÉRIA)
 
-**À travers la porte**
+**M1 — À travers la porte** *(toujours après la relance de la génératrice ; Cuisine est Méfiant)*
 > **Cuisine :** Toc toc toc… Si t'es un mordu, t'es très poli. Dis-moi un truc qu'un vivant dirait.
-> **[Bricoleur] J'ai faim, et j'en ai marre des pêches.**
-> **Cuisine :** *(Rire étouffé.)* Ça, c'est un vivant. *(Clic.)* Entre, vite. Ferme derrière toi.
+> **[Lou] J'ai faim, et j'en ai marre des pêches.**
+> **Cuisine :** *(Rire étouffé. Clic. La porte s'ouvre sur la chaîne : un œil, une moustache, un couperet.)* Ça, c'est un vivant. T'es qui, toi ? T'es pas d'ici.
+> **Cuisine :** Ça fait neuf jours que c'est mort, icitte. Pis là, ça se remet à marcher. Depuis que t'es là.
+> **Cuisine :** C'est-tu toi qui as rallumé la génératrice ?
+> **[Lou] Oui. Ça fait du bruit, je sais.** → **Cuisine :** …Au moins, tu mens pas.
+> **[Lou] Non.** → *(Faux pas différé : la boue et la génératrice le contrediront.)*
 
-**Une fois dedans**
-> **Cuisine :** Tout le monde m'appelle Cuisine, alors… Cuisine. T'es pas d'ici, toi.
-> **[Bricoleur] Qu'est-ce qui s'est passé ?**
+**Ensuite, selon la confiance**
+> **Cuisine :** Tout le monde m'appelle Cuisine, alors… Cuisine.
+> **[Lou] Qu'est-ce qui s'est passé ?**
 > **Cuisine :** L'orage. La porte de service. C'est ce qu'ils ont affiché. Moi, j'étais à l'entrepôt,
 > à compter mes piles, quand ça a crié. Je me suis enfermé ici. Depuis, je compte les pêches.
-> **[Bricoleur] Qui a écrit « pas tous » sur la porte ?**
+> **[Lou] Qui a écrit « pas tous » sur la porte ?**
 > **Cuisine :** La petite Lila, sûrement. Elle est venue taper ici. J'ai pas ouvert. J'avais peur.
-> **[Bricoleur] Qui volait les piles ?**
+> **[Lou] Qui volait les piles ?**
 > **Cuisine :** Elle aussi. Je l'ai vue. J'ai mis un cadenas, et ce soir-là elle est venue m'en
 > réclamer une. J'ai dit non. *(Il regarde ses mains.)* Une gamine qui vole, ça se punit, non ?
+> **[Lou] Pourquoi tu me regardes comme ça ?**
+> **Cuisine :** Tu tiens ta sacoche comme si y avait un bébé dedans. Qu'est-ce que tu caches ?
+> **[Lou] Chercher un abri, c'est tout.** → **Cuisine :** Mouais.
+> **[Lou] J'ai fait une promesse. Je ne peux pas en dire plus.** → **Cuisine :** Correct. Garde-la. *(Compte comme une vérité.)*
+
+**M2 — La voix au haut-parleur** *(après l'énigme 2)* : l'opératrice annonce, sur le circuit général,
+que la porte de service est ouverte et que « l'étranger est entré par là » ; elle ajoute qu'elle a vu
+le voyant la nuit de l'orage (mensonge, X9). Cuisine passe à **Hostile** (ou de Prudent à Méfiant).
+> **Cuisine :** *(Porte fermée.)* C'est-tu toi qui les as laissés rentrer ? Recule. Tu passes ton affaire par la fente.
+
+**M3 — L'accusation publique (HUB)** : pour la première fois en neuf jours, Cuisine sort, couperet à la main, devant l'avis officiel.
+> **Cuisine :** « Par la porte de service. » Pis toi, t'es rentré par où ?
+> **Cuisine :** Ta boue rouge part de la porte de service jusqu'à ma cafétéria.
+> **Cuisine :** *(Si Lou porte la lanterne de Lila.)* Ça, c'est la lanterne à Lila. Où est-ce qu'elle est, elle ?
+> **Cuisine :** Vide ta sacoche.
+> **[Lou] Vider la sacoche.** → Le paquet noué reste fermé : « Ça, c'est à quelqu'un qui est mort. » **Cuisine :** Correct.
+> **[Lou] « Je suis entré par là. J'ai laissé la porte ouverte. Mais ils étaient là avant moi. »** → **Cuisine :** Prouve-le.
+> **[Lou] Montrer la preuve** *(si C5 est validée)* → retournement immédiat (M5).
+> **Cuisine :** *(Sans preuve.)* Tant que tu me prouves pas le contraire, tu touches pas à mes affaires.
+Au tableau apparaît : **« Comment prouver que je n'y suis pour rien ? »**
+
+**M4 — Le commis** : Cuisine, hors de sa chambre froide, voit son commis mordu revenir avec son plateau.
+Lou peut le figer à la lampe (coût : de la charge). Le sauver fait monter la confiance d'une marche,
+même accusé : « …T'aurais pu me laisser là. Pourquoi ? » Fuir la fait baisser : « Je le savais. »
 
 **Petite quête : « Pour qui, les piles ? »**
-1. Lui donner **1 bandage** (dilemme : c'est le seul de l'infirmerie).
-2. Établir au tableau que les piles allaient à la chambre 1, puis revenir :
+1. Lui donner **1 bandage** (dilemme : c'est le seul de l'infirmerie). Passé par la fente s'il est Hostile.
+2. Établir au tableau que les piles allaient à la chambre 1 (C3), puis revenir :
 
-> **[Bricoleur] Elle ne volait pas pour elle. C'était pour les lampes d'Okafor.**
+> **[Lou] Elle ne volait pas pour elle. C'était pour les lampes d'Okafor.**
 > **Cuisine :** *(Long silence.)* …Et j'ai fermé l'armoire. Le soir même.
-> **[Bricoleur] Quelqu'un a ouvert la porte. Ce n'est pas vous qui l'avez ouverte.**
-> **Cuisine :** *(Il sort une clé.)* La réserve, derrière les fourneaux. Prends ce qu'il te faut. Et
-> trouve qui a ouvert. J'ai besoin de savoir.
 
-- **Récompense :** clé de la réserve (2 piles, 1 trousse, 1 boîte de clous).
+**M5 — Le retournement** *(C5 validée, cartes montrées)*
+> **[Lou] La montre de l'infirmier : 2 h 14, la nuit de l'orage. Tes neuf traits. Sur le seuil, mes pas, et ceux de Lila, qui sortent.**
+> **Cuisine :** *(Il pose le couperet.)* …Neuf jours. Ouin. T'étais pas là.
+> **Cuisine :** Bon. J'me suis trompé. Ça arrive pas souvent. C'est quoi ton nom, déjà ?
+> **[Lou] Lou.**
+> **Cuisine :** Lou. Mais si c'est pas toi… c'est qui ?
+À l'interphone, trois secondes de silence ; l'opératrice : « Je suis contente pour vous. » La lueur verte s'éteint.
+
+**Confiant** *(disculpé, et C3 faite)*
+> **[Lou] Quelqu'un a ouvert la porte. Ce n'est pas toi qui l'as ouverte.**
+> **Cuisine :** *(Il te tourne le dos, fouille une étagère, sort une clé.)* La réserve, derrière les
+> fourneaux. Prends ce qu'il te faut, Lou. Et trouve qui a ouvert. J'ai besoin de savoir.
+
+- **Récompense :** clé de la réserve (2 piles, 1 trousse, 1 boîte de clous). Atteinte **seulement si
+  Lou est disculpé** ; sinon, Cuisine échange les mêmes objets un par un, plus cher.
 
 ### L'opératrice de nuit — le local technique (SALLE DE CONTRÔLE)
 
@@ -729,12 +862,18 @@ Dialogues écrits à l'avance. Entre crochets : les choix du joueur.
 **Après l'énigme 2**
 > **Opératrice :** *(Par l'interphone.)* …Le courant ? Vous êtes celui que j'ai entendu, à la
 > guérite ? *(Clic.)* Je suis restée coincée depuis l'orage. Le courant, la serrure… vous voyez.
-> **[Bricoleur] Qui êtes-vous ?**
+> **[Lou] Qui êtes-vous ?**
 > **Opératrice :** L'opératrice de nuit. Mon nom… ça fait longtemps que plus personne ne l'utilise.
 > *(Elle tourne son alliance.)*
-> **[Bricoleur] La radio peut-elle remarcher ?**
+> **[Lou] La radio peut-elle remarcher ?**
 > **Opératrice :** L'émetteur a grillé pendant l'orage. Je l'ai écrit sur la relève. Un module, à
 > l'atelier. Si vous le réparez, ils nous entendront, en bas. Il faut qu'ils m'entendent.
+
+**Le masque** *(tant que Lou est accusé)* : elle l'appelle « mon garçon » en face et « l'étranger » au
+haut-parleur. Elle ne fabrique aucune preuve : elle dit du vrai qui oriente, et ment une fois (X9).
+> **Opératrice :** Ne lui en voulez pas, mon garçon. Il a peur. Moi, je vous crois.
+> **Opératrice :** Mais c'est vrai que vous êtes entré par là… Vous comprenez qu'il se pose des questions.
+> *(Si Lou touche sa sacoche, ou dit « j'ai fait une promesse »)* **Opératrice :** Vous aussi, vous gardez quelque chose. Je connais ce geste. Moi aussi.
 
 **Petite quête : « La voix d'en bas »**
 1. Lui donner **1 pile** (dilemme : « Je ne supporte plus le noir. »).
@@ -747,16 +886,25 @@ Dialogues écrits à l'avance. Entre crochets : les choix du joueur.
   > **Opératrice :** Il réparait tout. Il sifflait en travaillant. Il… sifflait, oui.
 - Si on montre l'éclat vert :
   > **Opératrice :** Du verre. Il y en a partout, depuis l'orage.
+- Après X9 (le voyant) :
+  > **Opératrice :** Le voyant ? J'ai dû me tromper. Il faisait noir. Parlons de la radio, voulez-vous ?
 
 **Après l'accusation juste (elle confirme ce que le joueur a établi)**
 > **Opératrice :** *(Elle pose sa lampe verte sur la console.)* Il m'appelait « ma Nuit ».
 > J'ai entendu : « À l'aube, on le sort. » Je voulais juste lui dire au revoir.
 > La porte s'est ouverte toute seule. Il était si calme, sous le vert… et la pile est morte.
 > Lila a frappé à ma porte, après. Je n'ai pas répondu. Le silence, c'était moi aussi.
-> **[Bricoleur] Venez avec moi, en bas.**
-> **Opératrice :** Non. Quelqu'un doit rester à la radio, pour dire la vérité à ceux d'en bas. Va, mon garçon.
+> Et quand ils vous ont accusé, je n'ai rien dit. C'était plus facile. Pardon, Lou.
 
-**Après une accusation fausse :** elle reste aimable. Le joueur peut descendre sans avoir trouvé.
+**M6 — Le choix de Lou** (l'accusé d'hier peut maintenant accuser ; trois choix valables)
+> **[Lou] Dites-le-lui vous-même.** → Elle avoue à Cuisine par l'interphone. **Cuisine :** …Ben. On a tous fermé une porte, c'te nuit-là. Moi, c'était l'armoire.
+> **[Lou] Je vais le lui dire.** → Cuisine est en colère contre elle. **Opératrice :** Vous avez eu raison.
+> **[Lou] (Garder son secret.)** → Cuisine ne saura pas ; le message radio vers le bas restera incomplet (§ 21).
+
+> **[Lou] Venez avec moi, en bas.**
+> **Opératrice :** Non. Quelqu'un doit rester à la radio, pour dire la vérité à ceux d'en bas. Va, Lou.
+
+**Après une accusation fausse :** elle reste aimable, et continue de dire « mon garçon ». Le joueur peut descendre sans avoir trouvé.
 
 ---
 
@@ -785,6 +933,9 @@ plan, trace, réplique). Le joueur, lui, assemble. Deux gestes :
 | **X5** | Mot de l'infirmier (« la petite ») | Liste de Lila n° 3 (« ma lampe est morte ») | « Ce n'était pas Lila. » | Lila sort de la liste des suspects. |
 | **X6** | Opératrice : « coincée » | Loquet fermé de l'intérieur | « Elle n'était pas coincée. Elle se cachait. » | Nouvelle question à lui poser (« Pourquoi vous cacher ? ») : elle détourne la conversation. |
 | **X7** | Relève radio (canon), signée « Opératrice de nuit » | Alliance « à ma Nuit » **ou** photo « — N. » | « “Ma Nuit”… c'est elle, sa femme. » | Le mot « femme » dans la banque. |
+| **X8** | Accusation de Cuisine | Seuil de la porte de service **ou** traits de Cuisine + montre 2 h 14 | « Tout a commencé la nuit de l'orage, neuf jours avant moi, et personne n'est entré par là. » | Le mot « neuf jours » dans la banque (C5). |
+| **X9** | Déclaration de l'opératrice (le voyant) | Cahier de relève (« 2 h 00 : orage, coupure ») | « Sans courant, pas de voyant. Elle n'a rien vu. Pourquoi l'inventer ? » | Nouvelle question à lui poser ; elle passe sur la défensive. |
+| **X10** | Lanterne de Lila (sacoche de Lou) | Liste de Lila n° 4 **ou** seuil (petits pas qui sortent) | « Lila est sortie seule, avant la nuit, bien avant moi. » | Cuisine cesse de parler de la lanterne. |
 
 ### Les phrases à trous (les conclusions de l'étage)
 
@@ -810,7 +961,16 @@ deux pièces**. Deux suffisent pour trouver.
 > les a enfermées le soir de l'orage.
 
 - Indices : menu du jour (cafétéria) · liste de Lila n° 2 (infirmerie) · feuille de comptage (entrepôt) · témoignage de Cuisine.
-- Débloque : la réplique de Cuisine → **clé de la réserve**.
+- Débloque : la réplique de Cuisine → **clé de la réserve** (si Lou est aussi disculpé par C5).
+
+**C5 — L'étranger (couche 1)** *(se débloque après l'accusation M3)*
+> Personne n'est entré par **[la porte de service]** : le premier mordu est sorti de **[l'infirmerie]**,
+> la nuit de l'orage. Je suis arrivé **[neuf jours]** plus tard. Ce qui les a remis en marche, c'est
+> **[le bruit]** de la génératrice.
+
+- Indices : seuil, poussière et UV (entrée) · traînée UV (infirmerie) · montre 2 h 14 (infirmerie) · traits de Cuisine (cafétéria) · avis officiel, qui dit lui-même « pendant l'orage » (hub) · règle du bruit (extérieur, génératrice).
+- La dernière case est un aveu : Lou reconnaît sa part. C'est la vérité qui disculpe.
+- Débloque : le **retournement** (M5, § 15) ; Cuisine peut devenir Confiant.
 
 **C4 — L'accusation (couche 3)** *(précédée du « Défi au joueur »)*
 > La nuit de l'orage, **[l'opératrice de nuit]** a ouvert la chambre 1 vers **[2 h 05]**, avec une lampe
@@ -838,6 +998,9 @@ deux pièces**. Deux suffisent pour trouver.
 | C2 avec « Okafor l'a fait entrer » | « Elle ne sortait jamais. Qui était à l'expédition ? » |
 | X sur Avis officiel + Rapport n° 12 | « La lumière et la porte de service, ça n'a rien à voir. Regarde le seuil, de près. » |
 | X sur Éclat vert + Lanterne de Lila | « La lanterne de Lila est blanche. Ce vert vient d'ailleurs. » |
+| C5 avec « le guetteur » dans la dernière case | « Le guetteur est dehors. Ce qui a fait du bruit dedans, c'est moi. » |
+| C5 avec « un jour » | « Il a tracé plus d'un trait sur sa porte. » |
+| X sur Avis officiel + Accusation de Cuisine | « Ces deux-là disent la même chose. Il me faut un fait, pas une affiche. » |
 
 **Pensées génériques** (au hasard) :
 - « Non… ces deux-là ne se parlent pas. Pas encore. »
@@ -851,6 +1014,7 @@ Toujours visible, d'un étage à l'autre (§ 20) :
 - Qui est la personne de dos, sur la photo de la porte ?
 - Quel « vieux dossier du fond » Okafor connaissait-elle ?
 - Où est Lila ? Qui tape « VIENS » ?
+- *(Tant que C5 n'est pas faite)* Comment prouver que je n'y suis pour rien ?
 
 ---
 
@@ -863,6 +1027,7 @@ Proposée après 2-3 minutes sans progrès ou 3 erreurs. Jamais la phrase compl�
 | C1 | « Je n'ai pas bien regardé la porte de service. » | « Et si je l'éclairais à la lampe UV ? » | « Aucune trace au seuil, mais une traînée à l'infirmerie : d'où part-elle ? » |
 | C2 | « Ce bracelet d'infirmerie… à qui appartenait-il ? » | « La page arrachée de la génératrice, elle parlait de quelqu'un. » | « Bracelet “chambre 1”, avant-bras bandé, feuille “RAS” : le même homme. » |
 | C3 | « Le menu parle de piles volées. Volées pour quoi ? » | « Il y a une liste dans le panier à piles de l'infirmerie. » | « Quatre piles par nuit, deux lampes, une chambre. » |
+| C5 | « Quand est-ce que tout a commencé, exactement ? » | « Cuisine compte tout. Même les jours. » | « Neuf traits, une montre à 2 h 14, un seuil sans trace : et moi, j'étais où ? » |
 | C4 | « Qui avait une lumière allumée, cette nuit-là ? » | « Lila parle d'une couleur. Où ai-je vu cette couleur ? » | « Lampe verte, “ma Nuit”, un trou dans le cahier à 2 h 10. » |
 
 ---
@@ -883,6 +1048,9 @@ Tous ces éléments sont trouvables **avant** l'accusation, la plupart en pleine
 | Elle n'était pas coincée | Loquet a11 | L'ouverture du local technique. |
 | Elle connaît le silence du mordu | Sa réplique | La conversation. |
 | Les alibis des autres | Feuille de comptage, journal du poste, mot de l'infirmier, liste de Lila | Entrepôt, sécurité, infirmerie, dortoirs. |
+| Elle laisse accuser l'étranger, et ment sur le voyant | M2, déclaration au haut-parleur, X9 | L'énigme 2. |
+| Elle dit « mon garçon » en face, « l'étranger » dans son dos, jamais « Lou » | Ses répliques | La rencontre. |
+| **L'innocence de Lou** (pour C5) | Seuil (a15), montre 2 h 14, 9 traits, avis « pendant l'orage », liste de Lila n° 4 | L'entrée, l'infirmerie, la cafétéria, le hub. |
 
 ---
 
@@ -902,6 +1070,9 @@ Une fois l'affaire résolue, chaque note **canon**, sans qu'un mot ait changé, 
 - **Lila** : « Ne fais pas confiance au silence. » Le mordu qui ne grogne pas… et la femme derrière
   la porte, qui n'a pas répondu.
 - **La craie** : « PAS TOUS. » Lila parlait de Cuisine et de l'opératrice : les deux vivants que le héros a trouvés.
+- **« Mon garçon »** : chaque fois qu'elle l'appelait ainsi, elle évitait son nom, et dans son dos elle disait « l'étranger ».
+- **L'avis officiel** : « des mordus sont entrés par la porte de service ». Le vieux mensonge du « mal venu du dehors », que l'opératrice a laissé retomber sur l'étranger.
+- *(Plus tard, étages 3 et 4)* **La pensée de la première minute**, « Pas tous. Alors quelqu'un est encore là-dedans. » : c'est la phrase qui a fait entrer Lou, alors qu'il avait promis de fermer de dehors.
 
 ---
 
@@ -917,9 +1088,13 @@ Ils intriguent à l'étage 1 sans bloquer, et restent dans la colonne « Questio
 | Le **« vieux dossier du fond »** | Rapport n° 1, dossier de la chambre 1 | Okafor avait une référence. | Étages 2 et 3 | Les mordus étaient connus du silo **bien avant** Marceau. |
 | Le **dessin de Lila** : 4 étages, « ICI ÇA TAPE » au 3ᵉ, croix au 4ᵉ | Pièce cachée | Un dessin d'enfant. | Étages 2, 3, 4 | Lila avait entendu le signal **avant tout le monde**. |
 | Le **signal « VIENS »** tapé à la main | Radio (fin d'étage) | Lila ? | Étage 2 (puis 3) | Ce n'est pas Lila : quelqu'un d'enfermé plus bas depuis longtemps. |
+| **L1 — Le paquet noué** de Lou (a16) | Sacoche (inventaire) | Un souvenir qu'il garde. « Pas maintenant. » | Étage 3 | Une clé de laiton au triangle : la clé des verrous du dehors. |
+| **L2 — Le trouble devant le triangle** de la photo | Entrée (a1) | « Ce triangle… Non. Rien. » | Étage 3 | Le même triangle est gravé sur sa clé : la marque des fondateurs. |
+| **L3 — Le gant sur le verrou** | Entrée (première minute) | Un geste sans pensée. | Étage 4 | Le vieux serrurier de Lou a posé ces verrous ; il lui a fait promettre de fermer le silo de dehors. |
 
 **Ce qui ne sera jamais contredit plus bas :** Marceau était le premier mordu **de l'étage 1** ; Bérard
-et Okafor ont menti ; l'opératrice a ouvert la porte. Les étages suivants **élargissent** (il y avait
+et Okafor ont menti ; l'opératrice a ouvert la porte ; **Lou n'y est pour rien**. Son secret est une
+promesse, pas une faute. Les étages suivants **élargissent** (il y avait
 eu des mordus avant), ils ne reviennent pas dessus.
 
 ---
@@ -935,7 +1110,14 @@ eu des mordus avant), ils ne reviennent pas dessus.
    lettre : **V… I… E… N… S.** Et elle pâlit : « Ce n'est pas le poste de l'étage 2. Cette fréquence…
    elle vient de **plus bas**. Il n'y a rien, plus bas. Il ne devrait rien y avoir. »
 4. **La clé** de Lila, dans la cachette (canon : « Le mur creux cède sous l'épaule. Une pièce cachée ! »).
+   **Ce que l'opératrice dit de Lou à la radio** dépend du joueur : affaire résolue, Lou disculpé, et
+   choix M6 « dites-le-lui » ou « je vais le lui dire » : « Il y a un garçon avec nous. Il s'appelle Lou.
+   Il n'y est pour rien. C'est moi qui ai ouvert. » Lou disculpé seulement : « Un bricoleur est passé.
+   Il n'y est pour rien. » Lou non disculpé, ou secret gardé : « Un étranger est entré par la porte de
+   service… et ils se sont remis à marcher. » **C'est la réputation qui attend Lou à l'étage 2.**
 5. **L'escalier.** Couloir nord : Bérard mordu garde encore la porte ; on le fige ou on le contourne.
+   Selon sa confiance, Cuisine est là avec une boîte de pêches (« Reviens pas mordu, Lou. »), parle à
+   l'interphone (« Bonne chance, le bricoleur. ») ou se tait (« Bon débarras, l'étranger. »).
    Des petits coups montent de sous la grille (d12). Le héros ouvre.
 6. **Texte de fin, canon, inchangé :** « La clé glisse dans le lecteur. L'escalier de service s'ouvre
    sur le noir. Quelque part plus bas, le signal radio répond encore. L'étage 2 vous attend… bientôt. »
@@ -957,9 +1139,12 @@ eu des mordus avant), ils ne reviennent pas dessus.
 **État (`game/state.ts`)**
 - `FACT_IDS` **inchangé** : les 5 objectifs, `REQUIRES` et la sauvegarde actuelle n'en dépendent pas.
 - Nouvelles listes sauvegardées et validées comme `notes` : `examined` (gros plans, traces UV),
-  `words` (banque de mots débloqués), `contradictions` (`x1`…`x7`), `conclusions` (`c1`…`c4`),
+  `words` (banque de mots débloqués), `contradictions` (`x1`…`x10`), `conclusions` (`c1`…`c5`),
   `puzzles` (`locker`, `shed`, `terminal`), `unlocked` (armoire, tiroir, casier, canal 2, réserve),
   `survivors` (`cook`, `operator` : 0 fermé · 1 rencontré · 2 quête en cours · 3 quête finie),
+  `trust` (`cook` : `hostile` | `wary` | `careful` | `trusting` ; `operator` : `mask` | `defensive` |
+  `ashamed` | `true`), `accused` (Lou soupçonné, jusqu'à C5), `promises` (porte de service refermée…),
+  `scenes` (M1 à M7 jouées), `verdict` (choix M6, pour le message radio),
   `uvLamp`, `hints` (paliers d'aide utilisés), `dormant` (questions sans réponse, à garder entre étages).
   Augmenter la version de sauvegarde.
 - Nouveau `game/investigation.ts` : contradictions `{ a, b, text, unlock }`, phrases à trous
@@ -979,7 +1164,10 @@ eu des mordus avant), ils ne reviennent pas dessus.
   `note_infirmary_map` (11, −7) ; `uv_lamp` + `okafor_drawer` (16, −7) ; `note_lila_2` (15, −6.5) ;
   `note_room1_file` (21, 6) ; `marceau_locker` (35, −6) ; `note_radio_logbook` (16, −20) ;
   `note_lila_3` (−29, −17) ; `note_lila_4` (27, 10) ; `lila_lantern` (40, 30) ; `lila_drawing` (−36, −17).
-- PNJ : `cook` (−30, 18), `operator` (28, −20).
+- Méfiance : `service_threshold` au seuil de la porte de service (la porte `plaza_generator`, −11, 27,
+  « à l'ouest de l'entrée ») ; `cook_tally` sur la porte de la chambre froide (près de `cook`) ; la
+  porte `plaza_generator` garde un état ouvert/fermé pour la scène « refermer la porte ».
+- PNJ : `cook` (−30, 18), `operator` (28, −20). Cuisine peut sortir au hub pour M3 (devant `poster_notice`).
 - `ENEMIES` : garder 5 (`walker_ext`, `walker_gen`, `crawler_cafe`, `walker_control` déplacé à
   l'infirmerie, `walker_dorms` déplacé au couloir nord), avec `resident`, `carries`, `habit`, `silent`
   (Marceau) ; retirer les 5 autres.
@@ -989,7 +1177,9 @@ eu des mordus avant), ils ne reviennent pas dessus.
   figé, PNJ, armoire / tiroir / casier / réserve (si déduction faite), console canal 2.
 - `checkTriggers` : première minute (craie, voix), pensées et événements, une seule fois chacun.
 - Le chemin des 5 objectifs reste **inchangé** : `tests/unit/journey.test.ts` passe sans retouche.
-  Ajouter un test « enquête complète » (X1–X7, C1–C4).
+  Ajouter un test « enquête complète » (X1–X10, C1–C5). La confiance ne doit bloquer aucun objectif.
+- Scènes M1 à M7 (§ 15) : déclenchées une seule fois chacune ; la porte de service a un état
+  ouvert/fermé (Lou la laisse ouverte en entrant, peut la refermer).
 
 **Mordus (`game/enemy.ts`, `game/combat.ts`)**
 - 5 mordus coriaces (favoriser l'évitement), chacun avec une ronde d'habitude ; pendant le gel par la
@@ -1002,10 +1192,15 @@ eu des mordus avant), ils ne reviennent pas dessus.
   « Questions sans réponse » ; bouton « Réfléchir » (3 paliers).
 - Vue **gros plan** (rotation + loupe, contour à portée), **bulle de pensée**, écrans cadenas à
   lettres / leviers / terminal, appui long pour la **lampe UV**.
-- Dialogues écrits pour Cuisine et l'opératrice.
+- Dialogues écrits pour Cuisine et l'opératrice, avec variantes selon `trust` et le nom donné à Lou.
+- Fiche de survivant dans le carnet : un petit dessin dont la pose change, et la ligne « Il t'appelle :
+  « l'étranger » ». Aucune jauge chiffrée. Rappel rare en bas d'écran : « Cuisine a remarqué. »
+- Haut-parleur général (circuit CONTRÔLE) pour la voix de l'opératrice (M2).
 - `ui/story.ts` : personnages `cook`, `operator`, `voice_below` ; ligne optionnelle de fin.
 
 **Rendu (`game/render/`)**
+- Seuil de la porte de service (deux séries de pas), boue rouge des bottes de Lou, traits sur la porte
+  de Cuisine, Cuisine hors de la chambre froide (couperet), paquet noué dans la sacoche.
 - Craie sur la porte, verrous côté dehors, cloisons de la chambre 1 et du local technique, armoire
   déplaçable, lampe verte, costumes et objets portés des 5 mordus, traînées luisantes en UV, vague
   d'allumage des néons.
@@ -1015,7 +1210,7 @@ eu des mordus avant), ils ne reviennent pas dessus.
 ## 23. Résumé à lire à voix haute
 
 SILLO 8 est un abri souterrain de quatre étages, et l'histoire est pensée pour les quatre. On commence
-par l'étage un. Un jeune bricoleur venu du dehors, bonnet olive et veste moutarde, arrive devant la
+par l'étage un. Un jeune bricoleur venu du dehors, Lou, bonnet olive et veste moutarde, arrive devant la
 grande porte du silo. Dessus, quelqu'un a écrit à la craie, en lettres d'enfant : « Ils sont
 descendus. Pas tous. » Près de la guérite, une radio grésille. Une voix de femme, douce et fatiguée,
 dit : « Ici l'opératrice de nuit, il y a quelqu'un ? » Puis plus rien. En une minute, le joueur veut
@@ -1025,28 +1220,39 @@ savoir qui est resté.
 répète une vieille habitude et porte un indice. On peut les éviter, ou les figer à la lampe pour les
 examiner. Les piles sont rares, et ce manque est au cœur de l'histoire.
 
-Une affiche officielle explique que les mordus sont entrés par la porte de service pendant l'orage.
-À la lampe ultraviolette, il n'y a aucune trace à cette porte : la traînée part de l'infirmerie,
-derrière une armoire. Là se trouve une chambre secrète. Marceau, le chef technique, avait été mordu
-pendant une expédition. Le sergent Bérard, son ami, l'a fait entrer en cachette. Le docteur Okafor
-l'a gardé sous deux lampes. Lila, son aide, volait les piles pour ces lampes, et le cuisinier a fini
-par les enfermer sous cadenas.
+Lou entre par la porte de service et rallume la génératrice. Le bruit remet les mordus en marche. Les
+deux survivants se méfient aussitôt de « l'étranger ». Le cuisinier, barricadé dans sa chambre froide,
+lui lance : « T'es qui, toi ? C'est-tu toi qui les as laissés rentrer ? Depuis que t'es là, ils
+marchent. » L'affiche officielle dit justement que les mordus sont entrés par la porte de service, et
+l'opératrice, si gentille avec Lou, rappelle à tout le monde que l'étranger est entré par là. Le
+cuisinier finit par l'accuser devant l'affiche. Lou doit prouver son innocence, et il le peut : sur le
+seuil de la porte, il n'y a que ses pas et ceux d'une enfant qui sortait, aucune trace de mordu. Tout a
+commencé neuf jours avant lui. Le cuisinier pose son couperet, demande enfin son nom, et l'appelle Lou.
 
-Puis vient la vraie question : la nuit de l'orage, qui a ouvert la porte de Marceau ? Tout le monde a
-un secret. Le joueur vérifie les alibis : Lila n'avait plus de lumière, le cuisinier était à
-l'entrepôt, Bérard à l'entrée, Okafor dormait. Reste une lampe verte vue dans le couloir, une
+La vraie enquête commence. À la lampe ultraviolette, la traînée part de l'infirmerie, derrière une
+armoire. Là se trouve une chambre secrète. Marceau, le chef technique, avait été mordu pendant une
+expédition. Le sergent Bérard, son ami, l'a fait entrer en cachette. Le docteur Okafor l'a gardé sous
+deux lampes. Lila, son aide, volait les piles pour ces lampes, et le cuisinier a fini par les enfermer
+sous cadenas.
+
+La nuit de l'orage, qui a ouvert la porte de Marceau ? Lila n'avait plus de lumière, le cuisinier
+était à l'entrepôt, Bérard à l'entrée, Okafor dormait. Reste une lampe verte vue dans le couloir, une
 alliance gravée « à ma Nuit », et un trou dans le cahier de radio, juste à l'heure du drame. C'est
 l'opératrice de nuit, la voix gentille du début. Elle était la femme de Marceau. Elle voulait lui dire
-adieu, et la pile de sa lampe s'est éteinte.
+adieu, et la pile de sa lampe s'est éteinte. Puis elle a laissé accuser l'étranger, parce que c'était
+plus facile. Pour la première fois, elle l'appelle par son nom : « Pardon, Lou. »
 
 Le joueur relie les indices dans son carnet et complète des phrases. Une erreur ne punit jamais, elle
-fait réfléchir. Les bonnes déductions ouvrent des passages et des tiroirs.
+fait réfléchir. Les bonnes déductions ouvrent des passages, et elles gagnent la confiance des survivants.
 
 Mais l'étage un ne dit pas tout. Pourquoi les verrous de la grande porte sont-ils du côté dehors ? Qui
-est l'inconnu de dos sur la vieille photo ? À la fin, la radio réparée capte la voix d'Okafor : « Ne
-descendez pas. Lila, tu n'es jamais arrivée. » Puis un signal tapé à la main, que l'opératrice traduit
-lettre par lettre : « Viens ». Il vient de plus bas que l'étage deux, là où il ne devrait y avoir
-personne. Le bricoleur prend la clé cachée par Lila, et descend.
+est l'inconnu de dos sur la vieille photo, avec sa valise marquée d'un triangle ? Et pourquoi Lou,
+devant ce triangle, pose-t-il la main sur un paquet qu'il n'ouvre jamais ? Les survivants avaient
+raison sur un point : il cache quelque chose. Pas ce qu'ils croient. On ne le saura que tout en bas. À
+la fin, la radio réparée capte la voix d'Okafor : « Ne descendez pas. Lila, tu n'es jamais arrivée. »
+Puis un signal tapé à la main, que l'opératrice traduit lettre par lettre : « Viens ». Il vient de plus
+bas que l'étage deux, là où il ne devrait y avoir personne. Lou prend la clé cachée par Lila, et descend.
+Ce que l'opératrice a dit de lui à la radio l'attend déjà en bas.
 
 ---
 
@@ -1069,12 +1275,13 @@ personne. Le bricoleur prend la clé cachée par Lila, et descend.
 - ✅ **Au moins 5 détails changent de sens à la relecture.** Il y en a 8 au § 19.
 
 **Les fausses pistes**
-- ✅ **2 ou 3 fausses pistes, chacune expliquée par un vrai petit secret.** La porte de service, Lila, Cuisine (§ 9). S'y ajoutent Bérard et Okafor, coupables d'autre chose.
-- ✅ **Chaque fausse piste s'écarte avec un indice trouvable.** UV, liste n° 3, feuille de comptage.
-- ✅ **Aucune fausse piste ne repose sur un mensonge du jeu.** Seuls les personnages mentent : l'avis officiel, l'infirmier qui se trompe, l'opératrice. Les notes canon disent vrai, seulement pas tout.
+- ✅ **2 ou 3 fausses pistes, chacune expliquée par un vrai petit secret.** La porte de service, Lila, Cuisine (§ 9). S'y ajoutent Bérard et Okafor, coupables d'autre chose, et **Lou lui-même** (l'étranger accusé), écarté par C5.
+  - ⚠️ Quatre fausses pistes principales : un peu plus que la cible. La porte de service et l'étranger se défont en partie avec les mêmes indices (le seuil), ce qui allège la charge.
+- ✅ **Chaque fausse piste s'écarte avec un indice trouvable.** UV, liste n° 3, feuille de comptage, seuil + montre + 9 traits (C5).
+- ✅ **Aucune fausse piste ne repose sur un mensonge du jeu.** Seuls les personnages mentent : l'avis officiel, l'infirmier qui se trompe, l'opératrice. Les notes canon disent vrai, seulement pas tout. Lou ne pense jamais faux : il se tait sur son passé.
 
 **Le joueur qui déduit**
-- ✅ **Le joueur affirme au moins 5 fois.** 7 contradictions et 4 phrases à trous.
+- ✅ **Le joueur affirme au moins 5 fois.** 10 contradictions et 5 phrases à trous.
 - ✅ **Erreur possible, remarquée, réparable.** « Presque… », pensées d'erreur, aucune pénalité.
 - ✅ **Une porte au moins s'ouvre par une information.** PECHES, MARCEAU, l'armoire (X1/X2), le canal 2.
 - ✅ **Impossible de gagner en essayant tout.** La validation porte sur la phrase entière, avec des mots débloqués seulement par les indices.
@@ -1100,20 +1307,21 @@ personne. Le bricoleur prend la clé cachée par Lila, et descend.
 
 **Les 4 étages**
 - ✅ **Affaire locale résolue, grand mystère laissé dans l'ombre.** § 2 et § 6.
-- ✅ **3 à 5 indices dormants, avec étage de paiement.** 6 au tableau du § 20, dont 2 liés (verrous et règle n° 1).
+- ✅ **3 à 5 indices dormants, avec étage de paiement.** 6 au tableau du § 20 pour le silo, dont 2 liés (verrous et règle n° 1), plus 3 très discrets sur le secret de Lou (L1-L3).
 - ✅ **Rien de révélé à l'étage 1 ne sera contredit sans explication.** Les étages suivants élargissent seulement (§ 20).
 - ✅ **La fin est une réponse qui crée une question.** Lila n'est pas en bas, et quelqu'un appelle de plus bas.
 
 **Survie et enquête**
 - ✅ **On peut finir l'étage sans vaincre de mordu.** C'est la règle du § 7.
 - ✅ **Une ressource sert à survivre et à enquêter.** La charge de la lampe : figer ou révéler.
-- ✅ **Un dilemme ressource contre information.** Il y en a deux : une pile pour l'opératrice, un bandage pour Cuisine.
+- ✅ **Un dilemme ressource contre information.** Il y en a deux : une pile pour l'opératrice, un bandage pour Cuisine. S'y ajoute la charge de lampe dépensée pour sauver Cuisine du commis (M4) : de la lumière contre de la confiance.
 - ✅ **Aucune pénurie pendant la lecture ou la déduction.** § 8, règles de dosage.
 - ✅ **La rareté vécue éclaire les mobiles.** Les piles comptées expliquent le cadenas de Cuisine et la lampe qui s'éteint.
 
-**Comptage des indices** (cible : 25 à 35). Le joueur trouve environ **33 cartes** :
+**Comptage des indices** (cible : 25 à 35). Le joueur trouve environ **36 cartes** :
 - 7 notes canon et la craie ;
-- 19 nouveaux documents et enregistrements ;
-- environ 6 gros plans ou traces qui ne doublent pas un document : alliance, bracelet, montre, éclat vert, loquet, seuil UV.
+- 19 nouveaux documents et enregistrements, plus 2 paroles (accusation de Cuisine, déclaration de l'opératrice) ;
+- environ 7 gros plans ou traces qui ne doublent pas un document : alliance, bracelet, montre, éclat vert, loquet, seuil (poussière et UV), traits de Cuisine.
+- ⚠️ Un peu au-dessus de la cible : les cartes de la méfiance resservent pour C1 (le seuil), donc la charge réelle reste modérée.
 
 Environ un tiers sert aux conclusions C1 à C4.
