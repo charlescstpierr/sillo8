@@ -467,3 +467,113 @@ export function dirtGroundTexture(): Texture {
     }
   });
 }
+
+// ——— Extérieur (entrée et zone extérieure) ———
+
+/** Sentier de terre tassée, bords fondus, ornières et cailloux. Le sentier court le long de V. */
+export function extTrailTexture(): Texture {
+  return make("ext-trail", 256, 512, (g, w, h) => {
+    const r = rng(83);
+    // Bande claire aux bords fondus (alpha), répétable en V.
+    const grad = g.createLinearGradient(0, 0, w, 0);
+    grad.addColorStop(0, "rgba(196,170,124,0)");
+    grad.addColorStop(0.2, "rgba(196,170,124,0.75)");
+    grad.addColorStop(0.5, "rgba(206,182,136,0.9)");
+    grad.addColorStop(0.8, "rgba(196,170,124,0.75)");
+    grad.addColorStop(1, "rgba(196,170,124,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, w, h);
+    // Ornières sombres.
+    for (const x of [w * 0.34, w * 0.66]) {
+      g.strokeStyle = "rgba(110,86,58,0.3)";
+      g.lineWidth = 14;
+      g.beginPath();
+      g.moveTo(x, 0);
+      for (let y = 0; y <= h; y += 32) g.lineTo(x + Math.sin((y / h) * Math.PI * 2) * 5, y);
+      g.stroke();
+    }
+    for (let k = 0; k < 160; k++) {
+      g.fillStyle = r() > 0.5 ? "rgba(120,98,70,0.55)" : "rgba(232,214,176,0.6)";
+      g.beginPath(); g.arc(w * 0.18 + r() * w * 0.64, r() * h, 1.5 + r() * 3, 0, Math.PI * 2); g.fill();
+    }
+  });
+}
+
+/** Halo lumineux doux (flaque de lumière au sol, en mélange additif). */
+export function extHaloTexture(): Texture {
+  return make("ext-halo", 128, 128, (g, w, h) => {
+    const grad = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+    grad.addColorStop(0, "rgba(255,255,255,0.9)");
+    grad.addColorStop(0.45, "rgba(255,255,255,0.35)");
+    grad.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, w, h);
+  }, false);
+}
+
+/** Touffe de fleurs sauvages en découpe alpha (tiges + corolles pastel). */
+export function extFlowersTexture(seed = 1): Texture {
+  return make("ext-flowers-" + seed, 128, 128, (g, w, h) => {
+    const r = rng(60 + seed);
+    const petals = [["#e9dcc0", "#d8a43a"], ["#e58a6a", "#f6d38a"], ["#b9a6dc", "#f4ecd6"], ["#f2c230", "#7a4a2a"]];
+    for (let k = 0; k < 9; k++) {
+      const base = w / 2 + (r() - 0.5) * 60;
+      const tipX = base + (r() - 0.5) * 40;
+      const tipY = 22 + r() * 50;
+      g.strokeStyle = k % 2 ? "#6b7550" : "#556045";
+      g.lineWidth = 4;
+      g.beginPath(); g.moveTo(base, h); g.quadraticCurveTo(base, (h + tipY) / 2, tipX, tipY); g.stroke();
+      g.fillStyle = "#6b7550";
+      g.beginPath(); g.ellipse(base + 8, h - 18 - r() * 20, 9, 4, -0.6, 0, Math.PI * 2); g.fill();
+      const [petal, heart] = petals[(seed + k) % petals.length];
+      g.fillStyle = petal;
+      for (let p = 0; p < 5; p++) {
+        const a = (p / 5) * Math.PI * 2;
+        g.beginPath(); g.arc(tipX + Math.cos(a) * 6, tipY + Math.sin(a) * 6, 5.5, 0, Math.PI * 2); g.fill();
+      }
+      g.fillStyle = heart;
+      g.beginPath(); g.arc(tipX, tipY, 4, 0, Math.PI * 2); g.fill();
+    }
+  }, false);
+}
+
+/** Plaque de tôle rouillée, lettres pochoir crème (ou rétroéclairées), rivets et coulures. */
+export function extRustPlateTexture(text: string, lit = false): Texture {
+  return make("ext-plate:" + text + ":" + lit, 512, 160, (g, w, h) => {
+    const r = rng(text.length * 13 + 5);
+    g.fillStyle = "#6a4528";
+    g.fillRect(0, 0, w, h);
+    for (let k = 0; k < 26; k++) {
+      const x = r() * w, y = r() * h, rad = 10 + r() * 40;
+      const grad = g.createRadialGradient(x, y, 0, x, y, rad);
+      grad.addColorStop(0, r() > 0.4 ? "rgba(168,86,46,0.7)" : "rgba(201,119,63,0.55)");
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = grad;
+      g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    }
+    g.strokeStyle = "#3b2c22";
+    g.lineWidth = 10;
+    g.strokeRect(5, 5, w - 10, h - 10);
+    g.fillStyle = "#c9a77a";
+    for (const [x, y] of [[22, 22], [w - 22, 22], [22, h - 22], [w - 22, h - 22]]) { g.beginPath(); g.arc(x, y, 7, 0, Math.PI * 2); g.fill(); }
+    g.font = `bold ${Math.floor(h * 0.62)}px 'Special Elite', monospace`;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    if (lit) {
+      g.shadowColor = "#ffb347";
+      g.shadowBlur = 26;
+      g.fillStyle = "#ffe2a6";
+    } else g.fillStyle = "#e9dcc0";
+    g.fillText(text, w / 2, h / 2 + 4);
+    g.shadowBlur = 0;
+    // Coulures de rouille sous les lettres.
+    for (let k = 0; k < 14; k++) {
+      const x = 60 + r() * (w - 120);
+      const grad = g.createLinearGradient(0, h * 0.6, 0, h);
+      grad.addColorStop(0, "rgba(168,86,46,0.6)");
+      grad.addColorStop(1, "rgba(168,86,46,0)");
+      g.fillStyle = grad;
+      g.fillRect(x, h * 0.6, 3 + r() * 4, h * 0.4);
+    }
+  }, false);
+}
