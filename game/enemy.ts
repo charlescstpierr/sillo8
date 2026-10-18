@@ -580,6 +580,11 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
       return candidates;
     },
 
+    threats() {
+      if (dormant) return [];
+      return zombies.filter((z) => z.alive).map((z) => ({ x: z.x, z: z.z, alert: z.mode === "chase" || z.mode === "investigate" || z.mode === "search" }));
+    },
+
     raycast(x, z, dx, dz, maxDistance): RayHit | null {
       let best: Zombie | null = null;
       let bestDistance = maxDistance;

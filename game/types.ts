@@ -3,6 +3,7 @@ import type { Object3D } from "three";
 import type { Box } from "./collision";
 import type { AimCandidate } from "./aim";
 import type { SiloState } from "./state";
+import type { Threat } from "./safety";
 
 export interface HordeContext {
   player: { x: number; z: number; crouched: boolean; alive: boolean };
@@ -41,6 +42,8 @@ export interface Horde {
   push?(id: string, dx: number, dz: number, distance: number, freeze?: number): void;
   /** Hauteur (m) du sommet de la tête, pour les effets au-dessus du zombie (facultatif). */
   headHeight?(id: string): number;
+  /** Mordus vivants et leur état d'alerte (sauvegarde automatique hors danger, game/safety.ts). */
+  threats?(): readonly Threat[];
   /** Retire les zombies déjà vaincus (chargement de sauvegarde). */
   sync(state: SiloState): void;
   setLowQuality(low: boolean): void;

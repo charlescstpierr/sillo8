@@ -1,125 +1,95 @@
 "use client";
-// Conversation radio, générique : nom et rôle viennent de story.ts.
+// Conversation écrite, sur une feuille de papier : répliques, puis réponses de Lou à choisir.
+// Le contenu et la logique (conditions, effets sur les faits) viennent de game/conversation.ts.
 import { useEffect, useRef, useState } from "react";
 import type { Engine } from "@/game/engine";
-import type { Character } from "@/game/state";
+import { ConversationRun, type Line } from "@/game/conversation";
 import { PaperButton, Tag } from "./Paper";
-import { CharacterPortrait } from "./Portraits";
-import { characterSheet } from "./story";
+import { SpeakerPortrait } from "./Portraits";
 import styles from "./sheets.module.css";
 
-interface Line {
-  id: number;
-  who: "char" | "you" | "system";
-  text: string;
-  tag?: string;
+interface Shown extends Line {
+  key: number;
 }
 
-let lineId = 0;
+let lineKey = 0;
+const tag = (lines: Line[]): Shown[] => lines.map((line) => ({ ...line, key: ++lineKey }));
 
-export function DialogueSheet({ engine, character, touch }: { engine: Engine; character: Character; touch: boolean }) {
-  const [lines, setLines] = useState<Line[]>(() => [
-    { id: ++lineId, who: "char", text: engine.dialogue.offlineReply(character, "bonjour") },
-  ]);
-  const [draft, setDraft] = useState("");
-  const [busy, setBusy] = useState(false);
+export function DialogueSheet({ engine, conversation, touch }: { engine: Engine; conversation: string; touch: boolean }) {
+  const data = engine.conversations[conversation];
+  // Le déroulé est créé une fois, à l'ouverture (il applique les effets du premier nœud).
+  const [run] = useState(() => (data ? new ConversationRun(data, engine.state) : null));
+  const [log, setLog] = useState<Shown[]>(() => (run ? tag(run.view().lines) : []));
+  const [view, setView] = useState(() => run?.view() ?? null);
   const logRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  const push = (line: Omit<Line, "id">) => setLines((list) => [...list, { ...line, id: ++lineId }].slice(-80));
+  const close = () => engine.resume();
 
+  // Échap ferme la conversation (avant le moteur, qui ouvrirait la pause).
   useEffect(() => {
-    const off = engine.dialogue.onReply((who, text, mode) => {
-      if (who !== character) return;
-      setBusy(false);
-      push({ who: "char", text, tag: `[${mode}]` });
-    });
-    return () => {
-      off();
-      engine.dialogue.cancel();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== "Escape") return;
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      engine.resume();
     };
-  }, [engine, character]);
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () => window.removeEventListener("keydown", onKey, { capture: true });
+  }, [engine]);
 
   // Défile vers la dernière réplique.
   useEffect(() => {
-    const log = logRef.current;
-    if (log) log.scrollTop = log.scrollHeight;
-  }, [lines, busy]);
+    const el = logRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [log]);
 
-  const close = () => {
-    engine.dialogue.cancel();
-    engine.resume();
+  if (!run || !data || !view) {
+    return (
+      <section className={styles.dialogue} aria-label="Conversation" data-sheet>
+        <p className={styles.text}>Personne ne répond.</p>
+        <PaperButton variant="primary" autoFocus={!touch} onClick={close}>Fermer</PaperButton>
+      </section>
+    );
+  }
+
+  const choose = (index: number, text: string) => {
+    if (!run.choose(index)) return;
+    const next = run.view();
+    const answer: Line = { who: "lou", text };
+    setLog((list) => [...list, ...tag(run.ended ? [answer] : [answer, ...next.lines])].slice(-120));
+    setView(next);
   };
 
-  const send = () => {
-    const text = draft.trim();
-    if (!text) return;
-    if (engine.dialogue.busy) {
-      push({ who: "system", text: "Réponse en cours. L'indice immédiat reste disponible." });
-      return;
-    }
-    push({ who: "you", text });
-    setDraft("");
-    engine.dialogue.ask(character, text);
-    setBusy(engine.dialogue.busy);
-  };
-
-  const hint = (question: string) => {
-    push({ who: "char", text: engine.dialogue.offlineReply(character, question), tag: "[dialogue scénarisé]" });
-  };
-
-  const sheet = characterSheet(character);
-  const name = sheet.name;
+  const speaker = data.speaker;
   return (
-    <section className={styles.dialogue} aria-label={`Radio avec ${name}`} data-sheet>
+    <section className={styles.dialogue} aria-label={`Conversation avec ${speaker.name}`} data-sheet>
       <header className={styles.dialogueHead}>
-        <div className={styles.avatar}><CharacterPortrait character={character} /></div>
+        <div className={styles.avatar}><SpeakerPortrait portrait={speaker.portrait} /></div>
         <div>
-          <Tag>RADIO · {sheet.title}</Tag>
-          <h1 className={styles.title}>{name}</h1>
+          <Tag>{speaker.title}</Tag>
+          <h1 className={styles.title}>{speaker.name}</h1>
         </div>
       </header>
 
       <div ref={logRef} className={styles.log} role="log" aria-live="polite">
-        {lines.map((line) => (
-          <p key={line.id} className={styles.line} data-who={line.who}>
-            {line.who === "you" ? <b>VOUS · </b> : line.who === "char" ? <b>{name} · </b> : null}
+        {log.map((line) => (
+          <p key={line.key} className={styles.line} data-who={line.who === "lou" ? "you" : line.who === "narration" ? "system" : "char"}>
+            {line.who === "lou" ? <b>LOU · </b> : line.who === "speaker" ? <b>{speaker.name} · </b> : null}
             {line.text}
-            {line.tag ? <span className={styles.modeTag}>{line.tag}</span> : null}
           </p>
         ))}
-        {busy ? <p className={styles.busy}>{name} compose une réponse</p> : null}
       </div>
 
-      <form
-        className={styles.compose}
-        onSubmit={(e) => { e.preventDefault(); send(); }}
-      >
-        <input
-          ref={inputRef}
-          className={styles.input}
-          type="text"
-          enterKeyHint="send"
-          autoComplete="off"
-          autoCorrect="on"
-          maxLength={600}
-          placeholder="Parlez dans la radio…"
-          aria-label={`Message pour ${name}`}
-          value={draft}
-          autoFocus={!touch}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            // Le moteur ignore les touches tapées dans un champ : Échap ferme ici.
-            if (e.key === "Escape") { e.preventDefault(); close(); }
-          }}
-        />
-        <PaperButton type="submit" variant="primary" disabled={!draft.trim()}>Transmettre</PaperButton>
-      </form>
-
-      <div className={styles.quick}>
-        <PaperButton variant="olive" onClick={() => hint("Que dois-je faire ?")}>Indice de mission • réponse immédiate</PaperButton>
-        <PaperButton onClick={() => hint("surface")}>Et dehors, à la surface ?</PaperButton>
-        <PaperButton variant="ghost" onClick={close}>Fermer la liaison</PaperButton>
+      <div className={styles.quick} role="group" aria-label="Réponses">
+        {view.done ? (
+          <PaperButton variant="primary" arrow autoFocus={!touch} onClick={close}>Terminer</PaperButton>
+        ) : (
+          view.choices.map((choice, i) => (
+            <PaperButton key={`${view.node}-${choice.index}`} variant={i === 0 ? "olive" : undefined} autoFocus={!touch && i === 0} onClick={() => choose(choice.index, choice.text)}>
+              {choice.text}
+            </PaperButton>
+          ))
+        )}
       </div>
     </section>
   );

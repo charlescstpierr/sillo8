@@ -10,7 +10,8 @@ async function boot(page: Page, keepSave = false) {
   await page.goto("/");
   await page.waitForFunction(() => Boolean((window as any).__silo), null, { timeout: 30_000 });
   await page.evaluate((keep) => {
-    if (!keep) window.localStorage.removeItem("sillo8-save");
+    // Trois emplacements : sillo8-save (manuel), sillo8-save-safe (lieu sûr), sillo8-save-floor (début d'étage).
+    if (!keep) for (const key of ["sillo8-save", "sillo8-save-safe", "sillo8-save-floor"]) window.localStorage.removeItem(key);
     // Le rendu logiciel (swiftshader) prend des secondes par image : la simulation tourne
     // sans dessiner, et on ne dessine qu'au moment des captures.
     const engine = (window as any).__silo;
@@ -80,6 +81,9 @@ test("ordi : parcours complet de l'interface", async ({ page }) => {
   await page.getByRole("button", { name: "Réglages" }).click();
   await expect(page.getByRole("heading", { name: "Réglages" })).toBeVisible();
   await expect(page.getByText("Mode performance")).toBeVisible();
+  // Plus d'IA de dialogue ; le code de sauvegarde à la place.
+  await expect(page.getByText(/Dialogues par IA/)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Copier le code de sauvegarde" })).toBeVisible();
   await shot(page, "settings");
   await page.keyboard.press("Escape");
   await expect.poll(() => mode(page)).toBe("menu");
@@ -303,51 +307,207 @@ test("objectifs pliables : ordi au clic", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("sauvegarde automatique : progrès, minuterie, arrière-plan, reprise", async ({ page }) => {
+/** Lit un emplacement de sauvegarde ("safe", "floor" ou "manual"). */
+const slot = (page: Page, id: "safe" | "floor" | "manual") => page.evaluate((key) => {
+  const raw = window.localStorage.getItem(key);
+  return raw ? JSON.parse(raw) : null;
+}, id === "manual" ? "sillo8-save" : `sillo8-save-${id}`);
+
+/** Place le joueur (et la caméra) en (x, z). */
+const place = (page: Page, x: number, z: number) => page.evaluate(([px, pz]) => {
+  const engine = (window as any).__silo;
+  engine.player.x = px;
+  engine.player.z = pz;
+  engine.player.vx = engine.player.vz = 0;
+  engine.rig.snap?.({ x: px, y: 0, z: pz });
+}, [x, z]);
+
+test("sauvegarde automatique : lieu sûr seulement, jamais en danger, pause en arrière-plan, reprise", async ({ page }) => {
   test.setTimeout(300_000);
   await page.setViewportSize({ width: 1280, height: 720 });
   const errors = await boot(page);
-  const saved = () => page.evaluate(() => {
-    const raw = window.localStorage.getItem("sillo8-save");
-    return raw ? JSON.parse(raw) : null;
-  });
   await page.evaluate(() => (window as any).__silo.newGame());
-  // Un objet ramassé déclenche une sauvegarde à l'image suivante.
+  // Début d'étage : écrit en entrant dans l'étage.
+  expect((await slot(page, "floor"))?.collected).toEqual([]);
+  // Dans un lieu sûr (l'entrée, aucun mordu proche), un objet ramassé est sauvegardé à l'image suivante.
   await page.evaluate(() => (window as any).__silo.state.collect("part_0", "components", 1));
-  await expect.poll(async () => (await saved())?.collected ?? []).toContain("part_0");
+  await expect.poll(async () => (await slot(page, "safe"))?.collected ?? []).toContain("part_0");
   await expect(page.getByRole("status").filter({ hasText: "Sauvegardé" })).toBeVisible();
-  // Toutes les 30 s de jeu, même sans progrès : la position suit le joueur.
+
+  // Danger : au poste de sécurité (lieu sûr), mais un mordu tout près. Le progrès n'est pas sauvegardé…
+  await place(page, 0, 15);
   await page.evaluate(() => {
     const engine = (window as any).__silo;
-    engine.player.x = 4;
-    engine.player.z = 38;
+    const z = engine.horde.get("walker_storage");
+    z.x = 0; z.z = 18; z.mode = "chase";
+    engine.state.collect("part_1", "components", 1);
   });
+  await page.waitForTimeout(1500);
+  expect(await page.evaluate(() => (window as any).__silo.safeNow())).toBe(false);
+  expect((await slot(page, "safe"))?.collected).not.toContain("part_1");
+  // … puis il l'est dès que le danger est écarté.
+  await page.evaluate(() => {
+    const engine = (window as any).__silo;
+    engine.horde.damage("walker_storage", 999, 0);
+    engine.state.health = 100;
+  });
+  await expect.poll(async () => (await slot(page, "safe"))?.collected ?? [], { timeout: 20_000 }).toContain("part_1");
+  // Hors des lieux sûrs (hub), rien ne s'écrit automatiquement, même sans aucun mordu (endormis pour la suite).
+  await page.evaluate(() => { (window as any).__silo.hordeContext.dormant = true; });
+  await place(page, 3, 0);
+  await page.evaluate(() => (window as any).__silo.state.collect("part_2", "components", 1));
+  await page.waitForTimeout(1200);
+  expect((await slot(page, "safe"))?.collected).not.toContain("part_2");
+
+  // Toutes les 30 s de jeu en lieu sûr, même sans progrès : la position suit le joueur.
+  await place(page, 4, 38);
   // boot() fait avancer la simulation de 1/30 s toutes les 40 ms : 30 s de jeu ≈ 36 s réelles.
-  await expect.poll(async () => (await saved())?.player_position?.[0] ?? 0, { timeout: 60_000 }).toBeCloseTo(4, 0);
-  // Passage en arrière-plan (téléphone verrouillé, autre appli) : sauvegarde immédiate.
+  await expect.poll(async () => (await slot(page, "safe"))?.player_position?.[0] ?? 0, { timeout: 60_000 }).toBeCloseTo(4, 0);
+
+  // Passage en arrière-plan (téléphone verrouillé, autre appli) : pause automatique et sauvegarde en lieu sûr.
   await page.evaluate(() => {
     const engine = (window as any).__silo;
     engine.state.readNote("note_entrance", false);
     Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
     document.dispatchEvent(new Event("visibilitychange"));
   });
-  expect((await saved())?.notes).toContain("note_entrance");
-  // Après rechargement, le menu propose de continuer et la partie revient telle quelle.
+  expect(await mode(page)).toBe("pause");
+  expect((await slot(page, "safe"))?.notes).toContain("note_entrance");
+  // Retour : la pause attend, la reprise est propre (touches relâchées, simulation qui repart).
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect(page.getByRole("heading", { name: "On souffle un peu" })).toBeVisible();
+  await page.getByRole("button", { name: "Reprendre", exact: true }).click();
+  await expect.poll(() => mode(page)).toBe("playing");
+  // pagehide (appli quittée sur iPhone) : même chose.
+  await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+  expect(await mode(page)).toBe("pause");
+  await page.getByRole("button", { name: "Reprendre", exact: true }).click();
+
+  // Après rechargement, « Continuer » reprend la plus récente (le lieu sûr) telle quelle.
   errors.push(...(await boot(page, true)));
   await expect(page.getByRole("button", { name: /CONTINUER/i })).toBeEnabled();
   await page.getByRole("button", { name: /CONTINUER/i }).click({ force: true });
   await expect.poll(() => mode(page)).toBe("playing");
   const state = await page.evaluate(() => {
     const engine = (window as any).__silo;
-    return { notes: engine.state.notes, components: engine.state.components };
+    return { notes: engine.state.notes, collected: engine.state.collected };
   });
   expect(state.notes).toContain("note_entrance");
-  expect(state.components).toBe(1);
-  // Mort : aucune sauvegarde ne remplace la dernière.
-  const before = JSON.stringify(await saved());
+  expect(state.collected).toEqual(expect.arrayContaining(["part_0", "part_1"]));
+  // Mort : aucune sauvegarde ne remplace les précédentes.
+  const before = JSON.stringify([await slot(page, "safe"), await slot(page, "floor"), await slot(page, "manual")]);
   await page.evaluate(() => (window as any).__silo.damagePlayer(999));
   await page.waitForTimeout(500);
-  expect(JSON.stringify(await saved())).toBe(before);
+  expect(JSON.stringify([await slot(page, "safe"), await slot(page, "floor"), await slot(page, "manual")])).toBe(before);
+  expect(errors).toEqual([]);
+});
+
+test("emplacements, confirmation de nouvelle descente, ancienne sauvegarde, code de sauvegarde", async ({ page }) => {
+  test.setTimeout(300_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  let errors = await boot(page);
+  // Une sauvegarde v2 d'avant la mise à jour : elle se charge (migration), rien n'est perdu.
+  await page.evaluate(() => window.localStorage.setItem("sillo8-save", JSON.stringify({
+    game: "sillo8", schema: 2, health: 72, energy: 64, ammo: 12, reserve: 32, components: 2, medkits: 0, bandages: 1,
+    cans: 1, cells: 2, notes: ["note_entrance"], upgraded: false, collected: ["part_0", "part_1", "part_2"], defeated: [],
+    facts: ["entrance_explored", "generator_powered"], memory: [], player_position: [0, 0, 15], player_yaw: 0, elapsed: 300,
+    visited: ["plaza", "generator", "security"],
+  })));
+  errors.push(...(await boot(page, true)));
+  await page.getByRole("button", { name: /CONTINUER LA SAUVEGARDE/ }).click();
+  await expect.poll(() => mode(page)).toBe("playing");
+  expect(await page.evaluate(() => (window as any).__silo.state.facts)).toEqual(["entrance_explored", "generator_powered"]);
+
+  // Sauvegarde manuelle (pause), puis un progrès en lieu sûr (sauvegarde automatique).
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: /Sauvegarder/ }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Progression sauvegardée" })).toBeVisible();
+  expect((await slot(page, "manual"))?.schema).toBe(3);
+  await page.keyboard.press("Escape");
+  await expect.poll(() => mode(page)).toBe("playing");
+  await page.evaluate(() => (window as any).__silo.state.collect("part_3", "components", 1));
+  await expect.poll(async () => (await slot(page, "safe"))?.collected ?? []).toContain("part_3");
+
+  // Menu : nouvelle descente → confirmation (Annuler ne touche à rien).
+  await page.evaluate(() => (window as any).__silo.setMode("menu"));
+  await page.getByRole("button", { name: /NOUVELLE DESCENTE/ }).click();
+  await expect(page.getByRole("alertdialog", { name: "Confirmer la nouvelle descente" })).toBeVisible();
+  await shot(page, "confirm-new");
+  await page.getByRole("button", { name: "Annuler" }).click();
+  expect(await mode(page)).toBe("menu");
+  await expect(page.getByRole("button", { name: /NOUVELLE DESCENTE/ })).toBeVisible();
+
+  // Choix d'emplacement : Lieu sûr et Manuel listés ; on charge le manuel.
+  await page.getByRole("button", { name: "Choisir une sauvegarde" }).click();
+  await expect(page.getByRole("button", { name: "Charger Lieu sûr" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Charger Manuel" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /Charger Début d'étage/ })).toHaveCount(0);
+  await shot(page, "slots");
+  await page.getByRole("button", { name: "Charger Manuel" }).click();
+  await expect.poll(() => mode(page)).toBe("playing");
+  expect(await page.evaluate(() => (window as any).__silo.state.collected)).not.toContain("part_3");
+
+  // Nouvelle descente confirmée : début d'étage écrit, lieu sûr effacé, manuel gardé.
+  await page.evaluate(() => (window as any).__silo.setMode("menu"));
+  await page.getByRole("button", { name: /NOUVELLE DESCENTE/ }).click();
+  await page.getByRole("button", { name: "Oui, recommencer" }).click();
+  await expect.poll(() => mode(page)).toBe("playing");
+  expect(await page.evaluate(() => (window as any).__silo.state.facts)).toEqual([]);
+  expect((await slot(page, "floor"))?.facts).toEqual([]);
+  expect((await slot(page, "manual"))?.facts).toEqual(["entrance_explored", "generator_powered"]);
+
+  // Code de sauvegarde : copier, tout effacer, coller, continuer.
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Sauvegarder" }).click();
+  await page.getByRole("button", { name: "Réglages" }).click();
+  await page.getByRole("button", { name: "Copier le code de sauvegarde" }).click();
+  const code = await page.getByRole("textbox", { name: "Code de sauvegarde", exact: true }).inputValue();
+  expect(code.startsWith("SILLO8-")).toBe(true);
+  await page.evaluate(() => { for (const key of ["sillo8-save", "sillo8-save-safe", "sillo8-save-floor"]) window.localStorage.removeItem(key); });
+  await page.getByRole("textbox", { name: "Coller un code de sauvegarde" }).fill(code);
+  await page.getByRole("button", { name: /Importer dans/ }).click();
+  await expect(page.getByText(/Code importé/)).toBeVisible();
+  await shot(page, "save-code");
+  expect((await slot(page, "manual"))?.game).toBe("sillo8");
+  expect(errors).toEqual([]);
+});
+
+test("conversation écrite : répliques, réponses, faits posés", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  const errors = await boot(page);
+  await page.evaluate(() => {
+    const engine = (window as any).__silo;
+    engine.newGame();
+    engine.conversations.essai = {
+      id: "essai",
+      speaker: { id: "voisin", name: "VOISIN", title: "DERRIÈRE LA PORTE", portrait: "survivor" },
+      start: "debut",
+      nodes: {
+        debut: {
+          lines: [{ who: "narration", text: "[trois coups, réguliers]" }, { who: "speaker", text: "Qui va là ?" }],
+          choices: [{ text: "Un ami.", next: "ami", effects: [{ trust: "voisin", delta: 1 }] }, { text: "Je repasserai." }],
+        },
+        ami: { lines: [{ who: "speaker", text: "On verra." }], effects: [{ flag: "voisin_parle" }] },
+      },
+    };
+    engine.openConversation("essai");
+  });
+  await expect.poll(() => mode(page)).toBe("dialogue");
+  await expect(page.getByRole("heading", { name: "VOISIN" })).toBeVisible();
+  await expect(page.getByText("[trois coups, réguliers]")).toBeVisible();
+  await shot(page, "conversation");
+  await page.getByRole("button", { name: "Un ami." }).click();
+  await expect(page.getByText("On verra.")).toBeVisible();
+  const state = await page.evaluate(() => {
+    const s = (window as any).__silo.state;
+    return { trust: s.relations.voisin, flag: s.knows("voisin_parle") };
+  });
+  expect(state).toEqual({ trust: 1, flag: true });
+  await page.getByRole("button", { name: /Terminer/ }).click();
+  await expect.poll(() => mode(page)).toBe("playing");
   expect(errors).toEqual([]);
 });
 

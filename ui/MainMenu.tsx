@@ -1,7 +1,10 @@
 "use client";
 // Menu principal de SILLO 8.
+import { useState } from "react";
 import type { Engine } from "@/game/engine";
 import { PaperButton, Stamp, Tag } from "./Paper";
+import { NewGameButton } from "./NewGameButton";
+import { SaveSlots } from "./SaveSlots";
 import { HeroPortrait } from "./Portraits";
 import styles from "./sheets.module.css";
 
@@ -31,6 +34,8 @@ const TOUCH: [string, string][] = [
 export function MainMenu({ engine, touch }: { engine: Engine; touch: boolean }) {
   const canResume = engine.state.elapsed > 0 && engine.state.health > 0;
   const controls = touch ? TOUCH : DESKTOP;
+  const [picking, setPicking] = useState(false);
+  const hasSave = engine.hasSave();
   return (
     <>
       <div className={styles.menuBg} aria-hidden />
@@ -45,12 +50,17 @@ export function MainMenu({ engine, touch }: { engine: Engine; touch: boolean }) 
             Le silo est tombé. Les morts marchent encore.<br />
             Descendez.
           </p>
-          <div className={styles.menuButtons}>
-            <PaperButton variant="primary" arrow autoFocus={!touch} onClick={() => engine.newGame()}>NOUVELLE DESCENTE</PaperButton>
-            <PaperButton variant="olive" disabled={!engine.hasSave()} onClick={() => engine.loadGame()}>CONTINUER LA SAUVEGARDE</PaperButton>
-            {canResume ? <PaperButton onClick={() => engine.resume()}>Reprendre la session</PaperButton> : null}
-            <PaperButton variant="leather" onClick={() => engine.setMode("settings")}>Réglages</PaperButton>
-          </div>
+          {picking ? (
+            <SaveSlots engine={engine} onCancel={() => setPicking(false)} />
+          ) : (
+            <div className={styles.menuButtons}>
+              <NewGameButton engine={engine} label="NOUVELLE DESCENTE" variant="primary" arrow autoFocus={!touch} />
+              <PaperButton variant="olive" disabled={!hasSave} onClick={() => engine.loadGame()}>CONTINUER LA SAUVEGARDE</PaperButton>
+              {hasSave ? <PaperButton onClick={() => setPicking(true)}>Choisir une sauvegarde</PaperButton> : null}
+              {canResume ? <PaperButton onClick={() => engine.resume()}>Reprendre la session</PaperButton> : null}
+              <PaperButton variant="leather" onClick={() => engine.setMode("settings")}>Réglages</PaperButton>
+            </div>
+          )}
         </section>
         <aside className={styles.controls} aria-label="Commandes">
           <h2>{touch ? "Commandes tactiles" : "Commandes"}</h2>

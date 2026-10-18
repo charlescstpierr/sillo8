@@ -1,5 +1,5 @@
 "use client";
-// Écrans d'interface selon engine.ui (menu, pause, réglages, sac, note, carnet, dialogue, fin, mort).
+// Écrans d'interface selon engine.ui (menu, pause, réglages, sac, note, carnet, conversation, fin d'étage, mort).
 import { useEffect, useState } from "react";
 import type { Engine } from "@/game/engine";
 import { useUi } from "./useUi";
@@ -9,7 +9,7 @@ import { PauseSheet } from "./PauseSheet";
 import { SettingsSheet } from "./SettingsSheet";
 import { InventorySheet } from "./InventorySheet";
 import { DialogueSheet } from "./DialogueSheet";
-import { ConclusionSheet, DeathSheet, EndingSheet } from "./OutcomeSheets";
+import { ConclusionSheet, DeathSheet } from "./OutcomeSheets";
 import { NoteSheet } from "./NoteSheet";
 import { JournalSheet, PLAN_PAGE } from "./JournalSheet";
 import { heal, openJournal, setMode, useCell, type AnyMode } from "./compat";
@@ -132,11 +132,9 @@ export function Overlay({ engine }: { engine: Engine }) {
     case "dialogue":
       return (
         <div className={styles.backdrop} data-tone="dialogue">
-          <DialogueSheet key={ui.character} engine={engine} character={ui.character} touch={touch} />
+          <DialogueSheet key={ui.character} engine={engine} conversation={ui.character} touch={touch} />
         </div>
       );
-    case "ending":
-      return <div className={styles.backdrop}><EndingSheet engine={engine} touch={touch} /></div>;
     case "conclusion":
       return <div className={styles.backdrop}><ConclusionSheet engine={engine} choice={ui.character} touch={touch} /></div>;
     case "death":

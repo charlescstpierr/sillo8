@@ -51,8 +51,10 @@ describe("pièces visitées", () => {
     s.exploreEntrance();
     const store = new MemoryStore();
     s.saveGame(store);
+    // Sauvegarde v2 d'avant le plan : ni `visited`, ni les champs du schéma 3 (migrés au chargement).
     const old = JSON.parse(store.getItem("sillo8-save")!);
-    delete old.visited;
+    for (const key of ["visited", "floor", "saved_at", "relations", "flags", "recharge_spent", "ext"]) delete old[key];
+    old.schema = 2;
     store.setItem("sillo8-save", JSON.stringify(old));
     const restored = new SiloState();
     restored.visitRoom("hub");

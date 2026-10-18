@@ -2017,3 +2017,67 @@
     animation: none !important;
   }
 }
+
+/* ——— Sauvegardes : confirmation de nouvelle descente, choix d'emplacement ——— */
+
+.confirm {
+  padding: 10px 12px;
+  background: #fbf4e2;
+  border: 2px dashed #c4412a;
+  border-radius: 12px;
+}
+
+.confirm .text {
+  font-size: 15.5px;
+  margin: 0 0 8px;
+}
+
+.confirmButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.confirmButtons .btn {
+  width: auto;
+  flex: 1 1 auto;
+}
+
+.slots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+
+.slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #fffaf0;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+}
+
+.slot .btn {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.slotText {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 14.5px;
+  line-height: 1.25;
+}
+
+.slotText b {
+  display: block;
+  font-family: var(--font-title);
+  font-size: 15px;
+}
+
+.slotText em {
+  color: rgba(58, 42, 28, 0.75);
+}

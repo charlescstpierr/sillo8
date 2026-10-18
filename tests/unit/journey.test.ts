@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import type { Box } from "@/game/collision";
 import { DOORS, INTERACTABLES, SPAWN, buildWalls, doorBox, roomAt, wallBox, type InteractableDef } from "@/game/level";
 import { PlayerController } from "@/game/player";
-import { checkTriggers, interactWith, type ProgressEffects } from "@/game/progress";
-import { doorOpen, interactableAvailable } from "@/game/rules";
+import { RECHARGE_SPENT, checkTriggers, interactWith, type ProgressEffects } from "@/game/progress";
+import { actionLabel, doorOpen, interactableAvailable } from "@/game/rules";
 import { SiloState } from "@/game/state";
 
 const walls = buildWalls().map(wallBox);
@@ -185,15 +185,49 @@ describe("objets de l'atelier et ressources", () => {
     const { log, fx } = effects();
     expect(interactWith(def("nail_press"), s, fx)).toBe(false);
     expect(log.at(-1)).toBe("La presse demande une ferraille.");
+    // La ferraille gardée pour la génératrice (3) et la radio (2) est refusée, avec un message clair.
     s.collect("p", "components", 4);
+    expect(interactWith(def("nail_press"), s, fx)).toBe(false);
+    expect(log.at(-1)).toBe("Ferraille réservée : 3 pour la génératrice et 2 pour le module radio. Aucune de libre pour l'instant.");
+    s.collect("q", "components", 3);
+    expect(interactWith(def("upgrade"), s, fx)).toBe(false);
+    expect(log.at(-1)).toBe("Ferraille réservée : 3 pour la génératrice et 2 pour le module radio. Seulement 2 de libre, il en faut 3.");
+    s.collect("r", "components", 2);
+    expect(s.powerGenerator() && s.craftRadioModule()).toBe(true);
+    expect(s.components).toBe(4);
     expect(interactWith(def("nail_press"), s, fx)).toBe(true);
     expect(log.at(-1)).toBe("Presse à clous : +16 clous · réserve 32.");
     expect(interactWith(def("upgrade"), s, fx)).toBe(true);
     expect(log.at(-1)).toBe("Lampe améliorée : charge 150.");
     expect(interactableAvailable(def("upgrade"), s)).toBe(false);
-    s.spendEnergy(100);
+  });
+
+  it("borne de recharge : une charge par visite, réarmée en quittant le poste de sécurité", () => {
+    const s = new SiloState();
+    const { log, fx } = effects();
+    // Lampe pleine : la borne n'est pas gaspillée.
+    expect(interactWith(def("recharge"), s, fx)).toBe(false);
+    expect(log.at(-1)).toContain("déjà pleine");
+    expect(s.rechargeSpent).toBe(false);
+    s.spendEnergy(60);
+    checkTriggers(s, 3.6, 12);
     expect(interactWith(def("recharge"), s, fx)).toBe(true);
-    expect([s.energy, log.at(-1)]).toEqual([150, "Lampe rechargée."]);
+    expect(s.energy).toBe(100);
+    expect(log.at(-1)).toContain("Lampe rechargée");
+    expect(actionLabel(def("recharge"), s)).toContain("Vide");
+    // Deuxième essai pendant la même visite : refusé, avec l'explication.
+    s.spendEnergy(60);
+    expect(interactWith(def("recharge"), s, fx)).toBe(false);
+    expect(log.at(-1)).toBe(RECHARGE_SPENT);
+    checkTriggers(s, 0, 18); // toujours au poste de sécurité
+    expect(s.rechargeSpent).toBe(true);
+    // On sort (hub) puis on revient : réarmée.
+    checkTriggers(s, 0, 2);
+    expect(s.rechargeSpent).toBe(false);
+    expect(actionLabel(def("recharge"), s)).toBe(def("recharge").action);
+    checkTriggers(s, 3.6, 12);
+    expect(interactWith(def("recharge"), s, fx)).toBe(true);
+    expect(s.energy).toBe(100);
   });
 
   it("ramasse chaque ressource une seule fois, avec un message", () => {

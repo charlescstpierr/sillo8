@@ -1,5 +1,5 @@
 // Portraits dessinés en SVG, façon jouet en pâte : le bricoleur (fiche personnage) et les voix provisoires.
-import type { Character } from "@/game/state";
+import type { PortraitId } from "@/game/conversation";
 
 const INK = "#3a2a1c";
 
@@ -42,7 +42,7 @@ export function HeroPortrait() {
   );
 }
 
-/** Voix du relais : un poste radio. */
+/** Voix à la radio : un poste. */
 export function RadioPortrait() {
   return (
     <svg viewBox="0 0 120 120" aria-hidden>
@@ -73,6 +73,9 @@ export function SurvivorPortrait() {
   );
 }
 
-export function CharacterPortrait({ character }: { character: Character }) {
-  return character === "mother" ? <RadioPortrait /> : <SurvivorPortrait />;
+/** Portrait d'un interlocuteur de conversation (game/conversation.ts). */
+export function SpeakerPortrait({ portrait }: { portrait: PortraitId }) {
+  if (portrait === "radio") return <RadioPortrait />;
+  if (portrait === "hero") return <HeroPortrait />;
+  return <SurvivorPortrait />;
 }

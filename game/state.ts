@@ -1,13 +1,15 @@
 // État d'une partie de SILLO 8 : ressources du bricoleur, carnet de notes, objectifs de l'étage 1, sauvegarde.
 // Ressources : ferraille (`components`), clous (`ammo` dans le lance-clous, `reserve` dans la sacoche),
 // charge des piles de la lampe (`energy`), piles de rechange (`cells`), bandages, trousses, conserves.
+// Sauvegarde : format versionné et migré (game/migrate.ts), emplacements dans game/save.ts.
+// Nouveau système qui doit être sauvegardé ? Rangez ses données dans `ext` (voir docs/SAUVEGARDES.md).
 import { ROOMS } from "./level";
+import { SAVE_SCHEMA, migrateSave, plainJson, validExt } from "./migrate";
 
 /** Identifiants des pièces de l'étage (plan du carnet). */
 const ROOM_IDS: readonly string[] = ROOMS.map((r) => r.id);
 
 export type Character = string;
-export type Ending = string;
 
 /** Faits de progression de l'étage 1, dans l'ordre des objectifs. */
 export const FACT_IDS = [
@@ -37,7 +39,8 @@ export const CELL_CHARGE = 40;
 /** Nombre d'objectifs accomplis (0 → 5), compatible avec l'ancien « phase ». */
 export const Phase = { START: 0, COMPLETE: 5 } as const;
 
-export const SAVE_LIMIT = 65536;
+/** Taille maximale d'une sauvegarde (caractères JSON). */
+export const SAVE_LIMIT = 262144;
 export const SAVE_KEY = "sillo8-save";
 export const SPAWN: [number, number, number] = [0, 0, 41];
 
@@ -49,7 +52,10 @@ export interface Objective {
 export interface KeyValueStore {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem?(key: string): void;
 }
+
+export type LoadResult = "ok" | "missing" | "corrupt" | "newer";
 
 type Listener = () => void;
 
@@ -65,7 +71,6 @@ export class SiloState {
   cells = 1;
   notes: string[] = [];
   upgraded = false;
-  ending: Ending = "";
   collected: string[] = [];
   defeated: string[] = [];
   facts: string[] = [];
@@ -76,6 +81,17 @@ export class SiloState {
   relations: Record<string, number> = {};
   /** Pièces déjà visitées (plan du carnet), dans l'ordre de découverte. */
   visited: string[] = [];
+  /** Étage en cours (1 → 4). */
+  floor = 1;
+  /** Faits libres posés par les conversations (game/conversation.ts), distincts des objectifs `facts`. */
+  flags: string[] = [];
+  /** Borne de recharge déjà utilisée pendant cette visite du poste de sécurité. */
+  rechargeSpent = false;
+  /**
+   * Données des autres systèmes (enquête, confiance détaillée…), sauvegardées telles quelles.
+   * Une clé par système (`investigation`, `trust`…), valeur JSON simple. Lire avec getExt, écrire avec setExt.
+   */
+  ext: Record<string, unknown> = {};
 
   private listeners = new Set<Listener>();
 
@@ -106,8 +122,13 @@ export class SiloState {
     return this.objectiveChecklist().steps.filter((s) => s.done).length;
   }
 
+  /** Confiance d'un survivant, de −5 à 5 (créée à 0 au premier changement). */
   changeTrust(character: string, delta: number): boolean {
-    if (!(character in this.relations) || (delta !== -1 && delta !== 1)) return false;
+    if (!/^[a-z][a-z0-9_]{0,39}$/.test(character) || !Number.isInteger(delta) || delta === 0 || Math.abs(delta) > 5) return false;
+    if (!(character in this.relations)) {
+      if (Object.keys(this.relations).length >= 32) return false;
+      this.relations[character] = 0;
+    }
     this.relations[character] = clamp(this.relations[character] + delta, -5, 5);
     this.changed();
     return true;
@@ -166,9 +187,22 @@ export class SiloState {
     return true;
   }
 
-  /** Atelier : une ferraille donne une poignée de clous. */
+  /**
+   * Ferraille réservée aux objectifs pas encore atteints (génératrice, module radio). La presse et le banc
+   * de batteries n'y touchent jamais : on ne peut pas se bloquer en fabriquant des clous ou en améliorant la lampe.
+   */
+  reservedParts(): number {
+    return (this.has("generator_powered") ? 0 : GENERATOR_PARTS) + (this.has("radio_module") ? 0 : RADIO_PARTS);
+  }
+
+  /** Ferraille disponible pour la presse et le banc (au-delà de la réserve). */
+  spareParts(): number {
+    return Math.max(0, this.components - this.reservedParts());
+  }
+
+  /** Atelier : une ferraille donne une poignée de clous (jamais une ferraille réservée). */
   craftNails(): boolean {
-    if (this.components < 1 || this.reserve + NAILS_PER_SCRAP > 999) return false;
+    if (this.spareParts() < 1 || this.reserve + NAILS_PER_SCRAP > 999) return false;
     this.components -= 1;
     this.reserve += NAILS_PER_SCRAP;
     this.changed();
@@ -275,7 +309,7 @@ export class SiloState {
   }
 
   upgrade(): boolean {
-    if (this.upgraded || this.components < UPGRADE_PARTS) return false;
+    if (this.upgraded || this.spareParts() < UPGRADE_PARTS) return false;
     this.components -= UPGRADE_PARTS;
     this.upgraded = true;
     this.remember("La batterie a été améliorée à l'atelier.");
@@ -286,6 +320,57 @@ export class SiloState {
   recharge(): void {
     this.energy = this.maxEnergy();
     this.changed();
+  }
+
+  /** Borne de recharge : une charge par visite. "spent" si déjà utilisée, "full" si la lampe est pleine. */
+  useRechargeStation(): "ok" | "spent" | "full" {
+    if (this.rechargeSpent) return "spent";
+    if (this.energy >= this.maxEnergy()) return "full";
+    this.rechargeSpent = true;
+    this.recharge();
+    return "ok";
+  }
+
+  /** On a quitté la zone de la borne : elle se réarme pour la prochaine visite. */
+  rearmRechargeStation(): boolean {
+    if (!this.rechargeSpent) return false;
+    this.rechargeSpent = false;
+    this.changed();
+    return true;
+  }
+
+  // ——— Faits de conversation et extensions ———
+
+  /** Vrai si l'objectif `id` est atteint ou si une conversation a posé ce fait. */
+  knows(id: string): boolean {
+    return this.facts.includes(id) || this.flags.includes(id);
+  }
+
+  setFlag(id: string, on = true): boolean {
+    if (!/^[a-z][a-z0-9_.-]{0,79}$/.test(id)) return false;
+    const has = this.flags.includes(id);
+    if (on === has || (on && this.flags.length >= 256)) return false;
+    this.flags = on ? [...this.flags, id] : this.flags.filter((f) => f !== id);
+    this.changed();
+    return true;
+  }
+
+  /** Lit l'extension `key` ; `read` vérifie (et migre) la donnée, sinon `fallback`. */
+  getExt<T>(key: string, read: (raw: unknown) => T | null, fallback: () => T): T {
+    const raw = this.ext[key];
+    if (raw === undefined) return fallback();
+    return read(raw) ?? fallback();
+  }
+
+  /** Écrit l'extension `key` (JSON simple uniquement ; `undefined` l'efface). Faux si la donnée est refusée. */
+  setExt(key: string, value: unknown): boolean {
+    const next = { ...this.ext };
+    if (value === undefined) delete next[key];
+    else next[key] = value;
+    if (!validExt(next)) return false;
+    this.ext = JSON.parse(JSON.stringify(next));
+    this.changed();
+    return true;
   }
 
   maxEnergy(): number {
@@ -364,25 +449,38 @@ export class SiloState {
     };
   }
 
-  saveGame(store: KeyValueStore, key = SAVE_KEY): "ok" | "invalid" | "write_failed" {
-    const data = this.snapshot();
-    if (!validSnapshot(data as unknown as Record<string, unknown>)) return "invalid";
+  saveGame(store: KeyValueStore, key = SAVE_KEY, now = Date.now()): "ok" | "invalid" | "write_failed" {
+    const text = this.saveText(now);
+    if (text === null) return "invalid";
     try {
-      store.setItem(key, JSON.stringify(data));
+      store.setItem(key, text);
       return "ok";
     } catch {
       return "write_failed";
     }
   }
 
-  loadGame(store: KeyValueStore, key = SAVE_KEY): "ok" | "missing" | "corrupt" {
+  /** Sauvegarde sous forme de texte JSON, ou null si l'état est incohérent. */
+  saveText(now = Date.now()): string | null {
+    const data = { ...this.snapshot(), saved_at: Math.max(0, Math.round(now)) };
+    if (!validSnapshot(data as unknown as Record<string, unknown>)) return null;
+    const text = JSON.stringify(data);
+    return text.length <= SAVE_LIMIT ? text : null;
+  }
+
+  loadGame(store: KeyValueStore, key = SAVE_KEY): LoadResult {
     let raw: string | null;
     try {
       raw = store.getItem(key);
     } catch {
       return "missing";
     }
-    if (raw === null) return "missing";
+    if (raw === null || raw === "") return "missing";
+    return this.loadText(raw);
+  }
+
+  /** Charge une sauvegarde texte : migration des anciennes versions, puis validation stricte. */
+  loadText(raw: string): Exclude<LoadResult, "missing"> {
     if (raw.length > SAVE_LIMIT) return "corrupt";
     let parsed: unknown;
     try {
@@ -390,8 +488,10 @@ export class SiloState {
     } catch {
       return "corrupt";
     }
-    if (!isRecord(parsed) || !validSnapshot(parsed)) return "corrupt";
-    const data = parsed as unknown as Snapshot;
+    const migrated = migrateSave(parsed);
+    if (migrated === "newer") return "newer";
+    if (migrated === null || !validSnapshot(migrated)) return "corrupt";
+    const data = migrated as unknown as Snapshot;
     this.health = data.health;
     this.energy = data.energy;
     this.ammo = data.ammo;
@@ -410,9 +510,13 @@ export class SiloState {
     this.playerPosition = [data.player_position[0], data.player_position[1], data.player_position[2]];
     this.playerYaw = data.player_yaw;
     this.elapsed = data.elapsed;
-    // Sauvegardes antérieures au plan : aucune pièce connue, le moteur note la pièce courante.
-    this.visited = data.visited ? [...data.visited] : [];
-    this.ending = "";
+    // Une sauvegarde migrée depuis la v2 peut n'avoir aucune pièce connue : le moteur note la pièce courante.
+    this.visited = [...data.visited];
+    this.floor = data.floor;
+    this.relations = { ...data.relations };
+    this.flags = [...data.flags];
+    this.rechargeSpent = data.recharge_spent;
+    this.ext = JSON.parse(JSON.stringify(data.ext));
     this.changed();
     return "ok";
   }
@@ -420,7 +524,7 @@ export class SiloState {
   snapshot(): Snapshot {
     return {
       game: "sillo8",
-      schema: 2,
+      schema: SAVE_SCHEMA,
       health: this.health,
       energy: this.energy,
       ammo: this.ammo,
@@ -440,6 +544,12 @@ export class SiloState {
       player_yaw: this.playerYaw,
       elapsed: this.elapsed,
       visited: [...this.visited],
+      floor: this.floor,
+      saved_at: 0,
+      relations: { ...this.relations },
+      flags: [...this.flags],
+      recharge_spent: this.rechargeSpent,
+      ext: JSON.parse(JSON.stringify(this.ext)),
     };
   }
 }
@@ -465,13 +575,20 @@ export interface Snapshot {
   player_position: number[];
   player_yaw: number;
   elapsed: number;
-  /** Optionnel : absent des sauvegardes antérieures au plan du carnet. */
-  visited?: string[];
+  visited: string[];
+  /** Champs ajoutés par le schéma 3 (une sauvegarde v2 les reçoit par migration). */
+  floor: number;
+  /** Date de la sauvegarde (ms depuis 1970), 0 si inconnue. */
+  saved_at: number;
+  relations: Record<string, number>;
+  flags: string[];
+  recharge_spent: boolean;
+  /** Extensions des autres systèmes : une clé par système, valeur JSON simple. */
+  ext: Record<string, unknown>;
 }
 
-/** Champs facultatifs : une sauvegarde peut ne pas les avoir. */
-const OPTIONAL_KEYS = ["visited"];
-const SNAPSHOT_KEYS = Object.keys(new SiloState().snapshot()).filter((key) => !OPTIONAL_KEYS.includes(key));
+/** Tous les champs sont requis après migration (migrate.ts donne leur valeur aux anciens). */
+const SNAPSHOT_KEYS = Object.keys(new SiloState().snapshot());
 
 /** Chaque fait n'est possible qu'après celui dont il dépend. */
 const REQUIRES: Partial<Record<FactId, FactId>> = {
@@ -483,10 +600,10 @@ const REQUIRES: Partial<Record<FactId, FactId>> = {
 };
 
 export function validSnapshot(data: Record<string, unknown>): boolean {
-  for (const key of Object.keys(data)) if (!SNAPSHOT_KEYS.includes(key) && !OPTIONAL_KEYS.includes(key)) return false;
+  for (const key of Object.keys(data)) if (!SNAPSHOT_KEYS.includes(key)) return false;
   for (const key of SNAPSHOT_KEYS) if (!(key in data)) return false;
   const d = data as Record<string, any>;
-  if (d.game !== "sillo8" || !num(d.schema, 2, 2) || typeof d.upgraded !== "boolean") return false;
+  if (d.game !== "sillo8" || !num(d.schema, SAVE_SCHEMA, SAVE_SCHEMA) || typeof d.upgraded !== "boolean") return false;
   for (const key of ["ammo", "reserve", "components", "medkits", "bandages", "cans", "cells"]) {
     if (!num(d[key], 0, 999) || !Number.isInteger(d[key])) return false;
   }
@@ -502,11 +619,15 @@ export function validSnapshot(data: Record<string, unknown>): boolean {
   for (const [fact, required] of Object.entries(REQUIRES)) {
     if (d.facts.includes(fact) && !d.facts.includes(required)) return false;
   }
-  if ("visited" in d) {
-    if (!strings(d.visited, ROOM_IDS.length, 40, true)) return false;
-    for (const room of d.visited) if (!ROOM_IDS.includes(room)) return false;
+  if (!strings(d.visited, ROOM_IDS.length, 40, true)) return false;
+  for (const room of d.visited) if (!ROOM_IDS.includes(room)) return false;
+  if (!num(d.floor, 1, 4) || !Number.isInteger(d.floor) || !num(d.saved_at, 0, 8.64e15)) return false;
+  if (typeof d.recharge_spent !== "boolean" || !strings(d.flags, 256, 80, true)) return false;
+  if (!isRecord(d.relations) || !plainJson(d.relations) || Object.keys(d.relations).length > 32) return false;
+  for (const [who, trust] of Object.entries(d.relations)) {
+    if (!/^[a-z][a-z0-9_]{0,39}$/.test(who) || !num(trust, -5, 5) || !Number.isInteger(trust)) return false;
   }
-  return true;
+  return validExt(d.ext);
 }
 
 function num(value: unknown, minimum: number, maximum: number): value is number {

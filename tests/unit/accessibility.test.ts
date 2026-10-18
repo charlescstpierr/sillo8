@@ -68,7 +68,7 @@ describe("réglages d'accessibilité", () => {
 
   it("rétrocompatibilité : réglages très anciens (avant le son) et stockage vide ou illisible", () => {
     fakeStorage({ [SETTINGS_KEY]: JSON.stringify({ lowQuality: false, endpoint: "http://127.0.0.1:8080", model: "m" }) });
-    expect(loadSettings()).toMatchObject({ endpoint: "http://127.0.0.1:8080", textSize: "normal", safeColors: false });
+    expect(loadSettings()).toMatchObject({ textSize: "normal", safeColors: false });
     fakeStorage();
     expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
     fakeStorage({ [SETTINGS_KEY]: "{pas du json" });

@@ -17,6 +17,12 @@ export function interactableAvailable(def: InteractableDef, state: SiloState): b
   }
 }
 
+/** Texte d'action affiché sur l'objet visé, selon l'état (ex. borne vide). */
+export function actionLabel(def: InteractableDef, state: SiloState): string {
+  if (def.id === "recharge" && state.rechargeSpent) return "Vide · se recharge quand vous partez";
+  return def.action;
+}
+
 export function doorOpen(door: Door, state: SiloState): boolean {
   switch (door.lock) {
     case "power": return state.has("generator_powered");

@@ -117,6 +117,14 @@ export const DOORS: Door[] = [
   { id: "infirmary_workshop", x: 22, z: 0, axis: "z", width: 2.2, label: "ATELIER", rooms: ["infirmary", "workshop"] },
 ];
 
+/**
+ * Lieux sûrs : la sauvegarde automatique « Lieu sûr » ne s'écrit que dans ces pièces, et seulement hors
+ * danger (game/safety.ts). Le poste de sécurité est aussi la zone de la borne de recharge.
+ */
+export const SAFE_ROOMS: readonly RoomId[] = ["plaza", "security", "infirmary", "secret", "stairs"];
+/** Pièce de la borne de recharge : elle se réarme quand on en sort. */
+export const RECHARGE_ROOM: RoomId = "security";
+
 /** Mur creux des dortoirs, devant la pièce cachée. */
 export const SECRET = { x: -32, z: -14 };
 /** On a « exploré l'entrée » en approchant de la porte de sécurité. */
@@ -133,7 +141,7 @@ export const INTERACTABLES: InteractableDef[] = [
   { id: "secret_wall", name: "Mur creux", action: "Pousser", x: -31.4, z: -14, radius: 0.4, solid: false },
   { id: "keycard", name: "Clé d'accès", action: "Prendre", x: -35, z: -14, radius: 0.4, solid: false },
   { id: "stairs", name: "Accès étage 2", action: "Descendre", x: 0, z: -19, radius: 0.9 },
-  { id: "recharge", name: "Borne de recharge", action: "Recharger la lampe · gratuit", x: 3.6, z: 11, radius: 0.5 },
+  { id: "recharge", name: "Borne de recharge", action: "Recharger la lampe · une fois par visite", x: 3.6, z: 11, radius: 0.5 },
   // Notes des survivants (carnet d'indices)
   { id: "note_entrance", name: "Note", action: "Lire", x: -8, z: 30, radius: 0.35, solid: false, note: "note_entrance" },
   { id: "note_generator", name: "Note", action: "Lire", x: -29, z: 23.5, radius: 0.35, solid: false, note: "note_generator" },
