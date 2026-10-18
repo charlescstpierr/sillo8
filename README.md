@@ -16,6 +16,8 @@ npm ci
 ./tools/run.sh          # http://localhost:3000
 ```
 
+Version page unique (sans serveur), pour la publier comme page web : `node tools/build-artifact.mjs sillo8.html`.
+
 `?low=1` force le mode performance (sans ombres portées ni poussière, résolution réduite) ;
 il est actif par défaut sur les écrans tactiles, `?low=0` le désactive.
 

@@ -1,0 +1,37 @@
+
+:root {
+  --paper: #f4ecd6;
+  --ink: #3a2a1c;
+  --rust: #b4532a;
+  --danger: #d8452b;
+  --teal: #2f9c8f;
+  /* Palette « jouet en pâte » de la fiche personnage */
+  --mustard: #d8a43a;
+  --mustard-deep: #b98722;
+  --olive: #6b7550;
+  --olive-deep: #556045;
+  --leather: #6a4528;
+  --leather-light: #7a4a2a;
+  --cream: #e9dcc0;
+  --charcoal: #3b3a36;
+  --button: #fff6e2;
+  --font-title: "Grandstander", "Comic Sans MS", system-ui, sans-serif;
+  --font-body: "Patrick Hand", "Comic Sans MS", system-ui, sans-serif;
+  --font-stamp: "Special Elite", "Courier New", monospace;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #1b2321;
+  color: var(--ink);
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+* {
+  box-sizing: border-box;
+}
