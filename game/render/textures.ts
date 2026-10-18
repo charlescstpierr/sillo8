@@ -1177,3 +1177,576 @@ export function westGlowTexture(): Texture {
     g.fillRect(0, 0, w, h);
   }, false);
 }
+
+// ——— Narration par le décor (storyProps.ts) ———
+// Toutes les petites images de l'enquête (affiches, craies, traces, carnets…) vivent dans un seul atlas :
+// deux matériaux (papier opaque, craie transparente) suffisent pour tout l'étage, et le lot statique les fond.
+
+/** Écriture d'enfant à la craie : lettres de travers, tailles inégales, trait épais et poudreux. */
+function chalkLines(g: CanvasRenderingContext2D, lines: string[], cx: number, cy: number, size: number, seed: number, color = "#f4efe2", lineGap = 1.08): void {
+  const r = rng(seed);
+  g.save();
+  g.textBaseline = "middle";
+  g.textAlign = "left";
+  g.lineJoin = "round";
+  g.lineCap = "round";
+  lines.forEach((line, row) => {
+    const y0 = cy + (row - (lines.length - 1) / 2) * size * lineGap;
+    const chars = [...line];
+    const sizes = chars.map(() => size * (0.86 + r() * 0.3));
+    let width = 0;
+    chars.forEach((ch, i) => { g.font = `${Math.floor(sizes[i])}px 'Patrick Hand', cursive`; width += g.measureText(ch).width * 1.04; });
+    let x = cx - width / 2;
+    const slope = (r() - 0.5) * 0.06;
+    chars.forEach((ch, i) => {
+      g.font = `${Math.floor(sizes[i])}px 'Patrick Hand', cursive`;
+      const cw = g.measureText(ch).width * 1.04;
+      g.save();
+      g.translate(x + cw / 2, y0 + (x - cx) * slope + (r() - 0.5) * size * 0.1);
+      g.rotate((r() - 0.5) * 0.24);
+      g.textAlign = "center";
+      // Trois passages légèrement décalés : trait de craie épais et irrégulier.
+      for (let k = 0; k < 3; k++) {
+        g.globalAlpha = 0.55 + k * 0.15;
+        g.strokeStyle = color;
+        g.lineWidth = size * 0.07;
+        g.strokeText(ch, (r() - 0.5) * 3, (r() - 0.5) * 3);
+        g.fillStyle = color;
+        g.fillText(ch, (r() - 0.5) * 2, (r() - 0.5) * 2);
+      }
+      g.restore();
+      x += cw;
+    });
+  });
+  g.restore();
+  g.globalAlpha = 1;
+}
+
+/** Grain de craie : petits trous dans tout ce qui vient d'être dessiné. */
+function chalkGrain(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, seed: number, amount = 1): void {
+  const r = rng(seed);
+  g.save();
+  g.globalCompositeOperation = "destination-out";
+  for (let k = 0; k < ((w * h) / 60) * amount; k++) {
+    g.globalAlpha = 0.25 + r() * 0.6;
+    g.fillRect(x + r() * w, y + r() * h, 1 + r() * 2.5, 1 + r() * 2);
+  }
+  g.restore();
+  g.globalAlpha = 1;
+}
+
+/** Trait de craie à main levée (tremblé). */
+function chalkStroke(g: CanvasRenderingContext2D, points: [number, number][], width: number, seed: number, color = "#f4efe2"): void {
+  const r = rng(seed);
+  g.save();
+  g.strokeStyle = color;
+  g.lineCap = "round";
+  g.lineJoin = "round";
+  for (let k = 0; k < 2; k++) {
+    g.globalAlpha = 0.7 + k * 0.2;
+    g.lineWidth = width * (0.8 + k * 0.3);
+    g.beginPath();
+    points.forEach(([px, py], i) => {
+      const jx = px + (r() - 0.5) * width * 0.5, jy = py + (r() - 0.5) * width * 0.5;
+      if (i === 0) g.moveTo(jx, jy); else g.lineTo(jx, jy);
+    });
+    g.stroke();
+  }
+  g.restore();
+}
+
+/** Lignes de texte (machine ou main) alignées à gauche, avec une graine pour l'irrégularité. */
+function writeLines(g: CanvasRenderingContext2D, lines: string[], x: number, y: number, size: number, font: string, color: string, gap = 1.25, seed = 1, wobble = 0): void {
+  const r = rng(seed);
+  g.save();
+  g.fillStyle = color;
+  g.font = `${size}px ${font}`;
+  g.textBaseline = "alphabetic";
+  g.textAlign = "left";
+  lines.forEach((line, i) => {
+    g.save();
+    g.translate(x + (r() - 0.5) * wobble * 4, y + i * size * gap);
+    g.rotate((r() - 0.5) * wobble * 0.04);
+    g.fillText(line, 0, 0);
+    g.restore();
+  });
+  g.restore();
+}
+
+/** Feuille de papier un peu froissée (fond), bords irréguliers, déchirée d'un côté au besoin. */
+function paperSheet(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, seed: number, color = "#efe5c8", torn: "" | "left" | "right" = ""): void {
+  const r = rng(seed);
+  g.save();
+  g.fillStyle = color;
+  g.beginPath();
+  g.moveTo(x + r() * 3, y + r() * 3);
+  g.lineTo(x + w - r() * 3, y + r() * 3);
+  if (torn === "right") for (let k = 1; k < 12; k++) g.lineTo(x + w - 6 - r() * 14, y + (k / 12) * h);
+  g.lineTo(x + w - r() * 3, y + h - r() * 3);
+  g.lineTo(x + r() * 3, y + h - r() * 3);
+  if (torn === "left") for (let k = 11; k > 0; k--) g.lineTo(x + 6 + r() * 14, y + (k / 12) * h);
+  g.closePath();
+  g.fill();
+  g.clip();
+  // Taches et pliure.
+  for (let k = 0; k < 4; k++) soft(g, x + r() * w, y + r() * h, 10 + r() * 24, "rgba(150,110,60,A)", 0.12 + r() * 0.12);
+  g.strokeStyle = "rgba(90,70,50,0.18)";
+  g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(x, y + h * (0.45 + r() * 0.1)); g.lineTo(x + w, y + h * (0.45 + r() * 0.1)); g.stroke();
+  g.restore();
+}
+
+/** Ruban adhésif jauni. */
+function tape(g: CanvasRenderingContext2D, x: number, y: number, w: number, angle: number): void {
+  g.save();
+  g.translate(x, y);
+  g.rotate(angle);
+  g.fillStyle = "rgba(240,226,180,0.85)";
+  g.fillRect(-w / 2, -7, w, 14);
+  g.restore();
+}
+
+/** Empreinte de petite chaussure (pointe vers le haut du canevas). */
+function shoePrint(g: CanvasRenderingContext2D, x: number, y: number, size: number, angle: number, alpha: number, color = "60,44,32"): void {
+  g.save();
+  g.translate(x, y);
+  g.rotate(angle);
+  g.fillStyle = `rgba(${color},${alpha})`;
+  g.beginPath(); g.ellipse(0, -size * 0.22, size * 0.3, size * 0.42, 0, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.ellipse(0, size * 0.42, size * 0.24, size * 0.22, 0, 0, Math.PI * 2); g.fill();
+  // Crampons de la semelle.
+  g.fillStyle = `rgba(${color},${alpha * 0.6})`;
+  for (let k = 0; k < 4; k++) g.fillRect(-size * 0.2, -size * 0.5 + k * size * 0.16, size * 0.4, size * 0.05);
+  g.restore();
+}
+
+type AtlasDraw = (g: CanvasRenderingContext2D, w: number, h: number) => void;
+
+/** Images de l'atlas (nom, largeur, hauteur en pixels, dessin dans un repère local w × h). */
+const STORY_IMAGES: [string, number, number, AtlasDraw][] = [
+  // Marelle à la craie qui s'arrête à la case 4 (le 5 n'a jamais été dessiné).
+  ["hopscotch", 256, 512, (g, w, h) => {
+    const s = 112;
+    const boxes: [number, number, string][] = [[w / 2 - s / 2, h - s - 16, "1"], [w / 2 - s / 2, h - 2 * s - 16, "2"], [w / 2 - s / 2, h - 3 * s - 16, "3"], [w / 2 - s, h - 4 * s - 16, "4"]];
+    boxes.forEach(([x, y, label], i) => {
+      chalkStroke(g, [[x, y], [x + s, y], [x + s, y + s], [x, y + s], [x, y]], 7, 40 + i);
+      chalkLines(g, [label], x + s / 2, y + s / 2, 64, 50 + i);
+    });
+    // Le trait du 5 commence à peine, puis plus rien.
+    chalkStroke(g, [[w / 2, h - 4 * s - 16], [w / 2 + 34, h - 4 * s - 14]], 6, 49);
+    chalkGrain(g, 0, 0, w, h, 61);
+  }],
+  // Petits pas d'enfant qui s'éloignent (vers le haut), anciens, à demi effacés.
+  ["kidprints", 128, 512, (g, w, h) => {
+    const r = rng(71);
+    for (let i = 0; i < 7; i++) {
+      const left = i % 2 === 0;
+      const alpha = r() < 0.2 ? 0.3 : 0.55 + r() * 0.3;
+      shoePrint(g, w / 2 + (left ? -22 : 22) + (r() - 0.5) * 6, h - 44 - i * 70, 54, (r() - 0.5) * 0.25, alpha, "38,26,18");
+    }
+    g.save();
+    g.globalCompositeOperation = "destination-out";
+    for (let k = 0; k < 22; k++) soft(g, r() * w, r() * h, 6 + r() * 16, "rgba(0,0,0,A)", 0.4 + r() * 0.4);
+    g.restore();
+  }],
+  // Affiche de la règle n° 1, signée « Les fondateurs ».
+  ["poster_rule", 256, 352, (g, w, h) => {
+    paperSheet(g, 6, 6, w - 12, h - 12, 81, "#ece2c2");
+    g.fillStyle = "#a8382a";
+    g.fillRect(18, 22, w - 36, 64);
+    g.fillStyle = "#f4ecd6";
+    g.font = "bold 42px 'Special Elite', monospace";
+    g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("RÈGLE N° 1", w / 2, 56);
+    g.fillStyle = "#2a221c";
+    g.font = "26px 'Special Elite', monospace";
+    ["Aucun mordu", "ne franchit", "la porte.", "", "Pas d'exception."].forEach((line, i) => g.fillText(line, w / 2, 124 + i * 34));
+    g.font = "italic 22px 'Special Elite', monospace";
+    g.fillText("— Les fondateurs", w / 2, h - 44);
+    tape(g, 26, 14, 50, -0.5); tape(g, w - 26, 14, 50, 0.5);
+    soft(g, w * 0.7, h * 0.8, 50, "rgba(110,80,40,A)", 0.25);
+  }],
+  // Photo de l'inauguration : la porte neuve, trente personnes, quelqu'un de dos avec une valise au triangle.
+  ["photo_inauguration", 256, 200, (g, w, h) => {
+    g.fillStyle = "#f2ead6"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#b8a27a"; g.fillRect(12, 12, w - 24, h - 40);
+    const r = rng(91);
+    // Grande porte ronde au fond.
+    g.fillStyle = "#857560"; g.beginPath(); g.arc(w / 2, 70, 48, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = "#5e523f"; g.lineWidth = 5; g.stroke();
+    g.fillStyle = "#6e6150"; g.fillRect(w / 2 - 3, 24, 6, 92);
+    // Trois rangées de petits personnages souriants.
+    for (let row = 0; row < 3; row++) for (let i = 0; i < 10; i++) {
+      const x = 26 + i * 21 + (row % 2) * 9 + (r() - 0.5) * 4, y = 104 + row * 15;
+      g.fillStyle = ["#5e4a36", "#6f5a42", "#4c3e30"][(i + row) % 3];
+      g.fillRect(x - 5, y, 10, 14);
+      g.fillStyle = "#d9b98e"; g.beginPath(); g.arc(x, y - 3, 4.5, 0, Math.PI * 2); g.fill();
+    }
+    // Au premier plan, de dos, en blouse, la valise au triangle.
+    g.fillStyle = "#f4efe2"; g.fillRect(w / 2 + 30, 118, 26, 46);
+    g.fillStyle = "#4c3e30"; g.beginPath(); g.arc(w / 2 + 43, 112, 9, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#3e3226"; g.fillRect(w / 2 + 56, 142, 30, 22);
+    g.strokeStyle = "#e9dcc0"; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(w / 2 + 71, 146); g.lineTo(w / 2 + 78, 159); g.lineTo(w / 2 + 64, 159); g.closePath(); g.stroke();
+    // Vieillissement : voile sépia.
+    g.fillStyle = "rgba(120,90,50,0.25)"; g.fillRect(12, 12, w - 24, h - 40);
+    g.fillStyle = "#3a2a1c"; g.font = "18px 'Patrick Hand', cursive"; g.textAlign = "center";
+    g.fillText("SILLO 8", w / 2, h - 12);
+  }],
+  // Craie devant la porte de service : trois pièces, une flèche vers les épaves.
+  ["service_chalk", 384, 192, (g, w, h) => {
+    chalkLines(g, ["3"], 54, h / 2, 110, 101);
+    for (let i = 0; i < 3; i++) {
+      const cx = 118 + i * 62, cy = h / 2;
+      const pts: [number, number][] = [];
+      for (let k = 0; k <= 16; k++) {
+        const a = (k / 16) * Math.PI * 2;
+        const rad = k % 2 ? 22 : 28;
+        pts.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad]);
+      }
+      chalkStroke(g, pts, 5, 110 + i);
+    }
+    chalkStroke(g, [[290, h / 2], [370, h / 2]], 8, 120);
+    chalkStroke(g, [[346, h / 2 - 24], [372, h / 2], [346, h / 2 + 24]], 8, 121);
+    chalkGrain(g, 0, 0, w, h, 122);
+  }],
+  // Avis officiel, imprimé bien droit.
+  ["poster_notice", 256, 352, (g, w, h) => {
+    g.fillStyle = "#f4f0e2"; g.fillRect(4, 4, w - 8, h - 8);
+    g.strokeStyle = "#2a221c"; g.lineWidth = 4; g.strokeRect(14, 14, w - 28, h - 28);
+    g.fillStyle = "#2a221c"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.font = "bold 36px 'Special Elite', monospace"; g.fillText("AVIS À TOUS", w / 2, 50);
+    g.fillRect(34, 76, w - 68, 3);
+    g.font = "17px 'Special Elite', monospace";
+    ["Pendant l'orage, des mordus", "sont entrés par la porte", "de service.", "", "Le Dr Okafor et le Sgt Bérard", "organisent la descente", "vers l'étage 2.", "", "Ne prenez que le nécessaire.", "Ne remontez pas."]
+      .forEach((line, i) => g.fillText(line, w / 2, 100 + i * 21));
+    g.save(); g.translate(w - 66, h - 46); g.rotate(-0.25);
+    g.strokeStyle = "rgba(168,56,42,0.85)"; g.lineWidth = 3; g.strokeRect(-46, -16, 92, 32);
+    g.fillStyle = "rgba(168,56,42,0.85)"; g.font = "bold 16px 'Special Elite', monospace"; g.fillText("OFFICIEL", 0, 1);
+    g.restore();
+  }],
+  // Neuf traits à la craie : un par jour depuis l'orage (un paquet de cinq barré, puis quatre).
+  ["tally", 256, 160, (g, w, h) => {
+    for (let i = 0; i < 4; i++) chalkStroke(g, [[30 + i * 22, 30 + (i % 3) * 3], [33 + i * 22, 130 - (i % 2) * 5]], 10, 130 + i);
+    chalkStroke(g, [[14, 112], [114, 46]], 10, 139);
+    for (let i = 0; i < 4; i++) chalkStroke(g, [[148 + i * 24, 28 + (i % 2) * 4], [151 + i * 24, 128 - (i % 3) * 4]], 10, 150 + i);
+    chalkGrain(g, 0, 0, w, h, 141, 0.6);
+
+  }],
+  // Plan de l'infirmerie : la chambre 1 « CONDAMNÉE (humidité) ».
+  ["infirmary_map", 256, 192, (g, w, h) => {
+    g.fillStyle = "#e9eef0"; g.fillRect(4, 4, w - 8, h - 8);
+    g.strokeStyle = "rgba(60,90,120,0.25)"; g.lineWidth = 1;
+    for (let x = 10; x < w; x += 16) { g.beginPath(); g.moveTo(x, 6); g.lineTo(x, h - 6); g.stroke(); }
+    for (let y = 10; y < h; y += 16) { g.beginPath(); g.moveTo(6, y); g.lineTo(w - 6, y); g.stroke(); }
+    g.strokeStyle = "#2c4a66"; g.lineWidth = 3; g.strokeRect(16, 26, w - 32, h - 46);
+    for (let i = 0; i < 4; i++) g.strokeRect(24 + i * 34, 32, 26, 40);
+    g.strokeRect(24, h - 62, 26, 40); g.strokeRect(58, h - 62, 26, 40);
+    g.fillStyle = "rgba(168,56,42,0.25)"; g.fillRect(w - 92, h - 76, 72, 54);
+    g.strokeStyle = "#a8382a"; g.strokeRect(w - 92, h - 76, 72, 54);
+    g.beginPath(); g.moveTo(w - 92, h - 76); g.lineTo(w - 20, h - 22); g.moveTo(w - 20, h - 76); g.lineTo(w - 92, h - 22); g.stroke();
+    g.fillStyle = "#2c4a66"; g.font = "bold 15px 'Special Elite', monospace"; g.textAlign = "left";
+    g.fillText("INFIRMERIE — PLAN", 18, 20);
+    g.fillStyle = "#a8382a"; g.font = "bold 12px 'Special Elite', monospace";
+    g.fillText("CHAMBRE 1", w - 90, h - 82);
+    g.fillText("CONDAMNÉE", w - 120, h - 8);
+    g.fillStyle = "#2c4a66"; g.font = "11px 'Special Elite', monospace";
+    g.fillText("(humidité)", w - 196, h - 8);
+  }],
+  // Dessin de Lila : le silo en coupe, quatre étages, une croix au fond, « ICI ÇA TAPE » au troisième.
+  ["lila_drawing", 256, 320, (g, w, h) => {
+    paperSheet(g, 4, 4, w - 8, h - 8, 151, "#f7f1e1");
+    g.lineCap = "round"; g.lineJoin = "round";
+    g.strokeStyle = "#f2b53a"; g.lineWidth = 5;
+    g.beginPath(); g.arc(w - 40, 34, 16, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = "#5e9b3a"; g.lineWidth = 6;
+    g.beginPath(); g.moveTo(10, 70); g.quadraticCurveTo(w / 2, 58, w - 10, 72); g.stroke();
+    // Silo en coupe.
+    g.strokeStyle = "#3a2a1c"; g.lineWidth = 5;
+    g.strokeRect(60, 70, 136, 228);
+    for (let i = 1; i < 4; i++) { g.beginPath(); g.moveTo(60, 70 + i * 57); g.lineTo(196, 70 + i * 57); g.stroke(); }
+    g.fillStyle = "#3a2a1c"; g.font = "22px 'Patrick Hand', cursive"; g.textAlign = "center";
+    ["1", "2", "3", "4"].forEach((n, i) => g.fillText(n, 44, 104 + i * 57));
+    // Bonshommes au premier.
+    for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(90 + i * 34, 92, 6, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.moveTo(90 + i * 34, 98); g.lineTo(90 + i * 34, 116); g.stroke(); }
+    // Croix rouge au dernier étage.
+    g.strokeStyle = "#c8453a"; g.lineWidth = 8;
+    g.beginPath(); g.moveTo(104, 252); g.lineTo(152, 290); g.moveTo(152, 252); g.lineTo(104, 290); g.stroke();
+    // Flèche « ICI ÇA TAPE » vers le troisième.
+    g.strokeStyle = "#3f6f86"; g.lineWidth = 4;
+    g.beginPath(); g.moveTo(232, 150); g.quadraticCurveTo(236, 200, 200, 212); g.stroke();
+    g.beginPath(); g.moveTo(212, 200); g.lineTo(198, 213); g.lineTo(214, 222); g.stroke();
+    g.fillStyle = "#3f6f86"; g.font = "20px 'Patrick Hand', cursive";
+    g.save(); g.translate(222, 122); g.rotate(-0.15); g.fillText("ICI ÇA", 0, 0); g.fillText("TAPE", 0, 20); g.restore();
+    g.fillStyle = "#3a2a1c"; g.font = "18px 'Patrick Hand', cursive"; g.fillText("Lila", 36, h - 16);
+  }],
+  // Raclures au sol : une armoire qu'on a fait glisser souvent (le long du canevas).
+  ["scrapes", 128, 512, (g, w, h) => {
+    const r = rng(161);
+    g.lineCap = "round";
+    for (let k = 0; k < 14; k++) {
+      const x = 14 + r() * (w - 28);
+      g.strokeStyle = k % 3 ? "rgba(60,48,36,0.55)" : "rgba(250,246,232,0.7)";
+      g.lineWidth = 2 + r() * 3;
+      g.beginPath(); g.moveTo(x, 20 + r() * 60); g.quadraticCurveTo(x + (r() - 0.5) * 16, h / 2, x + (r() - 0.5) * 10, h - 20 - r() * 80); g.stroke();
+    }
+    for (let k = 0; k < 6; k++) soft(g, r() * w, r() * h, 14, "rgba(60,50,40,A)", 0.18);
+  }],
+  // Marques de chariot (deux roues) : elles descendent, aucune ne remonte.
+  ["cart_tracks", 128, 512, (g, w, h) => {
+    const r = rng(171);
+    for (const x0 of [30, 98]) {
+      g.strokeStyle = "rgba(34,26,20,0.72)";
+      g.lineWidth = 11;
+
+      g.beginPath(); g.moveTo(x0, h);
+      for (let y = h; y >= 0; y -= 32) g.lineTo(x0 + Math.sin(y * 0.02) * 4 + (r() - 0.5) * 2, y);
+      g.stroke();
+      // Chevrons de la bande de roulement, pointés vers le haut (le sens de la descente).
+      g.strokeStyle = "rgba(30,24,20,0.45)"; g.lineWidth = 3;
+      for (let y = h - 10; y > 0; y -= 16) { g.beginPath(); g.moveTo(x0 - 6, y + 4); g.lineTo(x0, y - 2); g.lineTo(x0 + 6, y + 4); g.stroke(); }
+    }
+    g.save(); g.globalCompositeOperation = "destination-out";
+    for (let k = 0; k < 30; k++) soft(g, r() * w, r() * h, 8 + r() * 20, "rgba(0,0,0,A)", 0.4 + r() * 0.4);
+    g.restore();
+  }],
+  // Calendrier : jours barrés jusqu'à l'orage (un éclair entouré), puis plus rien.
+  ["calendar", 256, 288, (g, w, h) => {
+    paperSheet(g, 4, 4, w - 8, h - 8, 181, "#f4ecd6");
+    g.fillStyle = "#6b7550"; g.fillRect(14, 14, w - 28, 70);
+    g.fillStyle = "#e9dcc0"; g.beginPath(); g.moveTo(30, 80); g.lineTo(90, 30); g.lineTo(140, 80); g.fill();
+    g.fillStyle = "#d8a43a"; g.beginPath(); g.arc(200, 40, 14, 0, Math.PI * 2); g.fill();
+    const cw = (w - 28) / 7, ch = 34;
+    for (let i = 0; i < 35; i++) {
+      const x = 14 + (i % 7) * cw, y = 96 + Math.floor(i / 7) * ch;
+      g.strokeStyle = "rgba(58,42,28,0.5)"; g.lineWidth = 1.5;
+      g.strokeRect(x, y, cw, ch);
+      g.fillStyle = "#3a2a1c"; g.font = "13px 'Special Elite', monospace"; g.textAlign = "left";
+      g.fillText(String(i + 1), x + 3, y + 13);
+      if (i < 17) {
+        g.strokeStyle = "rgba(168,56,42,0.85)"; g.lineWidth = 3;
+        g.beginPath(); g.moveTo(x + 6, y + 6); g.lineTo(x + cw - 6, y + ch - 6); g.moveTo(x + cw - 6, y + 6); g.lineTo(x + 6, y + ch - 6); g.stroke();
+      } else if (i === 17) {
+        g.fillStyle = "#3f6f86";
+        g.beginPath(); g.moveTo(x + cw * 0.55, y + 3); g.lineTo(x + cw * 0.3, y + ch * 0.55); g.lineTo(x + cw * 0.5, y + ch * 0.55); g.lineTo(x + cw * 0.38, y + ch - 2); g.lineTo(x + cw * 0.72, y + ch * 0.42); g.lineTo(x + cw * 0.52, y + ch * 0.42); g.closePath(); g.fill();
+        g.strokeStyle = "rgba(168,56,42,0.85)"; g.lineWidth = 2.5; g.beginPath(); g.ellipse(x + cw / 2, y + ch / 2, cw * 0.48, ch * 0.48, 0, 0, Math.PI * 2); g.stroke();
+      }
+    }
+  }],
+  // Registre du poste ouvert : « RAS », « RAS »… puis le stylo a glissé.
+  ["register", 256, 168, (g, w, h) => {
+    g.fillStyle = "#5a3d24"; g.fillRect(0, 0, w, h);
+    paperSheet(g, 8, 8, w / 2 - 10, h - 16, 191, "#f1e8cf");
+    paperSheet(g, w / 2 + 2, 8, w / 2 - 10, h - 16, 192, "#f1e8cf");
+    g.fillStyle = "rgba(60,40,20,0.35)"; g.fillRect(w / 2 - 2, 6, 4, h - 12);
+    writeLines(g, ["J−14  RAS", "J−13  RAS", "J−12  RAS", "J−11  RAS", "J−10  RAS", "J−9   RAS", "J−8   RAS"], 18, 30, 15, "'Patrick Hand', cursive", "#2a3a5a", 1.2, 193, 1);
+    writeLines(g, ["J−7   RAS", "J−6   RAS", "J−5   RAS", "Orage."], w / 2 + 12, 30, 15, "'Patrick Hand', cursive", "#2a3a5a", 1.2, 194, 1);
+    g.strokeStyle = "#2a3a5a"; g.lineWidth = 2; g.lineCap = "round";
+    g.beginPath(); g.moveTo(w / 2 + 70, 92); g.bezierCurveTo(w / 2 + 90, 120, w / 2 + 60, 140, w - 14, h - 6); g.stroke();
+  }],
+  // Cahier de relève de nuit, rien entre 2 h 00 et 2 h 20.
+  ["logbook", 256, 168, (g, w, h) => {
+    g.fillStyle = "#3f6f6a"; g.fillRect(0, 0, w, h);
+    paperSheet(g, 8, 8, w / 2 - 10, h - 16, 201, "#f4efe0");
+    paperSheet(g, w / 2 + 2, 8, w / 2 - 10, h - 16, 202, "#f4efe0");
+    g.strokeStyle = "rgba(60,90,140,0.25)"; g.lineWidth = 1;
+    for (let y = 26; y < h - 10; y += 16) { g.beginPath(); g.moveTo(10, y); g.lineTo(w - 10, y); g.stroke(); }
+    writeLines(g, ["0 h 50 : RAS", "1 h 00 : RAS", "1 h 10 : RAS", "1 h 20 : RAS", "1 h 30 : RAS", "1 h 40 : RAS", "1 h 50 : canal 2", " (Dr O. / Sgt B.)"], 14, 24, 13, "'Patrick Hand', cursive", "#2a2a3a", 1.23, 203);
+    writeLines(g, ["2 h 00 : orage,", " coupure."], w / 2 + 10, 24, 13, "'Patrick Hand', cursive", "#2a2a3a", 1.23, 204);
+    writeLines(g, ["2 h 20 : RAS"], w / 2 + 10, 24 + 13 * 1.23 * 5, 13, "'Patrick Hand', cursive", "#2a2a3a", 1.23, 205);
+    g.fillStyle = "#2a2a3a"; g.font = "12px 'Patrick Hand', cursive"; g.fillText("— Nuit", w - 54, h - 16);
+  }],
+  // Moitié gauche de la consigne de délestage (génératrice).
+  ["shed_left", 160, 200, (g, w, h) => {
+    paperSheet(g, 4, 4, w - 8, h - 8, 211, "#efe7cf", "right");
+    writeLines(g, ["APRÈS UN", "REDÉMARRAGE,", "un circuit à la fois :", "– Jamais le CONTRÔLE", "  en premier", "– L'INFIRMERIE passe", "  juste après la"], 12, 30, 12, "'Special Elite', monospace", "#2a221c", 1.45, 212);
+    g.fillStyle = "#c8453a"; g.beginPath(); g.arc(w / 2 - 10, 12, 6, 0, Math.PI * 2); g.fill();
+  }],
+  // Moitié droite (sécurité).
+  ["shed_right", 160, 200, (g, w, h) => {
+    paperSheet(g, 4, 4, w - 8, h - 8, 221, "#efe7cf", "left");
+    writeLines(g, ["", "", "    CAFÉTÉRIA.", "– Les DORTOIRS", "  toujours avant la", "  cafétéria : les", "  petits dorment.", "– Le CONTRÔLE", "  en dernier."], 22, 30, 12, "'Special Elite', monospace", "#2a221c", 1.45, 222);
+    g.fillStyle = "#c8453a"; g.beginPath(); g.arc(w / 2 + 10, 12, 6, 0, Math.PI * 2); g.fill();
+  }],
+  // Post-it du terminal de Bérard.
+  ["postit_terminal", 128, 128, (g, w, h) => {
+    g.fillStyle = "#f3d65a"; g.fillRect(6, 6, w - 12, h - 12);
+    g.fillStyle = "rgba(0,0,0,0.08)"; g.fillRect(6, 6, w - 12, 18);
+    writeLines(g, ["Mot de passe :", "celui que je", "n'aurais jamais", "laissé dehors."], 12, 44, 15, "'Patrick Hand', cursive", "#2a3a5a", 1.3, 231, 1);
+  }],
+  // Post-it de Cuisine.
+  ["postit_cook", 128, 128, (g, w, h) => {
+    g.fillStyle = "#f6c27a"; g.fillRect(6, 6, w - 12, h - 12);
+    g.fillStyle = "rgba(0,0,0,0.08)"; g.fillRect(6, 6, w - 12, 18);
+    writeLines(g, ["Code armoire :", "ce qu'on mange", "ENCORE.", "(même le commis)"], 12, 44, 15, "'Patrick Hand', cursive", "#5a2a1a", 1.3, 241, 1);
+  }],
+  // Dossier de la chambre 1.
+  ["room1_file", 192, 240, (g, w, h) => {
+    g.fillStyle = "#d9b77a"; g.fillRect(10, 26, w - 20, h - 36);
+    g.fillRect(14, 10, 70, 24);
+    g.fillStyle = "#f4ecd6"; g.fillRect(30, 60, w - 60, 40);
+    g.fillStyle = "#2a221c"; g.font = "bold 18px 'Special Elite', monospace"; g.textAlign = "center";
+    g.fillText("CHAMBRE 1", w / 2, 78); g.font = "14px 'Special Elite', monospace"; g.fillText("PATIENT n° 1", w / 2, 95);
+    g.fillStyle = "rgba(168,56,42,0.8)"; g.font = "bold 16px 'Special Elite', monospace";
+    g.save(); g.translate(w / 2, 160); g.rotate(-0.2); g.fillText("Rapports 1 à 11", 0, 0); g.restore();
+    g.fillStyle = "#f4ecd6"; for (let i = 0; i < 4; i++) g.fillRect(w - 26, 40 + i * 4, 10, 2);
+  }],
+  // Plaque au nom à demi arraché.
+  ["nameplate", 192, 64, (g, w, h) => {
+    g.fillStyle = "#c9ccc6"; g.fillRect(4, 8, w - 8, h - 16);
+    g.fillStyle = "#2a221c"; g.font = "bold 34px 'Special Elite', monospace"; g.textAlign = "left"; g.textBaseline = "middle";
+    g.fillText("MARCEAU", 14, h / 2 + 2);
+    const r = rng(251);
+    g.save(); g.globalCompositeOperation = "destination-out";
+    g.beginPath(); g.moveTo(108, 0);
+    for (let y = 0; y <= h; y += 8) g.lineTo(100 + r() * 22, y);
+    g.lineTo(w, h); g.lineTo(w, 0); g.closePath(); g.fill();
+    g.restore();
+    g.fillStyle = "rgba(200,190,170,0.9)";
+    for (let y = 10; y < h - 8; y += 9) g.fillRect(100 + r() * 16, y, 6, 4);
+  }],
+  // « toc toc ? » à la craie, au bas d'une porte (Lila).
+  ["toc", 256, 128, (g, w, h) => {
+    chalkLines(g, ["toc toc ?"], w / 2, h / 2 - 6, 52, 261);
+    chalkStroke(g, [[w / 2 - 70, h - 22], [w / 2 + 70, h - 26]], 4, 262);
+    chalkGrain(g, 0, 0, w, h, 263);
+  }],
+  // « D C I C » à moitié effacé (aide de secours de l'énigme des leviers).
+  ["dcic", 256, 96, (g, w, h) => {
+    chalkLines(g, ["D · C · I · C"], w / 2, h / 2, 54, 271);
+    g.save(); g.globalCompositeOperation = "destination-out";
+    const r = rng(272);
+    for (let k = 0; k < 18; k++) soft(g, r() * w, r() * h, 10 + r() * 22, "rgba(0,0,0,A)", 0.5 + r() * 0.4);
+    g.restore();
+    chalkGrain(g, 0, 0, w, h, 273);
+  }],
+  // Triangle gravé (marque discrète sur les verrous).
+  ["triangle", 64, 64, (g, w, h) => {
+    g.strokeStyle = "rgba(225,205,150,0.85)"; g.lineWidth = 5; g.lineJoin = "round";
+    g.beginPath(); g.moveTo(w / 2, 10); g.lineTo(w - 10, h - 12); g.lineTo(10, h - 12); g.closePath(); g.stroke();
+  }],
+  // Écran du terminal de Bérard.
+  ["terminal_screen", 256, 192, (g, w, h) => {
+    g.fillStyle = "#0f2418"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#8ff0a8"; g.font = "16px 'Special Elite', monospace"; g.textAlign = "left";
+    g.fillText("SILLO 8 — POSTE DE GARDE", 14, 34);
+    g.fillText("Journal du poste :", 14, 74);
+    g.fillText("verrouillé.", 14, 96);
+    g.fillText("MOT DE PASSE : _", 14, 140);
+    g.fillStyle = "rgba(143,240,168,0.08)"; for (let y = 0; y < h; y += 4) g.fillRect(0, y, w, 2);
+  }],
+  // Liste de Lila n° 4 (feuille tenue par un caillou).
+  ["lila_list4", 128, 160, (g, w, h) => {
+    paperSheet(g, 4, 4, w - 8, h - 8, 281, "#f2ead2");
+    g.strokeStyle = "rgba(60,90,140,0.3)"; g.lineWidth = 1;
+    for (let y = 26; y < h - 6; y += 14) { g.beginPath(); g.moveTo(6, y); g.lineTo(w - 6, y); g.stroke(); }
+    writeLines(g, ["Pour rallumer :", "3 pièces.", "1. la serre", "2. 2 dehors", "3. près de la", " porte de service", "Si je reviens pas :", "la clé est où", "j'ai dit."], 8, 24, 12, "'Patrick Hand', cursive", "#3a2a1c", 1.16, 282, 1);
+  }],
+  // Tableau d'outils peint : chaque outil à sa place, rangé au millimètre.
+  ["tool_board", 256, 384, (g, w, h) => {
+    g.fillStyle = "#3e4a44"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "rgba(20,26,24,0.5)";
+    for (let y = 10; y < h; y += 20) for (let x = 10; x < w; x += 20) { g.beginPath(); g.arc(x, y, 2, 0, Math.PI * 2); g.fill(); }
+    const shapes: [string, () => void][] = [
+      ["#a9b2ad", () => { g.beginPath(); g.roundRect(40, 30, 22, 150, 8); g.roundRect(28, 22, 46, 34, 10); }],
+      ["#7a4a2a", () => { g.beginPath(); g.roundRect(108, 60, 16, 130, 6); }],
+      ["#4d5a60", () => { g.beginPath(); g.roundRect(88, 36, 56, 28, 6); }],
+      ["#c8453a", () => { g.beginPath(); g.roundRect(176, 30, 20, 70, 8); }],
+      ["#c9ccc6", () => { g.beginPath(); g.roundRect(182, 100, 8, 80, 3); }],
+      ["#d8a43a", () => { g.beginPath(); g.roundRect(30, 220, 34, 120, 10); g.roundRect(70, 220, 34, 120, 10); }],
+      ["#c9ccc6", () => { g.beginPath(); g.moveTo(140, 220); g.lineTo(232, 220); g.lineTo(232, 260); g.lineTo(140, 300); g.closePath(); }],
+      ["#7a4a2a", () => { g.beginPath(); g.roundRect(150, 300, 40, 50, 10); }],
+    ];
+    // Contour blanc peint, puis l'outil pile dedans.
+    for (const [, shape] of shapes) { g.save(); g.strokeStyle = "#f4efe2"; g.lineWidth = 9; shape(); g.stroke(); g.restore(); }
+    for (const [color, shape] of shapes) { g.save(); g.fillStyle = color; shape(); g.fill(); g.restore(); }
+  }],
+  // Dos d'une photo de groupe retournée (valise ouverte du hub).
+  ["photo_back", 128, 96, (g, w, h) => {
+    g.fillStyle = "#efe7d2"; g.fillRect(4, 4, w - 8, h - 8);
+    writeLines(g, ["Nous, au", "printemps."], 16, 40, 18, "'Patrick Hand', cursive", "#5a4a3a", 1.2, 291);
+  }],
+  // Pochoir « CHAMBRE FROIDE ».
+  ["cold_label", 256, 64, (g, w, h) => {
+    g.fillStyle = "#3f6f86"; g.font = "bold 30px 'Special Elite', monospace"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("CHAMBRE FROIDE", w / 2, h / 2);
+    chalkGrain(g, 0, 0, w, h, 301, 0.6);
+  }],
+  // Pochoir « PILES » sur l'armoire.
+  ["piles_label", 256, 96, (g, w, h) => {
+    g.fillStyle = "#f2c230"; g.font = "bold 66px 'Special Elite', monospace"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("PILES", w / 2, h / 2 + 4);
+    chalkGrain(g, 0, 0, w, h, 311, 0.5);
+  }],
+  // Mot de Cuisine sur le mur de l'entrepôt.
+  ["cook_piles", 192, 224, (g, w, h) => {
+    paperSheet(g, 6, 6, w - 12, h - 12, 321, "#f4ecd6");
+    g.fillStyle = "#5a2a1a"; g.font = "30px 'Patrick Hand', cursive"; g.textAlign = "center";
+    ["PILES :", "ON LES", "COMPTE,", "MAINTENANT."].forEach((l, i) => g.fillText(l, w / 2, 48 + i * 36));
+    g.font = "22px 'Patrick Hand', cursive"; g.fillText("— Cuisine", w / 2 + 20, h - 22);
+  }],
+  // Liste de Lila n° 3 (sous l'oreiller).
+  ["lila_list3", 128, 160, (g, w, h) => {
+    paperSheet(g, 4, 4, w - 8, h - 8, 331, "#f2ead2");
+    writeLines(g, ["Nuit de l'orage.", "1. Plus de piles.", "2. 2 h 05 : une", "lampe VERTE…", "3. du vert sous", "la porte.", "4. Quelqu'un sait."], 8, 26, 12, "'Patrick Hand', cursive", "#3a2a1c", 1.3, 332, 1);
+  }],
+  // Liste de Lila n° 2 (au fond du panier à piles vide).
+  ["lila_list2", 128, 160, (g, w, h) => {
+    paperSheet(g, 4, 4, w - 8, h - 8, 341, "#f2ead2");
+    writeLines(g, ["Pour le Dr O. :", "1. Quatre piles", "par nuit.", "2. Rien dire", "à Cuisine.", "3. Ce soir :", "armoire fermée."], 8, 26, 12, "'Patrick Hand', cursive", "#3a2a1c", 1.3, 342, 1);
+  }],
+];
+
+let storyAtlasCache: { texture: Texture; rects: Map<string, [number, number, number, number]> } | null = null;
+
+/**
+ * Atlas des images de l'enquête (2048 × 1024, rangées par étagères). `rect(nom)` renvoie [u0, v0, u1, v1]
+ * (v vers le haut, comme les UV de three.js).
+ */
+export function storyAtlas(): { texture: Texture; rect(name: string): [number, number, number, number] } {
+  if (!storyAtlasCache) {
+    const W = 2048, H = 1024, pad = 6;
+    const rects = new Map<string, [number, number, number, number]>();
+    const texture = make("story-atlas", W, H, (g) => {
+      g.clearRect(0, 0, W, H);
+      const sorted = [...STORY_IMAGES].sort((a, b) => b[2] - a[2]);
+      let x = pad, y = pad, row = 0;
+      for (const [name, w, h, draw] of sorted) {
+        if (x + w + pad > W) { x = pad; y += row + pad * 2; row = 0; }
+        g.save();
+        g.translate(x, y);
+        g.beginPath(); g.rect(0, 0, w, h); g.clip();
+        draw(g, w, h);
+        g.restore();
+        rects.set(name, [x / W, 1 - (y + h) / H, (x + w) / W, 1 - y / H]);
+        x += w + pad * 2;
+        row = Math.max(row, h);
+      }
+    }, false);
+    storyAtlasCache = { texture, rects };
+  }
+  const { texture, rects } = storyAtlasCache;
+  return {
+    texture,
+    rect(name: string) {
+      const r = rects.get(name);
+      if (!r) throw new Error(`Image d'enquête inconnue : ${name}`);
+      return r;
+    },
+  };
+}
+
+/**
+ * Craie de Lila sur la grande porte : « ILS SONT DESCENDUS. PAS TOUS. », en grosses lettres d'enfant.
+ * Une seule image pour les deux battants (chaque battant en affiche une moitié).
+ */
+export function storyDoorChalkTexture(): Texture {
+  return make("story-door-chalk", 1024, 416, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    chalkLines(g, ["ILS SONT", "DESCENDUS."], w / 2 - 6, h * 0.33, 126, 1001, "#f6f1e4", 0.98);
+    chalkLines(g, ["PAS TOUS."], w / 2 + 14, h * 0.8, 120, 1002, "#f6f1e4");
+    // PAS TOUS souligné : on insiste.
+    chalkStroke(g, [[w * 0.28, h - 16], [w * 0.5, h - 21], [w * 0.73, h - 15]], 8, 1003, "#f6f1e4");
+    chalkGrain(g, 0, 0, w, h, 1004, 0.8);
+  }, false);
+}

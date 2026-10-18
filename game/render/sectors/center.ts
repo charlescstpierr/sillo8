@@ -5,6 +5,7 @@ import {
   SphereGeometry, TorusGeometry, type Object3D,
 } from "three";
 import { onWorldRefresh, ruin, type DecorContext, type ModelBuilder, type WorldView } from "../world";
+import { decorateStory } from "../storyProps";
 import type { SiloState } from "../../state";
 import type { Box } from "../../collision";
 import { toon } from "../toon";
@@ -14,7 +15,7 @@ import {
 } from "../props";
 import {
   blobTexture, centerArrowTexture, centerEmblemTexture, centerMonitorTexture, centerNoteTexture, centerPadlockTexture,
-  centerRingTexture, drawingTexture, hazardTexture, paperTexture, rng, signTexture,
+  centerRingTexture, hazardTexture, paperTexture, rng, signTexture,
 } from "../textures";
 
 // Teintes « jouet en pâte » de la fiche personnage.
@@ -155,17 +156,6 @@ function boxStack(parent: Object3D, x: number, z: number, levels: number, seed: 
   }
 }
 
-/** Pile de piles électriques (ressource de la lampe torche), simple décor. */
-function batteryPile(parent: Object3D, x: number, z: number, seed: number): void {
-  const r = rng(seed);
-  for (let i = 0; i < 7; i++) {
-    const c = cylinder(parent, 0.05, 0.18, i % 3 ? MUSTARD : "#3f6f6a", x + (r() - 0.5) * 0.35, 0, z + (r() - 0.5) * 0.3, 10);
-    c.rotation.z = Math.PI / 2;
-    c.rotation.y = r() * 3;
-    c.position.y = 0.05 + (i > 4 ? 0.09 : 0);
-  }
-}
-
 /** Tas de ferraille (tôles, tuyaux, boulons) pour l'ambiance bricoleur. */
 function scrapPile(parent: Object3D, x: number, z: number, seed: number): void {
   const r = rng(seed);
@@ -180,9 +170,11 @@ function scrapPile(parent: Object3D, x: number, z: number, seed: number): void {
   }
 }
 
+/** Bougie consumée, éteinte depuis longtemps : mèche noire, cire coulée. */
 function candle(parent: Object3D, x: number, z: number, height = 0.14): void {
   cylinder(parent, 0.04, height, CREAM, x, 0, z, 8);
-  parent.add(mesh(new SphereGeometry(0.025, 6, 5), bulb("#ffb35a", "#ffcf6a"), x, height + 0.03, z, false));
+  cylinder(parent, 0.06, 0.012, CREAM, x + 0.02, 0, z, 10);
+  cylinder(parent, 0.006, 0.03, CHARCOAL, x, height, z, 4);
 }
 
 // ——— Sécurité ———
@@ -275,7 +267,6 @@ function decorateSecurity(ctx: DecorContext): void {
   lead.rotation.set(Math.PI / 2, 0, 0.9);
   root.add(lead);
   crate(root, 4.4, 12.5, 0.5, 0.3);
-  batteryPile(root, 3.3, 12.4, 4);
   collide(ctx, 4.4, 12.5, 0.6, 0.6);
   cylinder(root, 0.2, 0.45, LEATHER, 2.5, 0, 12.3, 10);
   cylinder(root, 0.24, 0.06, MUSTARD, 2.5, 0.45, 12.3, 12);
@@ -379,19 +370,17 @@ function decorateHub(ctx: DecorContext): void {
   block(root, 2.5, 1.15, 0.1, LEATHER, bx, 0.42, bz, 0.04);
   block(root, 2.3, 0.97, 0.04, "#b98a5a", bx, 0.51, bz + 0.05, 0.01);
   signBoard(root, "MOTS DES SURVIVANTS", bx, 1.48, bz + 0.08, 1.6, 0.2, 0, { bg: MUSTARD, fg: CHARCOAL });
+  // Mots griffonnés le matin de la descente, de travers, autour de l'avis officiel (storyProps.ts) bien droit.
   const notes = [
-    "ON TIENT BON !", "Léa est partie\nvers l'atelier", "PILES : borne\nà la sécu", "Ne descendez\npas seuls",
-    "Eau potable\n→ cafétéria", "Merci pour\nla soupe !", "Clous dispo\nentrepôt", "Qui a pris ma\nclé à molette ?",
-    "Étage 2 :\nbruits la nuit", "Bandages :\ninfirmerie", "Tom, on t'attend\nau dortoir",
+    "Ne remontez\npas !", "Lila, on\nt'attend\nen bas", "PILES :\nvoir Cuisine", "Descente\nà 6 h",
+    "J'ai laissé\nle chat.\nPardon.", "Rendez-vous\nétage 2", "On revient\nvous chercher", "Pas de bruit\ndans le\nnord !",
   ];
   const nr = rng(55);
   notes.forEach((text, i) => {
-    const col = i % 6, row = Math.floor(i / 6);
-    const note = panel(root, centerNoteTexture(text, i + 1), bx - 0.95 + col * 0.38 + (nr() - 0.5) * 0.08, 1.1 - row * 0.44 + (nr() - 0.5) * 0.06, bz + 0.08 + i * 0.001, 0.33, 0.38, 0);
-    note.rotation.z = (nr() - 0.5) * 0.3;
+    const col = [-0.95, -0.57, 0.57, 0.95][i % 4], row = Math.floor(i / 4);
+    const note = panel(root, centerNoteTexture(text, i + 1), bx + col + (nr() - 0.5) * 0.06, 1.12 - row * 0.44 + (nr() - 0.5) * 0.06, bz + 0.08 + i * 0.001, 0.33, 0.38, 0);
+    note.rotation.z = (nr() - 0.5) * 0.4;
   });
-  const photo = panel(root, drawingTexture(), bx + 0.95, 0.68, bz + 0.095, 0.36, 0.28, 0);
-  photo.rotation.z = 0.12;
   // Bougies et fleurs séchées au pied du panneau.
   candle(root, bx - 0.7, bz + 0.35);
   candle(root, bx - 0.5, bz + 0.45, 0.1);
@@ -430,7 +419,6 @@ function decorateHub(ctx: DecorContext): void {
   grass(root, 5.9, 5.9, 0.75);
   grass(root, 5.8, 6.0, 0.6);
   crate(root, 5.1, 6.15, 0.55, 0.4);
-  batteryPile(root, 4.6, 5.6, 13);
   collide(ctx, 5.5, 6.0, 1.3, 1.0);
   // Guirlande de fortune entre les piliers nord.
   const [lx0, lz0] = polar(5.0, 247.5 * deg);
@@ -566,6 +554,7 @@ export function decorateCenter(ctx: DecorContext): void {
   decorateHub(ctx);
   decorateNorth(ctx);
   decorateStairs(ctx);
+  decorateStory(ctx, "center");
 }
 
 /**
