@@ -31,7 +31,7 @@ export const CARDS: Card[] = [
   // ——— Entrée (extérieur) ———
   { id: "chalk_door", title: "Craie sur la grande porte", text: "ILS SONT DESCENDUS. PAS TOUS.", source: "À la craie, lettres d'enfant", room: "plaza", icon: "chalk", question: "q_reste" },
   {
-    // Proposé : la voix de la première minute devient une carte (d1).
+    // Validé par l'auteur : la voix de la première minute devient une carte (d1).
     id: "audio_gate", title: "La voix de la guérite", icon: "audio", room: "plaza", question: "q_reste", source: "Radio de la guérite",
     text: "« …ici l'opératrice de nuit… c'est l'heure de la relève… il y a quelqu'un ? »\nPuis la pile de la radio meurt. Plus rien.",
     words: ["l'opératrice de nuit"],
@@ -42,7 +42,7 @@ export const CARDS: Card[] = [
     text: "RÈGLE N° 1\nAucun mordu ne franchit la porte. Pas d'exception.\n— Les fondateurs", image: "rule",
   },
   {
-    // Proposé (texte) : le document décrit les verrous sans en faire un document.
+    // Validé par l'auteur : le document décrit les verrous sans en faire un document.
     id: "door_bolts", title: "Verrous de la grande porte", icon: "object", room: "plaza", question: "q_verrous", source: "Gros plan",
     text: "Les gros verrous de la grande porte sont du côté dehors.", image: "bolts",
   },
@@ -70,7 +70,7 @@ export const CARDS: Card[] = [
     words: ["blanche"], flag: true,
   },
   {
-    // Proposé : la règle du bruit, montrée à la zone extérieure (§ 7, règle 3), devient une carte.
+    // Validé par l'auteur : la règle du bruit, montrée à la zone extérieure (§ 7, règle 3), devient une carte.
     id: "noise_rule", title: "Le bruit les attire", icon: "trace", room: "exterior", question: "q_porte", source: "Vu à la zone extérieure",
     text: "Un coup de tôle, et le guetteur tourne la tête vers le bruit.", words: ["le bruit"],
   },
@@ -83,7 +83,7 @@ export const CARDS: Card[] = [
     words: ["Marceau", "l'expédition"],
   },
   {
-    // Proposé (texte) : message canon du jeu à la relance.
+    // Validé par l'auteur : message canon du jeu à la relance.
     id: "generator_restart", title: "La génératrice repart", icon: "audio", room: "generator", question: "q_porte", source: "Génératrice",
     text: "La génératrice tousse… puis tourne.\nLe moteur fait du bruit dans tout l'étage.", words: ["le bruit"],
   },
@@ -120,7 +120,7 @@ export const CARDS: Card[] = [
     words: ["Bérard", "Okafor", "1 h 50", "dire adieu"],
   },
   {
-    // Proposé (carte) : la boucle du haut-parleur (d4).
+    // Validé par l'auteur : la boucle du haut-parleur (d4).
     id: "audio_loop", title: "Le haut-parleur de la sécurité", icon: "audio", room: "security", question: "q_ouverte", source: "Enregistrement en boucle",
     text: "« …canal 2… à l'aube… »", words: ["dire adieu"],
   },
@@ -156,7 +156,7 @@ export const CARDS: Card[] = [
     words: ["la chambre 1"],
   },
   {
-    // Proposé (texte) : l'habitude du commis, vue sans le figer (X2 « ou habitude du commis »).
+    // Validé par l'auteur : l'habitude du commis, vue sans le figer (X2 « ou habitude du commis »).
     id: "commis_habit", title: "Le commis et ses plateaux", icon: "object", room: "cafeteria", question: "q_chambre1", source: "Vu à la cafétéria",
     text: "Il porte un plateau vide jusqu'à la chambre froide, le pose, frappe deux fois, repart.",
   },
@@ -208,7 +208,7 @@ export const CARDS: Card[] = [
     words: ["Okafor", "le soigner"],
   },
   {
-    // Proposé (carte) : le « vieux dossier du fond » rangé dans la colonne des questions sans réponse.
+    // Validé par l'auteur : le « vieux dossier du fond » rangé dans la colonne des questions sans réponse.
     id: "old_file", title: "Le vieux dossier du fond", icon: "note", room: "infirmary", question: "q_dossier", source: "Rapport n° 1, à la loupe",
     text: "« Même forme que dans le vieux dossier du fond. »",
   },
