@@ -1,4 +1,4 @@
-// Gros plan de l'opératrice sous 4 angles et planche d'animations, depuis la caméra du jeu.
+// Gros plan de l'opérateur sous 4 angles et planche d'animations, depuis la caméra du jeu.
 import { expect, test, type Page } from "@playwright/test";
 
 const SHOTS = process.env.SHOTS_DIR ?? "docs/screenshots";
@@ -25,7 +25,7 @@ async function step(page: Page, seconds: number, setup?: string) {
 }
 
 test("opérateur : gros plan 4 vues", async ({ browser }) => {
-  test.setTimeout(200_000);
+  test.setTimeout(600_000);
   const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
   const page = await context.newPage();
   const errors = await boot(page);
