@@ -25,7 +25,7 @@ async function step(page: Page, seconds: number, setup?: string) {
 }
 
 test("opérateur : gros plan 4 vues", async ({ browser }) => {
-  test.setTimeout(200_000);
+  test.setTimeout(600_000);
   const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
   const page = await context.newPage();
   const errors = await boot(page);

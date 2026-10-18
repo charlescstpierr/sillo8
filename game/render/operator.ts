@@ -3,12 +3,14 @@
 // Outils de bricoleuse : clé à molette (corps à corps), lance-clous à batterie, lampe frontale qui éblouit.
 // Animations procédurales : marche, course, accroupi, coup de clé, tir et rechargement du lance-clous, éblouir.
 import {
-  BoxGeometry, CapsuleGeometry, ConeGeometry, CylinderGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, Object3D,
-  RingGeometry, SphereGeometry, SpotLight, TorusGeometry,
+  BoxGeometry, CapsuleGeometry, ConeGeometry, CylinderGeometry, DataTexture, DoubleSide, Group, LinearFilter,
+  LinearMipmapLinearFilter, Mesh, MeshBasicMaterial, Object3D, RGBAFormat, RepeatWrapping, RingGeometry, SphereGeometry,
+  SpotLight, TorusGeometry, Vector3,
 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { addOutline, glow, toon } from "./toon";
 import { PALETTE } from "./palette";
+import { dustEnabled, puffDust, updateDust } from "./footsteps";
 import type { Pose } from "../player";
 
 const THIGH = 0.22;
@@ -24,15 +26,19 @@ const LAMP_ANGLE = 0.52;
 
 /** Couleurs propres au personnage (planche de référence). */
 const LOOK = {
-  beanie: "#545c40",
-  beanieCuff: "#4d553a",
-  patch: "#c9a26b",
+  beanie: "#5a6343",
+  beanieCuff: "#636c4a",
+  patch: "#d2ac72",
   hair: "#7a4a2a",
-  hairLight: "#8d5a35",
-  skin: "#f0c4a0",
-  blush: "#ee9f8a",
+  hairLight: "#8f5c36",
+  hairDark: "#5c361e",
+  skin: "#f3c8a4",
+  skinDark: "#e8b08c",
+  blush: "#f19a86",
   eye: "#2a1d16",
+  mouth: "#7a3a2c",
   scarf: "#3b3d40",
+  scarfLight: "#55585c",
   jacket: "#d8a43a",
   jacketDark: "#c38e2c",
   knit: "#e9dcc0",
@@ -82,6 +88,35 @@ export interface OperatorRig {
   /** Bande vide éjectée pendant le rechargement. */
   droppedMag: Mesh;
   dropped: { active: boolean; y: number; vy: number };
+  /** Mouvements secondaires : queue de cheval, sacoche, pans d'écharpe, yeux (clignement). */
+  ponytail: Group;
+  satchel: Group;
+  scarfTails: Group[];
+  eyes: Group[];
+  motion: OperatorMotion;
+}
+
+/** Ressort amorti à un axe (balancements). */
+interface Spring {
+  x: number;
+  v: number;
+}
+
+/** État persistant des mouvements secondaires (aucune allocation par image). */
+export interface OperatorMotion {
+  time: number;
+  idle: number;
+  look: number;
+  lookTimer: number;
+  blink: number;
+  yaw: number;
+  turn: number;
+  stepSign: number;
+  steps: number;
+  tail: Spring;
+  tailSide: Spring;
+  bag: Spring;
+  bagSide: Spring;
 }
 
 type Geo = ConstructorParameters<typeof Mesh>[0];
@@ -108,129 +143,233 @@ function limb(parent: Object3D, length: number, radius: number, color: string): 
   return mesh;
 }
 
-function buildHead(head: Group): { lens: Mesh; headlamp: SpotLight } {
-  // Visage rond
-  const face = part(new SphereGeometry(0.24, 20, 16), LOOK.skin, 0, 0.2, 0);
-  head.add(face);
-  for (const side of [-1, 1]) {
-    const eye = decal(new SphereGeometry(0.036, 12, 10), LOOK.eye, side * 0.085, 0.145, 0.214);
-    eye.scale.set(0.78, 1.22, 0.45);
-    eye.rotation.y = side * 0.38;
-    head.add(eye);
-    const shine = decal(new SphereGeometry(0.011, 6, 5), "#ffffff", side * 0.085 + 0.012, 0.162, 0.229);
-    head.add(shine);
-    const blush = decal(new SphereGeometry(0.03, 10, 8), LOOK.blush, side * 0.145, 0.095, 0.18, true);
-    blush.scale.set(1.3, 0.7, 0.4);
-    blush.rotation.y = side * 0.65;
-    head.add(blush);
+let ribs: DataTexture | null = null;
+
+/** Côtes de tricot : bandes verticales douces (DataTexture, sans canvas : fonctionne aussi hors navigateur). */
+function knit(repeat: number): DataTexture {
+  if (!ribs) {
+    const w = 8;
+    const data = new Uint8Array(w * 4);
+    for (let i = 0; i < w; i++) {
+      const v = 255 - Math.round(46 * (0.5 - 0.5 * Math.cos((i / w) * Math.PI * 2)));
+      data.set([v, v, v, 255], i * 4);
+    }
+    ribs = new DataTexture(data, w, 1, RGBAFormat);
+    ribs.wrapS = RepeatWrapping;
+    ribs.wrapT = RepeatWrapping;
+    ribs.magFilter = LinearFilter;
+    ribs.minFilter = LinearMipmapLinearFilter;
+    ribs.generateMipmaps = true;
+    ribs.needsUpdate = true;
   }
-  const smile = decal(new TorusGeometry(0.026, 0.0065, 4, 12, Math.PI), LOOK.eye, 0, 0.088, 0.226);
-  smile.rotation.set(-0.35, 0, Math.PI);
+  const texture = ribs.clone();
+  texture.repeat.set(repeat, 1);
+  texture.needsUpdate = true;
+  return texture;
+}
+
+interface HeadParts {
+  lens: Mesh;
+  headlamp: SpotLight;
+  ponytail: Group;
+  eyes: Group[];
+}
+
+function buildHead(head: Group): HeadParts {
+  // Visage rond, petit nez en pâte à modeler
+  const face = part(new SphereGeometry(0.24, 22, 16), LOOK.skin, 0, 0.2, 0);
+  face.scale.set(1.04, 0.97, 1);
+  // Peau « argile » éclairée de l'intérieur : le palier d'ombre du toon ne fait pas de barbe sous le menton
+  face.material = toon(LOOK.skin, { emissive: LOOK.skin, emissiveIntensity: 0.32 });
+  // Pas d'ombre portée du bonnet sur le visage : il resterait sombre sous la caméra plongeante
+  face.receiveShadow = false;
+  head.add(face);
+  const nose = decal(new SphereGeometry(0.02, 8, 6), LOOK.skinDark, 0, 0.112, 0.238, true);
+  nose.scale.set(1.2, 0.8, 0.7);
+  head.add(nose);
+  // Grands yeux ovales à deux reflets (groupes : clignement et grimace de douleur)
+  const eyes: Group[] = [];
+  for (const side of [-1, 1]) {
+    const eye = new Group();
+    eye.position.set(side * 0.09, 0.145, 0.208);
+    eye.rotation.y = side * 0.4;
+    head.add(eye);
+    const ball = decal(new SphereGeometry(0.044, 14, 10), LOOK.eye, 0, 0, 0);
+    ball.scale.set(0.8, 1.12, 0.42);
+    eye.add(ball);
+    eye.add(decal(new SphereGeometry(0.014, 8, 6), "#ffffff", 0.011, 0.018, 0.016));
+    eye.add(decal(new SphereGeometry(0.0065, 6, 5), "#ffffff", -0.012, -0.02, 0.016));
+    eyes.push(eye);
+    const blush = decal(new SphereGeometry(0.034, 10, 8), LOOK.blush, side * 0.15, 0.085, 0.178, true);
+    blush.scale.set(1.3, 0.62, 0.4);
+    blush.rotation.y = side * 0.68;
+    head.add(blush);
+    const brow = decal(new CapsuleGeometry(0.008, 0.035, 2, 6), LOOK.hairDark, side * 0.092, 0.218, 0.214);
+    brow.rotation.set(0, side * 0.4, Math.PI / 2 + side * 0.15);
+    head.add(brow);
+  }
+  const smile = decal(new TorusGeometry(0.022, 0.0062, 4, 12, Math.PI), LOOK.mouth, 0, 0.078, 0.229);
+  smile.rotation.set(-0.3, 0, Math.PI);
   head.add(smile);
 
-  // Cheveux châtains ondulés : masse arrière, mèches latérales, frange, petite queue basse
-  const mass = part(new SphereGeometry(0.248, 18, 14), LOOK.hair, 0, 0.21, -0.045);
-  mass.scale.set(1.08, 1, 1);
+  // Cheveux châtains ondulés : masse arrière, mèches latérales qui débordent du bonnet, frange balayée
+  const mass = part(new SphereGeometry(0.25, 18, 14), LOOK.hair, 0, 0.21, -0.05);
+  mass.scale.set(1.1, 1, 1);
   head.add(mass);
   for (const side of [-1, 1]) {
-    const lock = part(new SphereGeometry(0.085, 12, 10), LOOK.hair, side * 0.205, 0.13, 0.05);
-    lock.scale.set(0.75, 1.25, 0.95);
+    const lock = part(new SphereGeometry(0.088, 12, 10), LOOK.hair, side * 0.208, 0.14, 0.06);
+    lock.scale.set(0.72, 1.3, 0.95);
     head.add(lock);
-    const curl = part(new SphereGeometry(0.07, 10, 8), LOOK.hair, side * 0.225, 0.03, -0.01);
+    const curl = part(new SphereGeometry(0.072, 10, 8), LOOK.hair, side * 0.232, 0.035, 0.0);
     curl.scale.set(0.9, 1, 1);
     head.add(curl);
-    const flick = part(new CapsuleGeometry(0.035, 0.06, 4, 8), LOOK.hairLight, side * 0.27, 0.0, -0.06);
-    flick.rotation.z = side * 1.0;
+    // Pointes qui rebiquent vers l'extérieur sous le revers (lisibles de haut)
+    const flick = part(new CapsuleGeometry(0.036, 0.07, 4, 8), LOOK.hairLight, side * 0.285, 0.0, -0.05);
+    flick.rotation.set(0, 0, side * 1.05);
     head.add(flick);
-    const back = part(new SphereGeometry(0.075, 10, 8), LOOK.hair, side * 0.15, 0.04, -0.17);
+    const flickFront = part(new CapsuleGeometry(0.03, 0.05, 4, 8), LOOK.hair, side * 0.255, 0.02, 0.1);
+    flickFront.rotation.set(0.3, 0, side * 0.8);
+    head.add(flickFront);
+    const back = part(new SphereGeometry(0.08, 10, 8), LOOK.hair, side * 0.16, 0.05, -0.18);
     head.add(back);
+    // Mèches qui sortent sous le revers, sur les côtés et derrière
+    for (const [a, y] of [[1.25, 0.25], [1.75, 0.24], [2.3, 0.23]] as const) {
+      const tuft = part(new SphereGeometry(0.06, 10, 8), a > 2 ? LOOK.hairLight : LOOK.hair, side * Math.sin(a) * 0.29, y, Math.cos(a) * 0.285);
+      tuft.scale.set(1, 0.7, 1);
+      head.add(tuft);
+    }
   }
-  for (const [x, tilt, len] of [[-0.1, -0.35, 0.07], [-0.02, 0.15, 0.08], [0.07, 0.4, 0.07], [0.15, 0.7, 0.05]] as const) {
-    const fringe = part(new CapsuleGeometry(0.038, len, 4, 8), LOOK.hair, x, 0.255, 0.2 - Math.abs(x) * 0.2);
-    fringe.rotation.set(0.5, 0, tilt);
+  for (const [x, tilt, len] of [[-0.12, -0.45, 0.07], [-0.04, -0.15, 0.09], [0.05, 0.3, 0.085], [0.14, 0.65, 0.06]] as const) {
+    const fringe = part(new CapsuleGeometry(0.04, len, 4, 8), x > 0 ? LOOK.hair : LOOK.hairLight, x, 0.262, 0.205 - Math.abs(x) * 0.22);
+    fringe.rotation.set(0.45, 0, tilt);
     head.add(fringe);
   }
-  const tie = part(new SphereGeometry(0.06, 10, 8), LOOK.hair, 0, 0.03, -0.25);
-  head.add(tie);
-  const tail = part(new CapsuleGeometry(0.045, 0.07, 4, 8), LOOK.hairLight, 0, -0.04, -0.27);
-  tail.rotation.x = 0.35;
-  head.add(tail);
 
-  // Bonnet en maille avec revers et écusson en cuir, légèrement basculé vers l'avant
+  // Petite queue de cheval basse, ondulée, sur pivot (balancement)
+  const ponytail = new Group();
+  ponytail.position.set(0, 0.07, -0.235);
+  head.add(ponytail);
+  ponytail.add(part(new SphereGeometry(0.05, 10, 8), LOOK.hairDark, 0, 0, 0));
+  const tail = part(new CapsuleGeometry(0.052, 0.07, 4, 10), LOOK.hairLight, 0, -0.075, -0.035);
+  tail.rotation.x = 0.4;
+  ponytail.add(tail);
+  const tip = part(new SphereGeometry(0.045, 10, 8), LOOK.hair, 0.012, -0.145, -0.045);
+  tip.scale.set(0.9, 1.1, 0.9);
+  ponytail.add(tip);
+
+  // Bonnet en grosse maille olive : dôme côtelé un peu affaissé vers l'arrière, revers épais, écusson en cuir
   const beanie = new Group();
-  beanie.position.set(0, 0.345, -0.01);
-  beanie.rotation.x = 0.04;
+  beanie.position.set(0, 0.34, -0.012);
+  beanie.rotation.x = 0.05;
   head.add(beanie);
-  const dome = part(new SphereGeometry(0.262, 22, 14, 0, Math.PI * 2, 0, Math.PI * 0.52), LOOK.beanie, 0, 0, -0.01);
-  dome.scale.set(1, 0.98, 1);
+  const dome = part(new SphereGeometry(0.256, 26, 14, 0, Math.PI * 2, 0, Math.PI * 0.52), LOOK.beanie, 0, 0.0, -0.012);
+  dome.material = toon(LOOK.beanie, { map: knit(30) });
+  dome.scale.set(1, 1.08, 1);
+  dome.rotation.x = -0.1;
   beanie.add(dome);
-  const cuff = part(new TorusGeometry(0.256, 0.052, 10, 30), LOOK.beanieCuff, 0, 0.0, 0);
+  const crown = part(new SphereGeometry(0.1, 12, 8), LOOK.beanieCuff, 0, 0.27, -0.045);
+  crown.scale.set(1, 0.32, 1);
+  crown.material = toon(LOOK.beanieCuff, { map: knit(10) });
+  crown.userData.noOutline = true;
+  beanie.add(crown);
+  const cuff = part(new TorusGeometry(0.25, 0.06, 10, 40), LOOK.beanieCuff, 0, 0.0, 0);
+  cuff.material = toon(LOOK.beanieCuff, { map: knit(52) });
   cuff.rotation.x = Math.PI / 2;
-  cuff.scale.set(1, 1.02, 1.15);
+  cuff.scale.set(1, 1.02, 1.18);
   beanie.add(cuff);
-  const patch = part(new RoundedBoxGeometry(0.08, 0.055, 0.02, 2, 0.008), LOOK.patch, 0, 0.005, 0);
-  patch.position.set(Math.sin(0.55) * 0.308, 0.005, Math.cos(0.55) * 0.308);
-  patch.rotation.y = 0.55;
-  patch.userData.noOutline = true;
+  const angle = 0.52;
+  const border = part(new RoundedBoxGeometry(0.108, 0.08, 0.02, 1, 0.012), LOOK.leatherDark, Math.sin(angle) * 0.31, 0.006, Math.cos(angle) * 0.31);
+  border.rotation.y = angle;
+  border.userData.noOutline = true;
+  beanie.add(border);
+  const patch = decal(new RoundedBoxGeometry(0.094, 0.066, 0.02, 1, 0.01), LOOK.patch, Math.sin(angle) * 0.318, 0.006, Math.cos(angle) * 0.318, true);
+  patch.rotation.y = angle;
   beanie.add(patch);
 
   // Petite lampe frontale clipsée sur le revers (fonctionnelle)
-  const lampBody = part(new CylinderGeometry(0.032, 0.036, 0.04, 12), PALETTE.steelDark, -0.06, 0.31, 0.27);
+  const lampBody = part(new CylinderGeometry(0.03, 0.034, 0.04, 12), PALETTE.steelDark, -0.075, 0.315, 0.29);
   lampBody.rotation.x = Math.PI / 2 - 0.25;
   head.add(lampBody);
-  const lens = new Mesh(new CylinderGeometry(0.026, 0.026, 0.012, 12), glow("#fff2c4"));
-  lens.position.set(-0.06, 0.305, 0.292);
+  const lens = new Mesh(new CylinderGeometry(0.024, 0.024, 0.012, 12), glow("#fff2c4"));
+  lens.position.set(-0.075, 0.31, 0.312);
   lens.rotation.x = Math.PI / 2 - 0.25;
   lens.userData.noOutline = true;
   head.add(lens);
   const headlamp = new SpotLight("#ffe6b0", LAMP_INTENSITY, 11, LAMP_ANGLE, 0.65, 1.6);
-  headlamp.position.set(-0.06, 0.305, 0.3);
+  headlamp.position.set(-0.075, 0.31, 0.32);
   headlamp.castShadow = false;
   const lampTarget = new Object3D();
-  lampTarget.position.set(-0.06, -1.6, 3.4);
+  lampTarget.position.set(-0.075, -1.6, 3.4);
   head.add(lampTarget);
   headlamp.target = lampTarget;
   head.add(headlamp);
-  return { lens, headlamp };
+  return { lens, headlamp, ponytail, eyes };
 }
 
-function buildTorso(torso: Group): void {
-  // Veste moutarde ouverte sur une chemise crème
-  const jacket = part(new CapsuleGeometry(0.19, 0.16, 6, 16), LOOK.jacket, 0, 0.21, 0);
-  jacket.scale.set(1.08, 1, 0.86);
+interface TorsoParts {
+  satchel: Group;
+  scarfTails: Group[];
+}
+
+function buildTorso(torso: Group): TorsoParts {
+  // Veste moutarde ouverte sur une chemise crème, bas de veste évasé
+  const jacket = part(new CapsuleGeometry(0.195, 0.16, 6, 16), LOOK.jacket, 0, 0.21, 0);
+  jacket.scale.set(1.1, 1, 0.88);
   torso.add(jacket);
-  const hem = part(new CylinderGeometry(0.2, 0.22, 0.12, 18), LOOK.jacket, 0, 0.03, 0);
-  hem.scale.z = 0.88;
+  const hem = part(new CylinderGeometry(0.205, 0.235, 0.13, 20), LOOK.jacket, 0, 0.03, 0);
+  hem.scale.z = 0.9;
   torso.add(hem);
-  const shirt = part(new RoundedBoxGeometry(0.13, 0.3, 0.06, 2, 0.025), LOOK.shirt, 0, 0.17, 0.15);
+  const shirt = part(new RoundedBoxGeometry(0.13, 0.3, 0.06, 2, 0.025), LOOK.shirt, 0, 0.17, 0.155);
   torso.add(shirt);
   for (const side of [-1, 1]) {
-    const lapel = part(new RoundedBoxGeometry(0.045, 0.3, 0.05, 2, 0.02), LOOK.jacketDark, side * 0.085, 0.18, 0.163);
+    const lapel = part(new RoundedBoxGeometry(0.048, 0.3, 0.05, 2, 0.02), LOOK.jacketDark, side * 0.088, 0.18, 0.166);
     lapel.rotation.z = side * 0.08;
     torso.add(lapel);
+    const pocket = decal(new RoundedBoxGeometry(0.07, 0.012, 0.03, 1, 0.005), LOOK.jacketDark, side * 0.14, 0.13, 0.17, true);
+    pocket.rotation.y = side * 0.55;
+    torso.add(pocket);
   }
-  // Capuche ramassée dans le dos et écharpe anthracite
-  const hood = part(new SphereGeometry(0.15, 14, 10), LOOK.jacket, 0, 0.39, -0.12);
-  hood.scale.set(1.25, 0.72, 0.85);
+  // Grosse capuche ramassée dans le dos, pointe qui retombe
+  const hood = part(new SphereGeometry(0.175, 16, 12), LOOK.jacket, 0, 0.38, -0.14);
+  hood.scale.set(1.32, 0.86, 0.92);
   torso.add(hood);
-  const hoodRim = part(new TorusGeometry(0.16, 0.045, 8, 20), LOOK.jacketDark, 0, 0.42, -0.04);
+  const hoodTip = part(new SphereGeometry(0.085, 10, 8), LOOK.jacketDark, 0, 0.28, -0.215);
+  hoodTip.scale.set(1.1, 1, 0.7);
+  torso.add(hoodTip);
+  const hoodRim = part(new TorusGeometry(0.165, 0.048, 8, 22), LOOK.jacketDark, 0, 0.425, -0.045);
   hoodRim.rotation.x = Math.PI / 2 + 0.25;
   torso.add(hoodRim);
-  const scarf = part(new TorusGeometry(0.11, 0.055, 10, 20), LOOK.scarf, 0, 0.415, 0.0);
-  scarf.rotation.x = Math.PI / 2;
+  // Écharpe anthracite enroulée, nœud sur le côté gauche, deux pans libres
+  const scarf = part(new TorusGeometry(0.118, 0.05, 10, 22), LOOK.scarf, 0, 0.395, -0.01);
+  scarf.rotation.x = Math.PI / 2 + 0.35; // avant abaissé : le menton reste visible
+  scarf.scale.set(1, 1, 1.05);
   torso.add(scarf);
-  const knot = part(new SphereGeometry(0.055, 10, 8), LOOK.scarf, 0.03, 0.35, 0.13);
-  knot.scale.set(1.2, 0.75, 0.7);
+  const knot = part(new SphereGeometry(0.058, 10, 8), LOOK.scarf, 0.09, 0.32, 0.125);
+  knot.scale.set(1.15, 0.8, 0.8);
   torso.add(knot);
+  const scarfTails: Group[] = [];
+  for (const [x, z, len, spread] of [[0.1, 0.11, 0.15, 0.12], [0.135, 0.07, 0.12, 0.42]] as const) {
+    const pivot = new Group();
+    pivot.position.set(x, 0.305, z);
+    pivot.rotation.z = spread;
+    pivot.userData.rest = spread;
+    torso.add(pivot);
+    const end = part(new CapsuleGeometry(0.032, len, 4, 8), LOOK.scarf, 0, -len / 2 - 0.02, 0);
+    end.scale.set(1.25, 1, 0.55);
+    pivot.add(end);
+    const fringe = decal(new BoxGeometry(0.07, 0.012, 0.022), LOOK.scarfLight, 0, -len - 0.035, 0, true);
+    pivot.add(fringe);
+    scarfTails.push(pivot);
+  }
 
   // Ceinture à petites poches
-  const belt = part(new CylinderGeometry(0.212, 0.218, 0.05, 20), LOOK.leatherDark, 0, 0.045, 0);
+  const belt = part(new CylinderGeometry(0.222, 0.228, 0.05, 22), LOOK.leatherDark, 0, 0.045, 0);
   belt.scale.z = 0.9;
   torso.add(belt);
-  const buckle = part(new RoundedBoxGeometry(0.05, 0.045, 0.02, 1, 0.008), LOOK.brass, 0, 0.045, 0.2);
+  const buckle = part(new RoundedBoxGeometry(0.05, 0.045, 0.02, 1, 0.008), LOOK.brass, 0, 0.045, 0.208);
   torso.add(buckle);
   for (const side of [-1, 1]) {
-    const pouch = part(new RoundedBoxGeometry(0.075, 0.07, 0.05, 2, 0.015), LOOK.leather, side * 0.13, 0.03, 0.165);
+    const pouch = part(new RoundedBoxGeometry(0.075, 0.07, 0.05, 2, 0.015), LOOK.leather, side * 0.135, 0.03, 0.17);
     pouch.rotation.y = side * 0.5;
     torso.add(pouch);
   }
@@ -242,20 +381,31 @@ function buildTorso(torso: Group): void {
   torso.add(sash);
   const strap = part(new TorusGeometry(1, 0.08, 6, 36), LOOK.leather);
   strap.rotation.x = Math.PI / 2;
-  strap.scale.set(0.3, 0.2, 0.28);
+  strap.scale.set(0.31, 0.2, 0.29);
   sash.add(strap);
 
-  // Sacoche en cuir sur la hanche gauche, côté dos, boucle en laiton
+  // Sacoche en cuir sur la hanche gauche, côté dos, suspendue à la sangle (balancement)
   const satchel = new Group();
-  satchel.position.set(0.1, 0.05, -0.2);
-  satchel.rotation.y = Math.PI - 0.45;
+  satchel.position.set(0.13, 0.17, -0.19);
+  satchel.rotation.order = "XZY";
+  satchel.rotation.y = Math.PI - 0.5;
   torso.add(satchel);
-  const bag = part(new RoundedBoxGeometry(0.22, 0.18, 0.09, 3, 0.03), LOOK.leather);
+  const bag = part(new RoundedBoxGeometry(0.23, 0.185, 0.1, 3, 0.035), LOOK.leather, 0, -0.12, 0);
   satchel.add(bag);
-  const flap = part(new RoundedBoxGeometry(0.215, 0.1, 0.03, 2, 0.012), LOOK.leatherDark, 0, 0.045, 0.045);
+  // Rabat qui couvre le dessus et la face : lisible depuis la caméra plongeante
+  const lid = part(new RoundedBoxGeometry(0.236, 0.035, 0.112, 1, 0.014), LOOK.leatherDark, 0, -0.03, 0.002);
+  satchel.add(lid);
+  const flap = part(new RoundedBoxGeometry(0.225, 0.11, 0.028, 1, 0.012), LOOK.leatherDark, 0, -0.085, 0.052);
   satchel.add(flap);
-  const clasp = part(new RoundedBoxGeometry(0.045, 0.045, 0.015, 1, 0.006), LOOK.brass, 0, 0.0, 0.065);
-  satchel.add(clasp);
+  const tab = decal(new RoundedBoxGeometry(0.036, 0.1, 0.012, 1, 0.005), LOOK.leather, 0, -0.1, 0.069, true);
+  satchel.add(tab);
+  const frame = part(new RoundedBoxGeometry(0.06, 0.052, 0.014, 1, 0.008), LOOK.brass, 0, -0.118, 0.074);
+  satchel.add(frame);
+  const hole = decal(new BoxGeometry(0.032, 0.024, 0.006), LOOK.leatherDark, 0, -0.118, 0.081, true);
+  satchel.add(hole);
+  const seam = decal(new BoxGeometry(0.2, 0.006, 0.006), LOOK.knit, 0, -0.05, 0.059, true);
+  satchel.add(seam);
+  return { satchel, scarfTails };
 }
 
 /** Clé à molette en acier, scotch moutarde sur le manche. Plat dans le plan XZ, tête vers +Z. */
@@ -369,7 +519,7 @@ export function buildOperator(): OperatorRig {
   const torso = new Group();
   torso.position.y = 0.02;
   hips.add(torso);
-  buildTorso(torso);
+  const { satchel, scarfTails } = buildTorso(torso);
   // Lampe torche clipsée au bout de la bandoulière, sur la hanche gauche, lentille vers le bas
   const torchClip = buildTorch();
   torchClip.position.set(0.215, 0.1, 0.07);
@@ -377,9 +527,9 @@ export function buildOperator(): OperatorRig {
   torso.add(torchClip);
 
   const head = new Group();
-  head.position.y = 0.46;
+  head.position.y = 0.47;
   torso.add(head);
-  const { lens, headlamp } = buildHead(head);
+  const { lens, headlamp, ponytail, eyes } = buildHead(head);
 
   // Bras : manche moutarde, poignet en maille crème, gros gant brun
   const arms: OperatorRig["arms"] = [];
@@ -457,7 +607,15 @@ export function buildOperator(): OperatorRig {
   droppedMag.visible = false;
 
   addOutline(root, 0.016);
-  return { root, body, head, hips, torso, legs, arms, gun, magazine, wrench, holster, trail, torchClip, torch, torchLens, beam, headlamp, lens, droppedMag, dropped: { active: false, y: 0, vy: 0 } };
+  const spring = (): Spring => ({ x: 0, v: 0 });
+  const motion: OperatorMotion = {
+    time: 0, idle: 0, look: 0, lookTimer: 2.5, blink: 3, yaw: 0, turn: 0, stepSign: 0, steps: 0,
+    tail: spring(), tailSide: spring(), bag: spring(), bagSide: spring(),
+  };
+  return {
+    root, body, head, hips, torso, legs, arms, gun, magazine, wrench, holster, trail, torchClip, torch, torchLens, beam, headlamp, lens,
+    droppedMag, dropped: { active: false, y: 0, vy: 0 }, ponytail, satchel, scarfTails, eyes, motion,
+  };
 }
 
 export interface OperatorAnimation {
@@ -488,7 +646,7 @@ function window01(t: number, start: number, end: number): number {
 }
 
 /** Visage légèrement levé vers la caméra plongeante. */
-const HEAD_TILT = -0.16;
+const HEAD_TILT = -0.24;
 
 /** Pose de bras : épaule (x, y, z), coude, poignet (orientation de la clé). */
 type ArmKey = readonly [number, number, number, number, number];
@@ -539,6 +697,11 @@ export function animateOperator(rig: OperatorRig, input: OperatorAnimation, dt: 
   const swing = moving ? (running ? 0.95 : crouch ? 0.4 : 0.65) : 0;
   const s = Math.sin(a.stride);
   const c = Math.cos(a.stride);
+  rig.motion.time += dt;
+  // Coup reçu : l'engine pose userData.hurt = 0.25, on le consomme ici (1 → 0)
+  const hurt = Math.max(0, ((rig.root.userData.hurt as number | undefined) ?? 0) - dt);
+  if (rig.root.userData.hurt !== undefined) rig.root.userData.hurt = hurt;
+  const flinch = Math.min(1, hurt / 0.25);
 
   rig.wrench.visible = weapon === 0;
   rig.gun.visible = weapon === 1;
@@ -568,27 +731,55 @@ export function animateOperator(rig: OperatorRig, input: OperatorAnimation, dt: 
   // Hauteur du bassin : accroupi, rebond chibi de la foulée, respiration au repos
   const legReach = (THIGH + SHIN) * Math.cos(crouchAngle);
   const crouchDrop = crouch ? (THIGH + SHIN) - legReach : 0;
-  const bob = moving ? Math.abs(c) * (running ? 0.06 : 0.04) : Math.sin(performance.now() / 650) * 0.006;
-  rig.hips.position.y = smooth(rig.hips.position.y, HIP_HEIGHT - crouchDrop + bob - step * 0.04, 16, dt);
+  const m = rig.motion;
+  const breath = Math.sin(m.time * 2.3);
+  const bob = moving ? Math.abs(c) * (running ? 0.06 : 0.04) : breath * 0.006;
+  rig.hips.position.y = smooth(rig.hips.position.y, HIP_HEIGHT - crouchDrop + bob - step * 0.04 - flinch * 0.03, 16, dt);
   const lean = running ? 0.2 : crouch ? 0.28 : moving ? 0.05 : 0;
   const kick = weapon === 1 && a.shotTime > 0 ? a.shotTime * 0.25 : 0;
-  rig.torso.rotation.x = smooth(rig.torso.rotation.x, lean - kick - glare * 0.22 + step * 0.12, 14, dt);
+  rig.torso.rotation.x = smooth(rig.torso.rotation.x, lean - kick - glare * 0.22 + step * 0.12 - flinch * 0.32, 14, dt);
   rig.torso.rotation.y = smooth(rig.torso.rotation.y, (moving ? s * 0.1 : 0) + (strike ? strike.twist : 0), strike ? 30 : 10, dt);
-  rig.torso.rotation.z = smooth(rig.torso.rotation.z, moving ? c * (running ? 0.05 : 0.035) : 0, 10, dt);
+  rig.torso.rotation.z = smooth(rig.torso.rotation.z, (moving ? c * (running ? 0.05 : 0.035) : 0) + flinch * 0.12, 10, dt);
+  // Respiration au repos : le buste gonfle à peine
+  const chest = moving ? 0 : breath * 0.012;
+  rig.torso.scale.set(1 + chest * 0.5, 1 + chest, 1 + chest * 0.5);
+  // Écrasement / étirement chibi : tassé à la pose du pied, étiré en l'air ; tassé aussi sous un coup
+  const squash = (moving ? Math.pow(1 - Math.abs(c), 4) * (running ? 0.07 : 0.045) - Math.abs(c) * (running ? 0.025 : 0.012) : 0) + flinch * 0.08;
+  rig.body.scale.set(1 + squash * 0.5, 1 - squash, 1 + squash * 0.5);
+
+  // Regard : coup d'œil de côté de temps en temps quand on attend
+  const calm = !moving && !strike && glare <= 0 && !a.aiming && flinch <= 0 && (weapon === 0 || a.reload <= 0);
+  m.idle = calm ? m.idle + dt : 0;
+  if (m.idle > 2.5) {
+    m.lookTimer -= dt;
+    if (m.lookTimer <= 0) {
+      m.look = m.look !== 0 ? 0 : (Math.random() < 0.5 ? -1 : 1) * (0.45 + Math.random() * 0.3);
+      m.lookTimer = m.look !== 0 ? 1.2 + Math.random() * 0.8 : 2 + Math.random() * 2.5;
+    }
+  } else {
+    m.look = 0;
+    m.lookTimer = 1.5;
+  }
   // La grosse tête compense l'inclinaison et dodeline un peu
-  rig.head.rotation.x = smooth(rig.head.rotation.x, HEAD_TILT - lean * 0.7 + glare * 0.12, 10, dt);
-  rig.head.rotation.z = smooth(rig.head.rotation.z, moving ? -c * 0.04 : 0, 8, dt);
-  rig.head.rotation.y = smooth(rig.head.rotation.y, strike ? -strike.twist * 0.5 : 0, 20, dt);
+  rig.head.rotation.x = smooth(rig.head.rotation.x, HEAD_TILT - lean * 0.7 + glare * 0.12 - flinch * 0.3 + (calm ? breath * 0.015 : 0), 10, dt);
+  rig.head.rotation.z = smooth(rig.head.rotation.z, (moving ? -c * 0.04 : 0) - m.look * 0.12 - flinch * 0.18, 8, dt);
+  rig.head.rotation.y = smooth(rig.head.rotation.y, strike ? -strike.twist * 0.5 : m.look, strike ? 20 : 6, dt);
+
+  // Clignement des yeux ; yeux plissés sous la douleur
+  m.blink -= dt;
+  if (m.blink < -0.12) m.blink = 2.2 + Math.random() * 3;
+  const lid = flinch > 0.25 ? 0.22 : m.blink < 0 ? 0.12 : 1;
+  for (const eye of rig.eyes) eye.scale.y = smooth(eye.scale.y, lid, 40, dt);
 
   // Lampe frontale poussée à fond pendant l'éblouissement, torche brandie, lentilles qui pulsent
-  const pulse = 1 + glare * (0.6 + 0.25 * Math.sin(performance.now() / 25));
+  const pulse = 1 + glare * (0.6 + 0.25 * Math.sin(m.time * 40));
   rig.headlamp.intensity = LAMP_INTENSITY * (1 + 3 * glare);
   rig.headlamp.angle = LAMP_ANGLE + 0.38 * glare;
   rig.lens.scale.setScalar(pulse);
   rig.torch.visible = glare > 0;
   rig.torchClip.visible = glare <= 0;
   rig.torchLens.scale.setScalar(pulse);
-  (rig.beam.material as MeshBasicMaterial).opacity = 0.26 * glare * (0.85 + 0.15 * Math.sin(performance.now() / 25));
+  (rig.beam.material as MeshBasicMaterial).opacity = 0.26 * glare * (0.85 + 0.15 * Math.sin(m.time * 40));
 
   // Traînée visible pendant la frappe
   const smear = window01(swingT, 0.3, 0.62);
@@ -683,4 +874,66 @@ export function animateOperator(rig: OperatorRig, input: OperatorAnimation, dt: 
       rig.dropped.active = false;
     }
   }
+
+  secondaryMotion(rig, moving, running, crouch, lean, s, c, dt);
+  footsteps(rig, moving, running, crouch, c, dt);
+}
+
+function spring(sp: Spring, target: number, stiffness: number, damping: number, dt: number): number {
+  sp.v += (target - sp.x) * stiffness * dt;
+  sp.v *= Math.exp(-damping * dt);
+  sp.x += sp.v * dt;
+  return sp.x;
+}
+
+/** Queue de cheval, sacoche et pans d'écharpe : ressorts entraînés par la foulée, l'inclinaison et les virages. */
+function secondaryMotion(rig: OperatorRig, moving: boolean, running: boolean, crouch: boolean, lean: number, s: number, c: number, dt: number): void {
+  const m = rig.motion;
+  const h = Math.min(dt, 0.05);
+  // Vitesse de rotation du corps (virages) : la queue et la sacoche partent à l'opposé
+  let dyaw = rig.root.rotation.y - m.yaw;
+  dyaw = Math.atan2(Math.sin(dyaw), Math.cos(dyaw));
+  m.yaw = rig.root.rotation.y;
+  m.turn = smooth(m.turn, h > 0 ? Math.max(-8, Math.min(8, dyaw / h)) : 0, 10, h);
+  const gait = moving ? (running ? 1 : crouch ? 0.4 : 0.6) : 0;
+
+  // Queue de cheval : rejetée en arrière à la course, rebondit à chaque pas
+  const tailBack = 0.1 + gait * 0.45 + lean * 0.6 - (moving ? Math.abs(c) * 0.25 * gait : 0);
+  rig.ponytail.rotation.x = 0.15 + spring(m.tail, tailBack, 150, 7, h);
+  rig.ponytail.rotation.z = spring(m.tailSide, s * 0.22 * gait - m.turn * 0.08, 110, 6, h);
+
+  // Sacoche : reste à la verticale quand le buste penche, ballotte avec la foulée
+  rig.satchel.rotation.x = spring(m.bag, -lean * 0.8 + (moving ? c * 0.14 * gait : 0), 120, 6, h);
+  rig.satchel.rotation.z = spring(m.bagSide, s * 0.2 * gait + m.turn * 0.06, 90, 5, h);
+
+  // Pans d'écharpe : pendent au repos, flottent derrière l'épaule à la course
+  for (let i = 0; i < rig.scarfTails.length; i++) {
+    const end = rig.scarfTails[i];
+    const flutter = Math.sin(m.time * (15 + i * 3) + i * 1.7) * (0.08 + 0.22 * gait);
+    end.rotation.x = smooth(end.rotation.x, gait * 1.25 + lean + flutter, 12, h);
+    end.rotation.z = smooth(end.rotation.z, (end.userData.rest as number) + gait * 0.35 + Math.sin(m.time * 11 + i) * 0.12 * gait, 10, h);
+  }
+}
+
+const FOOT = new Vector3();
+
+/** Petite bouffée de poussière quand un pied touche le sol (une sur deux accroupie). */
+function footsteps(rig: OperatorRig, moving: boolean, running: boolean, crouch: boolean, c: number, dt: number): void {
+  const container = rig.root.parent;
+  if (!container) return;
+  updateDust(container, dt);
+  const m = rig.motion;
+  const sign = c >= 0 ? 1 : -1;
+  const landed = moving && m.stepSign !== 0 && sign !== m.stepSign;
+  m.stepSign = moving ? sign : 0;
+  if (!landed || !dustEnabled()) return;
+  m.steps++;
+  if (crouch && m.steps % 2 === 1) return;
+  // c passe au positif : la jambe 0 se pose ; au négatif : la jambe 1
+  rig.legs[sign > 0 ? 0 : 1].knee.getWorldPosition(FOOT);
+  const yaw = rig.root.rotation.y;
+  const back = running ? 0.55 : 0.3;
+  const size = running ? 1.15 : crouch ? 0.5 : 0.8;
+  puffDust(container, FOOT.x, FOOT.z, size, -Math.sin(yaw) * back, -Math.cos(yaw) * back);
+  if (running) puffDust(container, FOOT.x - Math.sin(yaw) * 0.12, FOOT.z - Math.cos(yaw) * 0.12, 0.7, Math.cos(yaw) * 0.25 * sign, -Math.sin(yaw) * 0.25 * sign);
 }
