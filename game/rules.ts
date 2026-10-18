@@ -6,6 +6,8 @@ import { doorUnlocked, examinableAvailable } from "./investigation/world";
 export function interactableAvailable(def: InteractableDef, state: SiloState): boolean {
   if (def.kind) return !state.collected.includes(def.id);
   if (def.note) return true;
+  // Survivants : la disponibilité fine est tenue par game/content/people_director.ts.
+  if (def.talk) return true;
   if (def.examine) return examinableAvailable(def.examine, state);
   switch (def.id) {
     case "security_door": return !state.has("generator_powered");

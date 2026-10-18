@@ -60,7 +60,12 @@ export interface InteractableDef {
   note?: string;
   /** Objet d'enquête à examiner en gros plan (identifiant dans game/investigation/content). */
   examine?: string;
+  /** Survivant à qui parler (identifiant de game/content/people.ts : "cuisine", "operatrice", "radio_guerite"…). */
+  talk?: string;
 }
+
+/** Arrêt d'habitude sur un point de patrouille : durée (s) et orientation (lacet ; 0 = vers le sud, +Z). */
+export interface PatrolStop { seconds: number; yaw?: number }
 
 export interface EnemySpawn {
   id: string;
@@ -68,6 +73,16 @@ export interface EnemySpawn {
   x: number; z: number;
   /** Points de patrouille (dans la même salle). */
   patrol: [number, number][];
+  /** Arrêts de son habitude, par indice de point de patrouille (il « guette », tapote le moteur, frappe…). */
+  stops?: Record<number, PatrolStop>;
+  /** Qui c'était (docs/HISTOIRE_PROPOSITION.md § 7). */
+  resident?: string;
+  /** L'indice qu'il porte. */
+  carries?: string;
+  /** Son habitude. */
+  habit?: string;
+  /** Ne grogne jamais (Marceau, le Silencieux). */
+  silent?: boolean;
 }
 
 export const ROOMS: Room[] = [
@@ -177,17 +192,45 @@ export const INTERACTABLES: InteractableDef[] = [
   { id: "can_3", name: "Conserve", action: "Ramasser", x: -27, z: 4, radius: 0.35, kind: "can", amount: 1 },
 ];
 
+/**
+ * Les 5 mordus de l'étage 1 (docs/HISTOIRE_PROPOSITION.md § 7 ; décision de l'auteur : 5 au lieu de 10, tous
+ * évitables). Chacun était un habitant, refait une habitude et porte un indice ; figé ou abattu, « Examiner »
+ * ouvre son indice (examinables à `carrier`, game/investigation/content/objects.ts). Les pièces où l'on lit longtemps
+ * (dortoirs, hub, entrepôt, atelier, salle de contrôle, pièce cachée) n'ont pas de mordu.
+ * Identifiants gardés du plan précédent : walker_control devient l'infirmier (déplacé à l'infirmerie),
+ * walker_dorms devient Bérard (déplacé au couloir nord).
+ */
 export const ENEMIES: EnemySpawn[] = [
-  { id: "walker_ext", kind: "walker", x: 32, z: 38, patrol: [[32, 38], [38, 32], [28, 30]] },
-  { id: "crawler_ext", kind: "crawler", x: 40, z: 40, patrol: [[40, 40], [44, 34], [36, 42]] },
-  { id: "walker_gen", kind: "walker", x: -16, z: 29, patrol: [[-14, 29.5], [-29, 30.5], [-29, 22.5], [-29, 30.5]] },
-  { id: "walker_serre", kind: "walker", x: 22, z: 12, patrol: [[22, 12], [14, 16], [26, 18]] },
-  { id: "crawler_cafe", kind: "crawler", x: -22, z: 12, patrol: [[-22, 12], [-15, 16], [-28, 16]] },
-  { id: "walker_storage", kind: "walker", x: -20, z: -1, patrol: [[-20, -1], [-27, 3], [-14, -3]] },
-  { id: "walker_dorms", kind: "walker", x: -22, z: -12, patrol: [[-22, -12], [-28, -16], [-14, -9]] },
-  { id: "crawler_hub", kind: "crawler", x: 3, z: 3, patrol: [[3, 3], [-3, -3], [3, -3]] },
-  { id: "walker_control", kind: "walker", x: 20, z: -14, patrol: [[20, -14], [12, -12], [26, -18]] },
-  { id: "crawler_workshop", kind: "crawler", x: 30, z: 0, patrol: [[30, 0], [25, -4], [31, 4]] },
+  {
+    id: "walker_ext", kind: "walker", x: 32, z: 38, patrol: [[32, 38], [38, 32], [28, 30], [33.8, 41.6]],
+    stops: { 3: { seconds: 5, yaw: 0 } },
+    resident: "Le guetteur", carries: "Feuille d'expédition, pliée dans son brassard « GARDE »",
+    habit: "Il se poste face à la route et « guette », puis repart.",
+  },
+  {
+    id: "walker_gen", kind: "walker", x: -16, z: 29, patrol: [[-14, 29.5], [-22.3, 28.4], [-29, 30.5], [-29, 22.5], [-29, 30.5]],
+    stops: { 1: { seconds: 4.5, yaw: Math.PI } },
+    resident: "Marceau, le Silencieux", carries: "Bracelet « CHAMBRE 1 — DR O. » et alliance « M. — à ma Nuit »",
+    habit: "Il tapote le moteur, comme pour le régler. Aucun son.", silent: true,
+  },
+  {
+    id: "crawler_cafe", kind: "crawler", x: -18, z: 11.5, patrol: [[-16.5, 11.2], [-27.9, 17.2], [-22, 12.5]],
+    stops: { 1: { seconds: 3.5, yaw: -Math.PI / 2 } },
+    resident: "Le commis", carries: "Ticket de plateau « Chambre 1 — frapper deux fois, ne pas entrer. Dr O. »",
+    habit: "Il porte un plateau vide jusqu'à la chambre froide, le pose, frappe deux fois, repart.",
+  },
+  {
+    id: "walker_control", kind: "walker", x: 15.5, z: -4.9, patrol: [[15.5, -4.9], [20.9, -4.6], [21.3, 0.6], [17.4, 1.2], [17.4, 5.15], [15, 0.5]],
+    stops: { 4: { seconds: 4, yaw: 0 } },
+    resident: "L'infirmier", carries: "Montre arrêtée à 2 h 14, et un mot dans sa blouse",
+    habit: "Il fait le tour des lits, s'arrête devant l'armoire.",
+  },
+  {
+    id: "walker_dorms", kind: "walker", x: -0.7, z: -11.5, patrol: [[-0.7, -11.5], [0.9, -11.5]],
+    stops: { 0: { seconds: 3, yaw: Math.PI }, 1: { seconds: 3, yaw: Math.PI } },
+    resident: "Sgt Bérard", carries: "La page arrachée, dans la poche de poitrine, avec son sifflet",
+    habit: "Il garde encore la porte de l'étage 2, va et vient.",
+  },
 ];
 
 export const SPAWN = { x: 0, z: 41, yaw: Math.PI };

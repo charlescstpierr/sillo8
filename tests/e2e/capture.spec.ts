@@ -57,7 +57,7 @@ test("ordi : entrée, génératrice, hub et armes du bricoleur", async ({ page }
   await page.screenshot({ path: `${SHOTS}/sillo8-hub.png` });
 
   // Clé à molette sur le rampant du hub.
-  await step(page, 1, teleport(1.9, 1.9, Math.PI / 4) + "const z = engine.horde.get ? engine.horde.get('crawler_hub') : null; if (z) { z.x = 3; z.z = 3; }");
+  await step(page, 1, teleport(1.9, 1.9, Math.PI / 4) + "const z = engine.horde.get ? engine.horde.get('walker_dorms') : null; if (z) { z.x = 3; z.z = 3; }");
   await step(page, 4, "engine.input.mouseFiring = true;");
   const swing = await page.evaluate(() => (window as any).__silo.combat.swingTime);
   expect(swing).toBeGreaterThan(0);

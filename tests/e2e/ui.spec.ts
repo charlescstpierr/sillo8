@@ -340,7 +340,7 @@ test("sauvegarde automatique : lieu sûr seulement, jamais en danger, pause en a
   await place(page, 0, 15);
   await page.evaluate(() => {
     const engine = (window as any).__silo;
-    const z = engine.horde.get("walker_storage");
+    const z = engine.horde.get("walker_control");
     z.x = 0; z.z = 18; z.mode = "chase";
     engine.state.collect("part_1", "components", 1);
   });
@@ -350,7 +350,7 @@ test("sauvegarde automatique : lieu sûr seulement, jamais en danger, pause en a
   // … puis il l'est dès que le danger est écarté.
   await page.evaluate(() => {
     const engine = (window as any).__silo;
-    engine.horde.damage("walker_storage", 999, 0);
+    engine.horde.damage("walker_control", 999, 0);
     engine.state.health = 100;
   });
   await expect.poll(async () => (await slot(page, "safe"))?.collected ?? [], { timeout: 20_000 }).toContain("part_1");

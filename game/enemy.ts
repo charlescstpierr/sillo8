@@ -40,6 +40,14 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+/** Plus petit écart d'angle pour aller de `from` à `to` (−π → π). */
+function angleTo(from: number, to: number): number {
+  let diff = (to - from) % (Math.PI * 2);
+  if (diff > Math.PI) diff -= Math.PI * 2;
+  if (diff < -Math.PI) diff += Math.PI * 2;
+  return diff;
+}
+
 export interface Zombie {
   readonly id: string;
   readonly kind: ZombieKind;
@@ -79,6 +87,9 @@ export interface Zombie {
   rig: ZombieRig | null;
   shadow: Mesh | null;
   candidate: AimCandidate;
+  /** Arrêt d'habitude restant (s), et dernier point où il s'est arrêté (−1 : aucun). */
+  wait: number;
+  stopped: number;
 }
 
 export interface HordeOptions {
@@ -169,9 +180,10 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
       stunned: 0, patrolIndex: 0, destX: 0, destZ: 0, lastX: 0, lastZ: 0, searchRemaining: 0, senseRemaining: i * 0.033,
       attackRemaining: 0, seesTarget: false, hit: 0, attackVisual: 0, stride: i * 1.7, speed: 0, dead: -1, stuck: 0,
       freeze: 0, pushX: 0, pushZ: 0, room: -1, waypointX: spawn.x, waypointZ: spawn.z, rig: null, shadow: null, candidate: { id: spawn.id, x: spawn.x, z: spawn.z },
+      wait: 0, stopped: -1,
     };
     if (visuals) {
-      z.rig = buildZombie(spawn.kind);
+      z.rig = buildZombie(spawn.kind, spawn.id);
       root.add(z.rig.root);
       z.shadow = makeShadow(spawn.kind);
     }
@@ -198,6 +210,8 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
     z.dead = -1;
     z.stunned = z.hit = z.attackRemaining = z.attackVisual = z.searchRemaining = z.stuck = z.speed = 0;
     z.freeze = z.pushX = z.pushZ = 0;
+    z.wait = 0;
+    z.stopped = -1;
     z.patrolIndex = 0;
     z.seesTarget = false;
     const first = z.spawn.patrol[0] ?? [z.spawn.x, z.spawn.z];
@@ -230,6 +244,7 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
       z.destX = z.lastX = x;
       z.destZ = z.lastZ = zz;
       z.searchRemaining = INVESTIGATE_TIME;
+      z.wait = 0;
       z.stuck = 0;
     }
   }
@@ -248,6 +263,7 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
       z.lastX = ctx.player.x;
       z.lastZ = ctx.player.z;
       z.searchRemaining = 5;
+      z.wait = 0;
     } else if (z.mode === "chase" && !z.seesTarget) {
       z.mode = "search";
       z.destX = z.lastX;
@@ -271,7 +287,23 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
       case "patrol": {
         speed = spec.patrol;
         const patrol = z.spawn.patrol;
+        // Arrêt d'habitude (il guette, tapote le moteur, frappe…) : immobile, tourné vers ce qu'il « fait ».
+        if (z.wait > 0) {
+          z.wait -= dt;
+          const stop = z.spawn.stops?.[z.patrolIndex];
+          if (stop?.yaw !== undefined) z.yaw += angleTo(z.yaw, stop.yaw) * (1 - Math.exp(-5 * dt));
+          return 0;
+        }
+        if (patrol.length > 0 && Math.hypot(z.x - z.destX, z.z - z.destZ) < 0.7 && z.stuck <= 2.5 && z.stopped !== z.patrolIndex) {
+          const stop = z.spawn.stops?.[z.patrolIndex];
+          z.stopped = z.patrolIndex;
+          if (stop) {
+            z.wait = stop.seconds;
+            return 0;
+          }
+        }
         if (patrol.length > 0 && (Math.hypot(z.x - z.destX, z.z - z.destZ) < 0.7 || z.stuck > 2.5)) {
+          z.stopped = -1;
           z.patrolIndex = (z.patrolIndex + 1) % patrol.length;
           z.destX = patrol[z.patrolIndex][0];
           z.destZ = patrol[z.patrolIndex][1];
@@ -571,6 +603,18 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
 
     hearNoise(x, z, radius) {
       for (const zombie of zombies) hear(zombie, x, z, radius);
+    },
+
+    lure(id, x, z, seconds = INVESTIGATE_TIME) {
+      const zombie = byId.get(id);
+      if (!zombie || !zombie.alive || dormant || zombie.mode === "chase") return false;
+      zombie.mode = "investigate";
+      zombie.destX = zombie.lastX = x;
+      zombie.destZ = zombie.lastZ = z;
+      zombie.searchRemaining = seconds;
+      zombie.stuck = 0;
+      zombie.wait = 0;
+      return true;
     },
 
     aimCandidates() {
