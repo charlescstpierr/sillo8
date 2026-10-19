@@ -76,7 +76,7 @@ export const SPOTS = {
 const PATH_TO_HUB: [number, number][] = [[-29.35, 17.6], [-28.4, 17.3], [-12.6, 13.2], [-9, 13], [-9, 0.3], [-6.4, 0.3], [-4.2, 0.3], [SPOTS.cookHub.x, SPOTS.cookHub.z]];
 const WALK_SPEED = 1.9;
 
-type CookPhase = "home" | "toHub" | "hub" | "toCafe" | "m4" | "farewell";
+type CookPhase = "home" | "toHub" | "hub" | "toCafe" | "m4" | "rescued" | "farewell";
 
 export class PeopleDirector {
   readonly cook: SurvivorRig;
@@ -390,6 +390,12 @@ export class PeopleDirector {
         this.cookPhase = "toCafe";
         this.path = [...PATH_TO_HUB].reverse().slice(1);
         break;
+      case "cuisine_m4":
+        if (this.cookPhase === "rescued") {
+          this.cookPhase = "home";
+          this.placeCookHome();
+        }
+        break;
       case "cuisine_m5":
         if (s.knows("m5")) this.afterProof();
         break;
@@ -441,11 +447,13 @@ export class PeopleDirector {
     const end = (saved: boolean) => {
       markScene(s, "M4");
       this.cookPhase = "home";
-      this.placeCookHome();
       if (saved) {
         applyGesture(s, "sauvetage");
-        this.open("cuisine_m4");
+        // Il reste devant son commis le temps de la conversation ; il rentre ensuite (after).
+        if (this.open("cuisine_m4")) this.cookPhase = "rescued";
+        else this.placeCookHome();
       } else {
+        this.placeCookHome();
         this.gesture("fuite", "CUISINE");
       }
     };
@@ -529,7 +537,7 @@ export class PeopleDirector {
     // Pose : la confiance se lit sur le corps.
     let pose: SurvivorPose = level >= 2 ? "back" : level === 1 ? "hips" : level === 0 ? "chain" : "guard";
     if (this.cookPhase === "hub") pose = "accuse";
-    if (this.cookPhase === "m4") pose = "afraid";
+    if (this.cookPhase === "m4" || this.cookPhase === "rescued") pose = "afraid";
     if (this.cookPhase === "farewell") pose = "offer";
     const outside = this.cookPhase !== "home";
     // Hostile : derrière sa porte fermée, on ne le voit pas.

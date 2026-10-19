@@ -332,12 +332,18 @@ describe("directeur des personnes", () => {
     // (La horde n'avance pas dans ce test : on place le commis, revenu vers Cuisine.)
     [commis.x, commis.z] = [-24.5, 15];
     d.horde.damage("crawler_cafe", 0, 1.8);
-    d.tick(-20, 10, 0.2);
+    // (Une image : le moteur ne fait plus tourner le monde pendant la conversation.)
+    d.people.update(0.05, -20, 10);
     expect(commis.alive).toBe(true);
     expect(played(s, "M4")).toBe(true);
     expect(gestureDone(s, "sauvetage")).toBe(true);
     expect(d.opened.at(-1)).toBe("cuisine_m4");
     expect(cookLevel(s)).toBe(0);
+    // Pendant la conversation, il reste devant son commis ; ensuite, il rentre à sa porte.
+    expect(d.people.speakerSpot("cuisine_m4")?.x).toBeCloseTo(-26.9, 1);
+    d.close();
+    d.tick(-20, 10, 0.2);
+    expect(d.people.speakerSpot("cuisine")?.x).toBeCloseTo(-29.95, 1);
   });
 
   it("M4 : fuir la cafétéria laisse Cuisine face au commis (« Je le savais. »)", () => {

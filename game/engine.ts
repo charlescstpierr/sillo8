@@ -783,8 +783,10 @@ export class Engine {
       this.talkFree = freeScreenCenter(viewW, viewH);
     }
     if (!this.talkFree) return null;
-    // Un peu plus près de l'interlocuteur que de Lou : c'est lui qu'on regarde.
-    this.talkPoint.set(this.player.x * 0.35 + spot.x * 0.65, spot.y * 0.8, this.player.z * 0.35 + spot.z * 0.65);
+    // Entre Lou et l'interlocuteur, mais jamais à plus de 2,5 m de ce dernier : c'est lui qu'on regarde.
+    const away = Math.hypot(this.player.x - spot.x, this.player.z - spot.z);
+    const w = away > 0.01 ? Math.min(0.4, 2.5 / away) : 0;
+    this.talkPoint.set(spot.x + (this.player.x - spot.x) * w, spot.y * 0.8, spot.z + (this.player.z - spot.z) * w);
     this.tmp.set(this.player.x, 0, this.player.z);
     return frameGoal(this.camera, this.tmp, this.talkPoint, this.talkFree.x, this.talkFree.y, viewW, viewH, this.rig.distance, this.talkGoal);
   }

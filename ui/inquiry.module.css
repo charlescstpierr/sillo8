@@ -466,12 +466,13 @@
 }
 
 /* Avis du jeu arrivé pendant le gros plan (disjoncteur, bruit…) : petite ligne au-dessus des boutons. */
-/* Gros plan à énigme : l'avis recouvre le bas de la scène au lieu de prendre une ligne de plus. */
+/* Gros plan à énigme : l'avis recouvre le haut de la scène au lieu de prendre une ligne de plus (le bas des objets
+   garde souvent un détail à la loupe : la craie sous les leviers). */
 .closeupNotice[data-over-stage] {
   position: absolute;
   left: 8px;
   right: 8px;
-  bottom: 8px;
+  top: 8px;
   z-index: 2;
   pointer-events: none;
   background: rgba(20, 12, 6, 0.86);
