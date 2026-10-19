@@ -101,8 +101,8 @@ export class InquiryDirector {
   thoughtEl: HTMLElement | null = null;
 
   /** File des pensées, avec l'heure (horloge de lecture) à laquelle chacune a été demandée. */
-  private queue: { id: string; at: number; chained?: boolean }[] = [];
-  private current: { id: string; left: number } | null = null;
+  private queue: { id: string; at: number; chained?: boolean; urgent?: boolean }[] = [];
+  private current: { id: string; left: number; urgent?: boolean } | null = null;
   /** Horloge de lecture : avance en jeu et en gros plan, pas dans le carnet ni en pause. */
   private readClock = 0;
   private pending: Pending[] = [];
@@ -321,7 +321,7 @@ export class InquiryDirector {
     if (this.current) {
       this.current.left -= dt;
       // D'autres pensées attendent : celle-ci ne s'attarde pas.
-      if (this.queue.length && !this.queue[0].chained) this.current.left = Math.min(this.current.left, THOUGHT_TIMING.queuedDuration);
+      if (this.queue.length && !this.queue[0].chained && !this.current.urgent) this.current.left = Math.min(this.current.left, THOUGHT_TIMING.queuedDuration);
       if (this.current.left <= 0) {
         this.current = null;
         if (!this.queue.length) this.store.patch({ thought: null });
@@ -373,7 +373,7 @@ export class InquiryDirector {
     if (!t || this.record.thoughts.includes(id) || this.queue.some((q) => q.id === id) || this.current?.id === id) return;
     addOnce(this.record, "thoughts", id);
     if (urgent) {
-      this.queue.unshift({ id, at: this.readClock });
+      this.queue.unshift({ id, at: this.readClock, urgent: true });
       if (this.current) this.current.left = Math.min(this.current.left, 0.25);
     } else this.queue.push({ id, at: this.readClock });
     if (t.card) this.grantCard(t.card);
@@ -391,7 +391,7 @@ export class InquiryDirector {
     const id = head.id;
     const t = THOUGHTS.get(id) as Thought;
     const text = t.text ?? null;
-    this.current = { id, left: thoughtDuration(text) };
+    this.current = { id, left: thoughtDuration(text), urgent: head.urgent };
     this.store.patch({ thought: { id, text, key: this.clock + Math.random() } });
     if (t.then) {
       const next = THOUGHTS.get(t.then);

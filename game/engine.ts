@@ -886,7 +886,10 @@ function freeScreenCenter(viewW: number, viewH: number): { x: number; y: number 
     else if (sheet.top > viewH * 0.35) y1 = sheet.top;
     else return null;
   }
-  const rail = document.querySelector<HTMLElement>("[aria-label='Vie et lampe'], [aria-label='État du survivant']")?.getBoundingClientRect();
+  // Le bloc vie/lampe, s'il est vraiment à l'écran (en conversation, le HUD s'efface : il garde sa place mais ne cache rien).
+  const railEl = [...document.querySelectorAll<HTMLElement>("[aria-label='Vie et lampe'], [aria-label='État du survivant']")]
+    .find((el) => el.checkVisibility?.({ opacityProperty: true, visibilityProperty: true }) ?? el.offsetParent !== null);
+  const rail = railEl?.getBoundingClientRect();
   if (rail && rail.width > 0 && rail.right < x0 + (x1 - x0) * 0.4 && rail.bottom > y0 && rail.top < y1) x0 = Math.max(x0, rail.right + 8);
   if (x1 - x0 < 120 || y1 - y0 < 120) return null;
   return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };
