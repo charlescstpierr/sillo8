@@ -179,6 +179,17 @@ export class PeopleDirector {
     return def ? { x: def.x, z: def.z, y: 1 } : null;
   }
 
+  /**
+   * Scène à montrer pendant le jeu (la caméra s'y penche) : en M4, Cuisine et son commis, pour que le joueur voie
+   * la menace. null hors scène.
+   */
+  sceneFocus(): { x: number; z: number } | null {
+    if (this.cookPhase !== "m4") return null;
+    const commis = this.zombie("crawler_cafe");
+    if (!commis || !commis.alive) return { x: this.cookPos.x, z: this.cookPos.z };
+    return { x: (this.cookPos.x + commis.x) / 2, z: (this.cookPos.z + commis.z) / 2 };
+  }
+
   // ——— Disponibilité et touche E ———
 
   available(def: InteractableDef): boolean {

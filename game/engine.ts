@@ -731,8 +731,15 @@ export class Engine {
     // Ressenti du combat (game/combat.ts) : tremblement et à-coups de la caméra.
     this.combat.applyCamera(this.rig);
     const talk = this.dialogueFrame(dt);
+    const scene = talk ? null : this.people.sceneFocus();
     if (talk) this.rig.update(dt, talk, null, CAMERA.dialogueRate);
-    else this.rig.update(dt, this.tmp.set(this.player.x, 0, this.player.z), this.aimPoint);
+    else if (scene) {
+      // Scène en cours (M4) : la caméra se penche à mi-chemin vers elle (4 m au plus), Lou reste à l'écran.
+      const dx = scene.x - this.player.x;
+      const dz = scene.z - this.player.z;
+      const k = Math.min(0.5, 4 / Math.max(0.01, Math.hypot(dx, dz)));
+      this.rig.update(dt, this.tmp.set(this.player.x + dx * k, 0, this.player.z + dz * k), null, CAMERA.dialogueRate);
+    } else this.rig.update(dt, this.tmp.set(this.player.x, 0, this.player.z), this.aimPoint);
     // Ambiance de la pièce du joueur ; la lune suit le point visé pour garder des ombres nettes autour de lui.
     this.atmosphere.update({
       dt, x: this.player.x, z: this.player.z, focus: this.rig.focus, distance: this.rig.distance,
