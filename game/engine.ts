@@ -734,11 +734,12 @@ export class Engine {
     const scene = talk ? null : this.people.sceneFocus();
     if (talk) this.rig.update(dt, talk, null, CAMERA.dialogueRate);
     else if (scene) {
-      // Scène en cours (M4) : la caméra se penche à mi-chemin vers elle (4 m au plus), Lou reste à l'écran.
-      const dx = scene.x - this.player.x;
-      const dz = scene.z - this.player.z;
-      const k = Math.min(0.5, 4 / Math.max(0.01, Math.hypot(dx, dz)));
-      this.rig.update(dt, this.tmp.set(this.player.x + dx * k, 0, this.player.z + dz * k), null, CAMERA.dialogueRate);
+      // Scène en cours (M4) : la caméra cadre Lou et la scène ensemble (centre de leur boîte, 4 m au plus de Lou).
+      const { x, z } = this.player;
+      const dx = (Math.min(x, scene.x0) + Math.max(x, scene.x1)) / 2 - x;
+      const dz = (Math.min(z, scene.z0) + Math.max(z, scene.z1)) / 2 - z;
+      const k = Math.min(1, 4 / Math.max(0.01, Math.hypot(dx, dz)));
+      this.rig.update(dt, this.tmp.set(x + dx * k, 0, z + dz * k), null, CAMERA.dialogueRate);
     } else this.rig.update(dt, this.tmp.set(this.player.x, 0, this.player.z), this.aimPoint);
     // Ambiance de la pièce du joueur ; la lune suit le point visé pour garder des ombres nettes autour de lui.
     this.atmosphere.update({

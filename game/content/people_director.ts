@@ -42,7 +42,7 @@ export interface PeopleHost {
  * s'éloigner sans que ça compte comme une fuite : seulement hors de la cafétéria, après AWAY s (avec un avertissement).
  * Le commis patrouille près de Cuisine : même s'il est déjà à côté de lui, il ne l'atteint qu'après GRACE s.
  */
-export const M4_TIMING = { hold: 1.8, pace: 0.6, away: 4, reach: 1.1, grace: 6, limit: 35 };
+export const M4_TIMING = { hold: 2, pace: 0.6, away: 4, reach: 1.1, grace: 10, limit: 35 };
 
 /** Où se tiennent les survivants (positions réelles du décor, storyProps.ts). */
 export const SPOTS = {
@@ -183,11 +183,16 @@ export class PeopleDirector {
    * Scène à montrer pendant le jeu (la caméra s'y penche) : en M4, Cuisine et son commis, pour que le joueur voie
    * la menace. null hors scène.
    */
-  sceneFocus(): { x: number; z: number } | null {
+  sceneFocus(): { x0: number; z0: number; x1: number; z1: number } | null {
     if (this.cookPhase !== "m4") return null;
     const commis = this.zombie("crawler_cafe");
-    if (!commis || !commis.alive) return { x: this.cookPos.x, z: this.cookPos.z };
-    return { x: (this.cookPos.x + commis.x) / 2, z: (this.cookPos.z + commis.z) / 2 };
+    const xs = [this.cookPos.x];
+    const zs = [this.cookPos.z];
+    if (commis?.alive) {
+      xs.push(commis.x);
+      zs.push(commis.z);
+    }
+    return { x0: Math.min(...xs), x1: Math.max(...xs), z0: Math.min(...zs), z1: Math.max(...zs) };
   }
 
   // ——— Disponibilité et touche E ———
