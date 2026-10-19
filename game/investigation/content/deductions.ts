@@ -17,7 +17,7 @@ export const DEDUCTIONS: Deduction[] = [
     hints: [
       "Je n'ai pas bien regardé la porte de service.",
       "Et si je l'éclairais à la lampe UV ?",
-      // Proposé : le document ne donne pas de palier 3 pour X1.
+      // Validé par l'auteur : le document ne donne pas de palier 3 pour X1.
       "L'avis dit « par la porte de service ». Le seuil, à la lampe UV, dit autre chose.",
     ],
   },
@@ -39,7 +39,7 @@ export const DEDUCTIONS: Deduction[] = [
     text: "L'avis a été écrit pour cacher “M.”",
     unlocks: [{ kind: "word", word: "mensonge" }],
     hints: [
-      // Proposé : le document ne donne pas d'aide pour X4.
+      // Validé par l'auteur : le document ne donne pas d'aide pour X4.
       "L'avis officiel… qui l'a écrit ?",
       "Le tiroir du Dr Okafor cachait un brouillon.",
       "Le brouillon et l'avis disent la même chose. Sauf la marge.",
@@ -53,7 +53,7 @@ export const DEDUCTIONS: Deduction[] = [
     text: "On nourrissait quelqu'un dans une chambre condamnée.",
     unlocks: [{ kind: "examinable", id: "room1_cabinet" }],
     hints: [
-      // Proposé.
+      // Validé par l'auteur.
       "Une chambre « condamnée »… depuis quand, et pour qui ?",
       "Le commis de la cafétéria porte encore ses plateaux. Où allaient-ils ?",
       "« Chambre 1 : condamnée. » « Plateau — chambre 1. » Les deux ne peuvent pas être vrais.",
@@ -65,7 +65,7 @@ export const DEDUCTIONS: Deduction[] = [
     text: "Marceau était blessé au retour. Bérard a menti.",
     unlocks: [{ kind: "examinable", id: "a9" }],
     hints: [
-      // Proposé.
+      // Validé par l'auteur.
       "Qui revenait de l'expédition, et dans quel état ?",
       "La page arrachée de la génératrice : un crayon, ça appuie.",
       "« Marceau : RAS. » « Avant-bras bandé. » Un des deux ment.",
@@ -103,7 +103,7 @@ export const DEDUCTIONS: Deduction[] = [
     text: "Tout a commencé la nuit de l'orage, neuf jours avant moi, et personne n'est entré par là.",
     unlocks: [{ kind: "word", word: "neuf jours" }, { kind: "dialogue", id: "X8" }],
     hints: [
-      // Proposé.
+      // Validé par l'auteur.
       "Il dit que tout a commencé avec moi. Quand est-ce que tout a commencé ?",
       "Cuisine compte tout. Même les jours.",
       "Neuf traits sur sa porte. Moi, je suis arrivé ce matin.",
@@ -115,7 +115,7 @@ export const DEDUCTIONS: Deduction[] = [
     text: "Lila est sortie seule, avant la nuit, bien avant moi.",
     unlocks: [{ kind: "dialogue", id: "X10" }],
     hints: [
-      // Proposé.
+      // Validé par l'auteur.
       "Cette lanterne d'enfant, qui l'a posée aux épaves ?",
       "Lila a laissé une liste dans la serre.",
       "« Les poser près de la porte de service. Avant la nuit. » Et de petits pas qui sortent.",
@@ -142,7 +142,7 @@ export const DEDUCTIONS: Deduction[] = [
     text: "Ce n'était pas Lila.",
     unlocks: [{ kind: "fact", id: "lila_cleared" }],
     hints: [
-      // Proposé.
+      // Validé par l'auteur.
       "L'infirmier a vu quelqu'un, avec une lampe. Il a cru que c'était Lila.",
       "Lila a écrit sa nuit, sous un oreiller des dortoirs.",
       "« Ma lampe aussi est morte. » Celle qui passait avait une lampe allumée.",
@@ -155,7 +155,7 @@ export const DEDUCTIONS: Deduction[] = [
     // Nouvelle question à lui poser (« Pourquoi vous cacher ? ») : elle détourne la conversation.
     unlocks: [{ kind: "dialogue", id: "X6" }],
     hints: [
-      // Proposé.
+      // Validé par l'auteur.
       "Elle dit qu'elle est restée coincée. Par quoi ?",
       "Le courant est revenu. Regarde la porte du local technique, de près.",
       "Un loquet manuel, tourné de l'intérieur. « Coincée » ?",
