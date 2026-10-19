@@ -61,16 +61,16 @@ export const RADIO_GUERITE: Conversation = {
   start: "reponse",
   nodes: {
     reponse: {
-      // Proposé : la radio grésille encore, tout bas ; à Lou de répondre.
+      // Validé par l'auteur : la radio grésille encore, tout bas ; à Lou de répondre.
       lines: [{ who: "narration", text: "[La radio grésille encore, tout bas.]" }],
       choices: [
-        // Proposé : la réponse de Lou.
+        // Validé par l'auteur : la réponse de Lou.
         { text: "Allô ? Je suis là. Vous m'entendez ?", next: "silence" },
         { text: "[Écouter sans répondre]", next: "silence" },
       ],
     },
     silence: {
-      // Proposé (d'après § 4 : « Puis la pile de la radio meurt. Plus rien. »).
+      // Validé par l'auteur (d'après § 4 : « Puis la pile de la radio meurt. Plus rien. »).
       lines: [{ who: "narration", text: "[Un souffle. La pile de la radio meurt. Plus rien.]" }],
       effects: [{ flag: "radio_guerite" }],
     },
@@ -92,7 +92,7 @@ export const CUISINE_M1: Conversation = {
       effects: [{ flag: "cuisine_rencontre" }],
       choices: [
         { text: "J'ai faim, et j'en ai marre des pêches.", next: "chaine" },
-        // Proposé : seconde réponse possible.
+        // Validé par l'auteur : seconde réponse possible.
         { text: "Les mordus, ça ne parle pas.", next: "chaine_b" },
       ],
     },
@@ -110,7 +110,7 @@ export const CUISINE_M1: Conversation = {
     },
     chaine_b: {
       lines: [
-        // Proposé.
+        // Validé par l'auteur.
         { who: "narration", text: "(Un silence. Clic. La porte s'ouvre sur la chaîne : un œil, une moustache, la lame d'un couperet.)" },
         { who: "speaker", text: "Ça parle pas, non. T'es qui, toi ? T'es pas d'ici." },
         { who: "speaker", text: "Ça fait neuf jours que c'est mort, icitte. Pis là, ça se remet à marcher. Depuis que t'es là." },
@@ -129,7 +129,7 @@ export const CUISINE_M1: Conversation = {
       choices: [{ text: "Et toi, tu es qui ?", next: "nom" }, { text: "Je repasserai." }],
     },
     mensonge: {
-      // Proposé : réaction au mensonge (faux pas différé : la boue le contredira).
+      // Validé par l'auteur : réaction au mensonge (faux pas différé : la boue le contredira).
       lines: [
         { who: "speaker", text: "Mouais." },
         { who: "narration", text: "(Il plisse les yeux. Il te regarde les bottes.)" },

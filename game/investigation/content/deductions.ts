@@ -167,7 +167,7 @@ export const DEDUCTIONS: Deduction[] = [
     text: "“Ma Nuit”… c'est elle, sa femme.",
     unlocks: [{ kind: "word", word: "femme" }, { kind: "dialogue", id: "X7" }],
     hints: [
-      // Proposé.
+      // Validé par l'auteur.
       "Qui signe ses notes d'un nom qui n'en est pas un ?",
       "Une alliance, une photo signée « N. ». Pour qui ?",
       "« À ma Nuit. » « Opératrice de nuit. »",
@@ -180,7 +180,7 @@ export const DEDUCTIONS: Deduction[] = [
     // Nouvelle question à lui poser ; elle passe sur la défensive.
     unlocks: [{ kind: "fact", id: "operator_defensive" }, { kind: "dialogue", id: "X9" }],
     hints: [
-      // Proposé.
+      // Validé par l'auteur.
       "Elle dit avoir vu le voyant de la porte de service, la nuit de l'orage.",
       "Son propre cahier de relève dit ce qui s'est passé à 2 h 00.",
       "« 2 h 00 : orage, coupure. » Un voyant sans courant ?",
@@ -226,7 +226,7 @@ export const GENERIC: GenericThoughts = {
   ],
   almost: "Presque… un détail cloche.",
   tooFew: "Il me manque un morceau. Peut-être dans une pièce que je n'ai pas fouillée.",
-  // Proposé.
+  // Validé par l'auteur.
   already: "Ces deux-là, je les ai déjà reliées.",
 };
 
@@ -248,7 +248,7 @@ export const PUZZLES: Puzzle[] = [
     prompt: "Un circuit à la fois. Abaissez les leviers dans le bon ordre.",
     options: ["DORTOIRS", "CAFÉTÉRIA", "INFIRMERIE", "CONTRÔLE"],
     answer: ["DORTOIRS", "CAFÉTÉRIA", "INFIRMERIE", "CONTRÔLE"],
-    // Proposé : la pensée d'erreur (le document décrit seulement le disjoncteur).
+    // Validé par l'auteur : la pensée d'erreur (le document décrit seulement le disjoncteur).
     error: "Un circuit à la fois… et pas dans n'importe quel ordre.",
     onError: [
       { do: "sound", cue: "metal_clang", x: POS.levers.x, z: POS.levers.z },
