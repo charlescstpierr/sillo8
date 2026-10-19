@@ -10,7 +10,7 @@ import {
 } from "@/game/investigation/logic";
 import { emptyRecord, readRecord, recordOf, validRecord, type InquiryRecord } from "@/game/investigation/record";
 import { inCone, litFraction, overlaps, placeBubble, tracePoints } from "@/game/investigation/geometry";
-import { examinableAvailable } from "@/game/investigation/world";
+import { CARRIERS, examinableAvailable } from "@/game/investigation/world";
 import { interactableAvailable } from "@/game/rules";
 import { EXAMINABLE_DEFS } from "@/game/investigation/world";
 
@@ -157,6 +157,21 @@ describe("déblocages", () => {
     expect(examinableAvailable("okafor_drawer", s)).toBe(true);
     expect(interactableAvailable(def, s)).toBe(true);
     expect(examinableAvailable("inconnu", s)).toBe(false);
+  });
+
+  it("le ticket du commis n'est plus proposé une fois noté, tant que le commis est debout", () => {
+    const s = new SiloState();
+    CARRIERS.set("crawler_cafe", { x: 0, z: 0, ready: true, dropped: false });
+    try {
+      expect(examinableAvailable("note_tray_ticket", s)).toBe(true);
+      recordOf(s).cards.push("note_tray_ticket");
+      expect(examinableAvailable("note_tray_ticket", s)).toBe(false);
+      // Tombé au sol : le ticket se relit (il est posé, plus dans les mains d'un mordu).
+      CARRIERS.set("crawler_cafe", { x: 0, z: 0, ready: true, dropped: true });
+      expect(examinableAvailable("note_tray_ticket", s)).toBe(true);
+    } finally {
+      CARRIERS.delete("crawler_cafe");
+    }
   });
 });
 

@@ -1,7 +1,7 @@
 // Les personnes de l'étage 1 : conversations valides, confiance sans jauge (marches, plafonds, nom donné à Lou),
 // moments clés M1 à M7 déclenchés par conditions, fin d'étage selon les découvertes, sauvegarde.
 import { describe, expect, it } from "vitest";
-import { Scene } from "three";
+import { PerspectiveCamera, Scene } from "three";
 import { CONVERSATIONS, ConversationRun, checkConversation, conditionMet, fillText, speakerStatus, type Conversation } from "@/game/conversation";
 import {
   COOK, OPERATOR, applyGesture, cookLevel, cookName, exonerated, farewell, floorEnding, gestureDone, markScene,
@@ -263,6 +263,34 @@ function director() {
   const tick = (x: number, z: number, seconds = 0.1) => { for (let t = 0; t < seconds; t += 0.05) people.update(0.05, x, z); };
   return { state, horde, people, inquiry, opened, notices, close, tick, events };
 }
+
+describe("pensées en retard", () => {
+  it("une pensée qui attend trop longtemps son tour est abandonnée ; une pensée urgente passe devant", () => {
+    const d = director();
+    const camera = new PerspectiveCamera();
+    const frame = (seconds: number) => {
+      for (let t = 0; t < seconds; t += 0.1) d.inquiry.render(0.1, camera, null as never, { x: 0, z: 0, yaw: 0 }, 800, 600, "playing");
+    };
+    const plain = CONTENT.thoughts.filter((t) => t.text && !t.then && !t.card).slice(0, 5).map((t) => t.id);
+    for (const id of plain) d.inquiry.think(id);
+    frame(0.1);
+    expect(d.inquiry.store.get().thought?.id).toBe(plain[0]);
+    // Les suivantes sont écourtées (2,4 s chacune au plus) ; au bout de 6 s d'attente, elles sont abandonnées.
+    const seen = new Set<string>();
+    for (let i = 0; i < 120; i++) {
+      frame(0.1);
+      const id = d.inquiry.store.get().thought?.id;
+      if (id) seen.add(id);
+    }
+    // 1re, 2e, 3e : à temps ; la 4e attend 7,2 s, abandonnée ; la dernière demandée est gardée.
+    expect(seen.has(plain[2])).toBe(true);
+    expect(seen.has(plain[3])).toBe(false);
+    expect(seen.has(plain[4])).toBe(true);
+    d.inquiry.think("t_lampe_commis", true);
+    frame(0.4);
+    expect(d.inquiry.store.get().thought?.id).toBe("t_lampe_commis");
+  });
+});
 
 describe("directeur des personnes", () => {
   it("M1 en frappant, M2 au haut-parleur en sortant, M3 au hub (Cuisine sort et accuse), M4 avec le commis", () => {
