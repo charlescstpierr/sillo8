@@ -163,6 +163,21 @@ export class PeopleDirector {
     peopleNotices.length = 0;
   }
 
+  /**
+   * Où se tient l'interlocuteur d'une conversation (pour que la caméra le cadre) : Cuisine là où il est, sinon l'objet
+   * auquel on parle (interphone, radio, loquet…). null : une voix sans lieu (haut-parleur).
+   */
+  speakerSpot(conversation: string): { x: number; z: number; y: number } | null {
+    if (conversation.startsWith("cuisine")) {
+      if (!this.cook.root.visible && this.cookPhase === "home") return { x: SPOTS.cookTalk.x - 0.6, z: SPOTS.cookTalk.z, y: 1.2 };
+      const p = this.cook.root.position;
+      return { x: p.x, z: p.z, y: 1.3 };
+    }
+    if (conversation.startsWith("operatrice") && conversation !== "operatrice_m2") return { x: SPOTS.operatorTalk.x, z: SPOTS.operatorTalk.z, y: 1.2 };
+    const def = this.defs.find((d) => d.talk === conversation);
+    return def ? { x: def.x, z: def.z, y: 1 } : null;
+  }
+
   // ——— Disponibilité et touche E ———
 
   available(def: InteractableDef): boolean {

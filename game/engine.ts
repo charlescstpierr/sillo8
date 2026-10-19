@@ -3,7 +3,7 @@
 import {
   Clock, NeutralToneMapping, PCFShadowMap, PerspectiveCamera, Scene, SRGBColorSpace, Vector3, WebGLRenderer, type Mesh,
 } from "three";
-import { CAMERA, CameraRig } from "./camera";
+import { CAMERA, CameraRig, frameGoal } from "./camera";
 import { AIM_HEIGHT, assistTarget, groundPoint, yawTowards } from "./aim";
 import { InputState } from "./input";
 import { PlayerController } from "./player";
@@ -105,6 +105,11 @@ export class Engine {
   private readonly tmp = new Vector3();
   private readonly aimTmp = new Vector3();
   private readonly guideTmp = new Vector3();
+  /** Conversation : cible de la caméra (entre Lou et l'interlocuteur) et partie de l'écran laissée libre. */
+  private readonly talkGoal = new Vector3();
+  private readonly talkPoint = new Vector3();
+  private talkFree: { x: number; y: number } | null = null;
+  private talkFreeClock = 0;
   private resizeObserver: ResizeObserver | null = null;
   private hordeContext: HordeContext;
   private progressEffects: ProgressEffects;
@@ -725,7 +730,9 @@ export class Engine {
   private render(dt: number): void {
     // Ressenti du combat (game/combat.ts) : tremblement et à-coups de la caméra.
     this.combat.applyCamera(this.rig);
-    this.rig.update(dt, this.tmp.set(this.player.x, 0, this.player.z), this.aimPoint);
+    const talk = this.dialogueFrame(dt);
+    if (talk) this.rig.update(dt, talk, null, CAMERA.dialogueRate);
+    else this.rig.update(dt, this.tmp.set(this.player.x, 0, this.player.z), this.aimPoint);
     // Ambiance de la pièce du joueur ; la lune suit le point visé pour garder des ombres nettes autour de lui.
     this.atmosphere.update({
       dt, x: this.player.x, z: this.player.z, focus: this.rig.focus, distance: this.rig.distance,
@@ -743,6 +750,35 @@ export class Engine {
     }
     this.hudClock += dt;
     if (this.hudClock >= 0.1) this.publishHud();
+  }
+
+  /**
+   * Conversation ouverte : la caméra cadre Lou et son interlocuteur dans la partie de l'écran que ne couvrent ni la
+   * feuille de dialogue ni le bloc vie/lampe. null : pas de conversation, voix sans lieu, ou feuille plein écran.
+   */
+  private dialogueFrame(dt: number): Vector3 | null {
+    const ui = this.ui.get();
+    if (ui.mode !== "dialogue") {
+      this.talkFree = null;
+      this.talkFreeClock = 0;
+      return null;
+    }
+    const spot = this.people.speakerSpot(ui.character);
+    if (!spot) return null;
+    const viewW = this.canvas.clientWidth;
+    const viewH = this.canvas.clientHeight;
+    if (viewW < 1 || viewH < 1) return null;
+    // La feuille glisse à l'ouverture : on relit sa place quatre fois par seconde.
+    this.talkFreeClock -= dt;
+    if (this.talkFreeClock <= 0) {
+      this.talkFreeClock = 0.25;
+      this.talkFree = freeScreenCenter(viewW, viewH);
+    }
+    if (!this.talkFree) return null;
+    // Un peu plus près de l'interlocuteur que de Lou : c'est lui qu'on regarde.
+    this.talkPoint.set(this.player.x * 0.35 + spot.x * 0.65, spot.y * 0.8, this.player.z * 0.35 + spot.z * 0.65);
+    this.tmp.set(this.player.x, 0, this.player.z);
+    return frameGoal(this.camera, this.tmp, this.talkPoint, this.talkFree.x, this.talkFree.y, viewW, viewH, this.rig.distance, this.talkGoal);
   }
 
   /**
@@ -831,4 +867,27 @@ export class Engine {
     this.hudClock = 0;
     this.hud.set(this.snapshot());
   }
+}
+
+/**
+ * Centre de la partie de l'écran libre pendant une conversation : à gauche de la feuille (ordi) ou au-dessus
+ * (feuille en bas), sans le bloc vie/lampe. null si la feuille couvre presque tout (téléphone).
+ */
+function freeScreenCenter(viewW: number, viewH: number): { x: number; y: number } | null {
+  if (typeof document === "undefined") return null;
+  const sheet = document.querySelector<HTMLElement>("[data-sheet]")?.getBoundingClientRect();
+  let x0 = 0;
+  let x1 = viewW;
+  let y0 = 0;
+  let y1 = viewH;
+  if (sheet && sheet.width > 0) {
+    if (sheet.left > viewW * 0.35) x1 = sheet.left;
+    else if (sheet.right < viewW * 0.65) x0 = sheet.right;
+    else if (sheet.top > viewH * 0.35) y1 = sheet.top;
+    else return null;
+  }
+  const rail = document.querySelector<HTMLElement>("[aria-label='Vie et lampe'], [aria-label='État du survivant']")?.getBoundingClientRect();
+  if (rail && rail.width > 0 && rail.right < x0 + (x1 - x0) * 0.4 && rail.bottom > y0 && rail.top < y1) x0 = Math.max(x0, rail.right + 8);
+  if (x1 - x0 < 120 || y1 - y0 < 120) return null;
+  return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };
 }

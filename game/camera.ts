@@ -9,6 +9,8 @@ export const CAMERA = {
   maxDistance: 24,
   defaultDistance: 14,
   followRate: 6,
+  /** Conversation : la caméra glisse vers l'interlocuteur, plus lentement qu'en jeu. */
+  dialogueRate: 2.2,
   zoomRate: 10,
   lookAhead: 1.4,
   /** Tremblement : amplitude maximale (m) et vitesse du bruit. */
@@ -31,6 +33,40 @@ export function cameraOffset(distance: number, pitchDeg = CAMERA.pitchDeg): Vect
 
 export function clampDistance(distance: number): number {
   return Math.min(CAMERA.maxDistance, Math.max(CAMERA.minDistance, distance));
+}
+
+const FRAME_CAMERA = new PerspectiveCamera();
+const FRAME_POINT = new Vector3();
+
+/**
+ * Point que la caméra doit suivre pour que `point` (monde) tombe à l'écran en (sx, sy) px, la caméra gardant son
+ * angle, son objectif (`camera`) et sa distance. Quelques pas de Newton : en plongée fixe, la projection est presque
+ * linéaire (x écran ↔ x monde, y écran ↔ z monde).
+ */
+export function frameGoal(
+  camera: PerspectiveCamera, base: Vector3, point: Vector3, sx: number, sy: number, viewW: number, viewH: number,
+  distance: number, out = new Vector3(),
+): Vector3 {
+  const cam = FRAME_CAMERA;
+  cam.fov = camera.fov;
+  cam.aspect = viewW / viewH;
+  cam.near = camera.near;
+  cam.far = camera.far;
+  cam.updateProjectionMatrix();
+  const metersPerPx = (2 * distance * Math.tan((cam.fov * Math.PI) / 360)) / viewH;
+  const sinPitch = Math.sin((CAMERA.pitchDeg * Math.PI) / 180);
+  out.copy(base);
+  for (let i = 0; i < 3; i++) {
+    cam.position.copy(out).add(cameraOffset(distance));
+    cam.lookAt(out);
+    cam.updateMatrixWorld();
+    FRAME_POINT.copy(point).project(cam);
+    const px = (FRAME_POINT.x * 0.5 + 0.5) * viewW;
+    const py = (-FRAME_POINT.y * 0.5 + 0.5) * viewH;
+    out.x += (px - sx) * metersPerPx;
+    out.z += ((py - sy) * metersPerPx) / sinPitch;
+  }
+  return out;
 }
 
 export class CameraRig {
@@ -88,7 +124,8 @@ export class CameraRig {
     }
   }
 
-  update(dt: number, player: Vector3, aimPoint: Vector3 | null): void {
+  /** `rate` : vitesse de suivi (plus lente pour cadrer une conversation en douceur). */
+  update(dt: number, player: Vector3, aimPoint: Vector3 | null, rate = CAMERA.followRate): void {
     this.goal.copy(player);
     if (aimPoint) {
       const dx = aimPoint.x - player.x;
@@ -100,9 +137,9 @@ export class CameraRig {
         this.goal.z += (dz / length) * reach;
       }
     }
-    this.focus.x = damp(this.focus.x, this.goal.x, CAMERA.followRate, dt);
-    this.focus.y = damp(this.focus.y, this.goal.y, CAMERA.followRate, dt);
-    this.focus.z = damp(this.focus.z, this.goal.z, CAMERA.followRate, dt);
+    this.focus.x = damp(this.focus.x, this.goal.x, rate, dt);
+    this.focus.y = damp(this.focus.y, this.goal.y, rate, dt);
+    this.focus.z = damp(this.focus.z, this.goal.z, rate, dt);
     this.distance = damp(this.distance, this.desiredDistance, CAMERA.zoomRate, dt);
     this.updateShake(dt);
     this.apply();

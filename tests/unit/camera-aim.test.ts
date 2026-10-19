@@ -1,7 +1,7 @@
 // Caméra en plongée et visée : nouveaux tests de la version vue de dessus.
 import { describe, expect, it } from "vitest";
 import { PerspectiveCamera, Vector3 } from "three";
-import { CAMERA, CameraRig, cameraOffset, clampDistance, damp } from "@/game/camera";
+import { CAMERA, CameraRig, cameraOffset, clampDistance, damp, frameGoal } from "@/game/camera";
 import { AIM_HEIGHT, angleDifference, assistTarget, groundPoint, turnTowards, yawTowards } from "@/game/aim";
 
 function rig() {
@@ -57,6 +57,21 @@ describe("caméra", () => {
     expect(r.desiredDistance).toBe(CAMERA.maxDistance);
     expect(clampDistance(-5)).toBe(CAMERA.minDistance);
     expect(damp(0, 10, 5, 0)).toBe(0);
+  });
+});
+
+describe("cadrage d'une conversation", () => {
+  it("pose l'interlocuteur au centre de la partie libre de l'écran (à gauche de la feuille)", () => {
+    const camera = new PerspectiveCamera(CAMERA.fov, 1280 / 720, 0.1, 200);
+    const speaker = new Vector3(4, 1.3, -2);
+    const goal = frameGoal(camera, new Vector3(0, 0, 0), speaker, 380, 360, 1280, 720, CAMERA.defaultDistance);
+    const rig = new CameraRig(camera);
+    camera.aspect = 1280 / 720;
+    camera.updateProjectionMatrix();
+    rig.snap(goal);
+    const p = speaker.clone().project(camera);
+    expect((p.x * 0.5 + 0.5) * 1280).toBeCloseTo(380, -1);
+    expect((-p.y * 0.5 + 0.5) * 720).toBeCloseTo(360, -1);
   });
 });
 
