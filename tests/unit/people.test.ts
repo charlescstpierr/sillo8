@@ -360,6 +360,22 @@ describe("directeur des personnes", () => {
     expect(d.notices).toContain("CUISINE : « Je le savais. »");
   });
 
+  it("M4 : le commis déjà près de Cuisine laisse quand même à Lou le temps de sortir sa lampe", () => {
+    const d = director();
+    const s = d.state;
+    s.facts.push("generator_powered");
+    for (const m of ["M1", "M2", "M3"] as const) markScene(s, m);
+    const commis = d.horde.get("crawler_cafe")!;
+    [commis.x, commis.z] = [-27.3, 16.9];
+    d.tick(-22, 14, 0.2);
+    d.tick(-22, 14, 3);
+    expect(played(s, "M4")).toBe(false);
+    d.horde.damage("crawler_cafe", 0, 1.8);
+    d.tick(-22, 14, 0.2);
+    expect(played(s, "M4")).toBe(true);
+    expect(gestureDone(s, "sauvetage")).toBe(true);
+  });
+
   it("le bruit près de la cafétéria fâche Cuisine ; refermer la porte promise le radoucit", () => {
     const d = director();
     const s = d.state;

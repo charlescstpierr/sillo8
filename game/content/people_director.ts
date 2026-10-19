@@ -40,8 +40,9 @@ export interface PeopleHost {
 /**
  * M4 : le commis s'arrête net à son entrée (HOLD s), puis revient vers Cuisine à PACE de son allure. Lou peut
  * s'éloigner sans que ça compte comme une fuite : seulement hors de la cafétéria, après AWAY s (avec un avertissement).
+ * Le commis patrouille près de Cuisine : même s'il est déjà à côté de lui, il ne l'atteint qu'après GRACE s.
  */
-export const M4_TIMING = { hold: 1.8, pace: 0.6, away: 4, reach: 1.1, limit: 35 };
+export const M4_TIMING = { hold: 1.8, pace: 0.6, away: 4, reach: 1.1, grace: 6, limit: 35 };
 
 /** Où se tiennent les survivants (positions réelles du décor, storyProps.ts). */
 export const SPOTS = {
@@ -444,7 +445,7 @@ export class PeopleDirector {
       }
       if (this.m4.away > M4_TIMING.away) return end(false);
     } else this.m4.away = 0;
-    if (distance < M4_TIMING.reach) return end(false);
+    if (distance < M4_TIMING.reach && this.m4.t > M4_TIMING.grace) return end(false);
     if (this.m4.t > M4_TIMING.limit) return end(true);
     // Fidèle à son habitude, il revient vers son ancien patron (lentement : il traîne son plateau).
     if (this.m4.lure <= 0) {
