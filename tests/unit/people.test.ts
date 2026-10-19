@@ -78,6 +78,9 @@ describe("conversations des personnes", () => {
     expect(cookName(s)).toBe("Lou");
     expect(fillText("{Nom}. Entre, entre.", COOK, s)).toBe("Lou. Entre, entre.");
     expect(speakerStatus(COOK, s).gesture).toContain("tourne le dos");
+    // Au départ (M7), l'état suit la scène : il tend des pêches, il ne fouille pas son étagère.
+    expect(speakerStatus(COOK, s, "cuisine_m7").gesture).toContain("pêches");
+    expect(speakerStatus(COOK, s, "cuisine_m7").gesture).not.toContain("tourne le dos");
   });
 });
 

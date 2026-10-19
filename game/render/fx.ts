@@ -4,7 +4,7 @@
 import {
   AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, ConeGeometry, DoubleSide, Group, IcosahedronGeometry,
   Color, Mesh, MeshBasicMaterial, OctahedronGeometry, PlaneGeometry, PointLight, Points, PointsMaterial, RingGeometry,
-  ShaderMaterial, Sprite, SpriteMaterial, Vector3, type ColorRepresentation, type Texture,
+  ShaderMaterial, Sprite, SpriteMaterial, Vector3, type Camera, type ColorRepresentation, type Texture,
 } from "three";
 import { CAMERA } from "../camera";
 import { COMFORT } from "../comfort";
@@ -22,6 +22,7 @@ interface Label { sprite: Sprite; material: SpriteMaterial; canvas: HTMLCanvasEl
 interface Dizzy { root: Group; stars: Mesh[]; swirl: Mesh; id: string; life: number; height: number; }
 
 /** Le clou laisse un trait complet du canon à l'impact pendant 2 à 3 images, qui s'efface. */
+const RECT_TMP = new Vector3();
 const TRACER_LIFE = 0.1;
 const RING_LIFE = 0.24;
 /** Lampe : portée et demi-angle du cône (mêmes valeurs que le combat). */
@@ -876,6 +877,26 @@ export class CombatFx {
     c.mesh.rotateZ(Math.random() * Math.PI * 2);
     c.mesh.scale.setScalar(0.15 + Math.random() * 0.06);
     c.mesh.visible = true;
+  }
+
+  /**
+   * Rectangles à l'écran (px) des étiquettes « +1 … » encore visibles, jusqu'au haut de leur montée : la bulle de
+   * pensée de Lou les évite.
+   */
+  labelRects(camera: Camera, viewW: number, viewH: number): { x: number; y: number; w: number; h: number }[] {
+    const rects: { x: number; y: number; w: number; h: number }[] = [];
+    for (const l of this.labels) {
+      if (l.life <= 0) continue;
+      const half = l.width / 2;
+      const corners = [
+        RECT_TMP.set(l.base.x - half, l.base.y - l.width * 0.2, l.base.z).project(camera).clone(),
+        RECT_TMP.set(l.base.x + half, l.base.y + l.rise + l.width * 0.2, l.base.z).project(camera).clone(),
+      ];
+      const xs = corners.map((c) => (c.x * 0.5 + 0.5) * viewW);
+      const ys = corners.map((c) => (-c.y * 0.5 + 0.5) * viewH);
+      rects.push({ x: Math.min(...xs), y: Math.min(...ys), w: Math.abs(xs[1] - xs[0]), h: Math.abs(ys[1] - ys[0]) });
+    }
+    return rects;
   }
 
   /** Étiquette en papier qui monte : redessinée seulement à l'apparition (événement, pas chaque image). */

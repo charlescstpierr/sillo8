@@ -1873,6 +1873,14 @@
   --tilt: 0.7deg;
 }
 
+/* Ordi : feuille plus large, boutons sur une ligne ; « Menu principal » visible sans défiler (1280 × 720). */
+@media (min-width: 900px) {
+  .conclusion { width: min(780px, 100%); }
+  .conclusion .bigStamp { margin: 2px 0 8px; }
+  .conclusion .text { margin-bottom: 8px; }
+  .conclusion .buttons { display: grid; grid-template-columns: 1.3fr 1.3fr 1fr; gap: 10px; }
+}
+
 /* ——— Téléphone (paysage) ——— */
 
 @media (max-height: 480px), (max-width: 640px) {
@@ -2103,4 +2111,10 @@
 
 .slotText em {
   color: rgba(58, 42, 28, 0.75);
+}
+
+/* Tableau d'enquête au téléphone (portrait) : « Fermer » tout court, pour tenir sur la ligne des outils. */
+.closeExtra { white-space: pre; }
+@media (max-width: 640px) and (min-height: 481px) {
+  [data-board-close] .closeExtra { display: none; }
 }

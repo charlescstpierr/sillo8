@@ -37,6 +37,8 @@ export interface InquiryHost {
   colliders?(): readonly Box[];
   /** Où est ce mordu (identifiant de ENEMIES) ? null s'il n'existe pas dans le monde. */
   locate?(enemy: string): { x: number; z: number; alive: boolean; frozen: boolean } | null;
+  /** Zones de l'écran (px) que la bulle de pensée ne doit pas couvrir en plus de l'interface : objet visé, « +1 … ». */
+  avoid?(viewW: number, viewH: number): Rect[];
 }
 
 export interface ThoughtShown {
@@ -76,6 +78,13 @@ export class InquiryStore {
 /** Durée d'affichage d'une pensée (2 à 4,5 s selon la longueur ; un silence est bref). */
 export const thoughtDuration = (text: string | null) => (text ? Math.min(4.5, Math.max(2.2, 1.2 + text.length * 0.045)) : 1.8);
 
+/**
+ * Pensées en retard : une pensée qui attend son tour plus de STALE_AFTER s (temps de lecture : jeu et gros plan) a
+ * perdu son à-propos ; elle est abandonnée (sa carte, s'il y en a une, est déjà au carnet). Quand d'autres pensées
+ * attendent, celle qui s'affiche est raccourcie à QUEUED_DURATION s au plus.
+ */
+export const THOUGHT_TIMING = { staleAfter: 6, queuedDuration: 2.4 };
+
 interface Pending { at: number; run: () => void }
 
 const THOUGHTS = new Map(CONTENT.thoughts.map((t) => [t.id, t]));
@@ -91,8 +100,11 @@ export class InquiryDirector {
   /** Bulle de pensée (élément posé par React). */
   thoughtEl: HTMLElement | null = null;
 
-  private queue: string[] = [];
+  /** File des pensées, avec l'heure (horloge de lecture) à laquelle chacune a été demandée. */
+  private queue: { id: string; at: number; chained?: boolean }[] = [];
   private current: { id: string; left: number } | null = null;
+  /** Horloge de lecture : avance en jeu et en gros plan, pas dans le carnet ni en pause. */
+  private readClock = 0;
   private pending: Pending[] = [];
   private clock = 0;
   private uv = false;
@@ -305,8 +317,11 @@ export class InquiryDirector {
       this.toastAge += dt;
       if (this.toastAge > 2.8) this.store.patch({ toast: null });
     }
+    this.readClock += dt;
     if (this.current) {
       this.current.left -= dt;
+      // D'autres pensées attendent : celle-ci ne s'attarde pas.
+      if (this.queue.length && !this.queue[0].chained) this.current.left = Math.min(this.current.left, THOUGHT_TIMING.queuedDuration);
       if (this.current.left <= 0) {
         this.current = null;
         if (!this.queue.length) this.store.patch({ thought: null });
@@ -338,7 +353,8 @@ export class InquiryDirector {
     const h = el.offsetHeight || 60;
     // Lou lui-même : la bulle ne doit pas le cacher.
     const self = { x: hx - 30, y: hy - 8, w: 60, h: 100 };
-    const place = placeBubble(hx, hy, w, h, viewW, viewH, [...this.obstacles, self]);
+    const world = this.host.avoid?.(viewW, viewH) ?? [];
+    const place = placeBubble(hx, hy, w, h, viewW, viewH, [...this.obstacles, ...world, self]);
     el.style.transform = `translate(${Math.round(place.x)}px, ${Math.round(place.y)}px)`;
     // Pointe de la bulle vers la tête.
     el.dataset.side = place.side satisfies BubbleSide;
@@ -348,18 +364,31 @@ export class InquiryDirector {
 
   // ——— Pensées ———
 
-  /** Met une pensée en file (une seule fois par partie). */
-  think(id: string): void {
+  /**
+   * Met une pensée en file (une seule fois par partie). `urgent` : elle passe devant les autres et écourte celle
+   * qui s'affiche (pensée liée à un danger immédiat, comme le commis de M4).
+   */
+  think(id: string, urgent = false): void {
     const t = THOUGHTS.get(id);
-    if (!t || this.record.thoughts.includes(id) || this.queue.includes(id) || this.current?.id === id) return;
+    if (!t || this.record.thoughts.includes(id) || this.queue.some((q) => q.id === id) || this.current?.id === id) return;
     addOnce(this.record, "thoughts", id);
-    this.queue.push(id);
+    if (urgent) {
+      this.queue.unshift({ id, at: this.readClock });
+      if (this.current) this.current.left = Math.min(this.current.left, 0.25);
+    } else this.queue.push({ id, at: this.readClock });
     if (t.card) this.grantCard(t.card);
     this.host.state.markChanged();
   }
 
   private showNext(): void {
-    const id = this.queue.shift()!;
+    // Les pensées en retard sur leur déclencheur sont abandonnées (on garde au moins la dernière demandée).
+    while (this.queue.length > 1 && this.readClock - this.queue[0].at > THOUGHT_TIMING.staleAfter) this.queue.shift();
+    const head = this.queue.shift()!;
+    if (this.readClock - head.at > THOUGHT_TIMING.staleAfter * 2) {
+      if (!this.queue.length) this.store.patch({ thought: null });
+      return;
+    }
+    const id = head.id;
     const t = THOUGHTS.get(id) as Thought;
     const text = t.text ?? null;
     this.current = { id, left: thoughtDuration(text) };
@@ -368,7 +397,7 @@ export class InquiryDirector {
       const next = THOUGHTS.get(t.then);
       if (next && !this.record.thoughts.includes(next.id)) {
         addOnce(this.record, "thoughts", next.id);
-        this.queue.unshift(next.id);
+        this.queue.unshift({ id: next.id, at: this.readClock + thoughtDuration(text), chained: true });
         if (next.card) this.grantCard(next.card);
       }
     }

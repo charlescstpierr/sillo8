@@ -33,8 +33,8 @@ export function JournalSheet({ engine, initial, touch }: { engine: Engine; initi
   };
   const note = selected ? NOTES[selected] : null;
   const close = (
-    <PaperButton variant="primary" autoFocus={!touch} hotkey={touch ? undefined : view === "plan" ? "M" : "J"} onClick={() => engine.resume()}>
-      Fermer le carnet
+    <PaperButton variant="primary" aria-label="Fermer le carnet" autoFocus={!touch} hotkey={touch ? undefined : view === "plan" ? "M" : "J"} onClick={() => engine.resume()}>
+      Fermer<span className={styles.closeExtra}> le carnet</span>
     </PaperButton>
   );
   return (

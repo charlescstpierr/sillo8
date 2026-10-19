@@ -205,7 +205,9 @@ function Closeup({ engine, exam, touch }: { engine: Engine; exam: Examinable; to
   const next = details.findIndex((_, i) => !revealed[i]);
   const cue = next >= 0 ? details[next].cue : null;
   const face = back && exam.closeup.back ? exam.closeup.back : exam.closeup.front;
-  const artProps = { pitch, revealed };
+  // inquiry.version change à chaque progrès : le dessin suit l'énigme (cadenas ouvert…).
+  const solved = Boolean(exam.puzzle && inquiry.version >= 0 && engine.inquiry.puzzleSolved(exam.puzzle));
+  const artProps = { pitch, revealed, solved };
   const objectStyle: CSSProperties = {
     aspectRatio: String(exam.closeup.aspect),
     ["--aspect" as string]: String(exam.closeup.aspect),
@@ -249,7 +251,9 @@ function Closeup({ engine, exam, touch }: { engine: Engine; exam: Examinable; to
             </Lens>
           ) : null}
         </div>
-        {!loupe ? <span className={styles.stageHint} aria-hidden>{touch ? "glisser pour tourner · pincer pour zoomer" : "glisser pour tourner · molette pour zoomer"}</span> : null}
+        {/* Énigme : l'avis se pose sur la scène (sans pousser la pensée de Lou hors de la vue au téléphone). */}
+        {notice && exam.puzzle ? <p key={notice.id} className={styles.closeupNotice} data-over-stage role="status" data-testid="closeup-notice">{frenchSpaces(notice.text)}</p> : null}
+        {!loupe && !(notice && exam.puzzle) ? <span className={styles.stageHint} aria-hidden>{touch ? "glisser pour tourner · pincer pour zoomer" : "glisser pour tourner · molette pour zoomer"}</span> : null}
       </div>
 
       <div className={styles.closeupInfo}>
@@ -262,7 +266,7 @@ function Closeup({ engine, exam, touch }: { engine: Engine; exam: Examinable; to
       </div>
 
       <div className={styles.tools}>
-        {notice ? <p key={notice.id} className={styles.closeupNotice} role="status" data-testid="closeup-notice">{frenchSpaces(notice.text)}</p> : null}
+        {notice && !exam.puzzle ? <p key={notice.id} className={styles.closeupNotice} role="status" data-testid="closeup-notice">{frenchSpaces(notice.text)}</p> : null}
         <button type="button" className={styles.tool} onClick={() => setZoom((z) => clamp(z - 0.3, 1, 2.4))} aria-label="Dézoomer" disabled={zoom <= 1}>−</button>
         <button type="button" className={styles.tool} onClick={() => setZoom((z) => clamp(z + 0.3, 1, 2.4))} aria-label="Zoomer" disabled={zoom >= 2.4}>+</button>
         {hasBack ? (

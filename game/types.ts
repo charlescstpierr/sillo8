@@ -34,6 +34,8 @@ export interface Horde {
    * revient vers son ancien patron, scène M4). Sans effet s'il poursuit déjà le joueur. Vrai s'il y va.
    */
   lure?(id: string, x: number, z: number, seconds?: number): boolean;
+  /** Arrête un mordu sur place `seconds` s, sans l'étourdir (facultatif ; mise en scène, ex. le commis en M4). */
+  hold?(id: string, seconds: number): void;
   /** Zombies vivants, pour la visée assistée, la clé à molette et la lampe. */
   aimCandidates(): AimCandidate[];
   /** Premier zombie touché par un rayon horizontal partant de (x, z) dans la direction (dx, dz) normalisée. */

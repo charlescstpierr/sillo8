@@ -112,15 +112,15 @@ export function InquiryBoard({ engine, touch, close }: { engine: Engine; touch: 
         <h1 className={styles.boardTitle}>Tableau d&apos;enquête</h1>
         <span className={styles.boardCount}>{record.cards.length} indice{record.cards.length > 1 ? "s" : ""} · {record.deductions.length} déduction{record.deductions.length > 1 ? "s" : ""}</span>
         <div className={styles.boardTools}>
-          <button type="button" className={styles.boardTool} aria-pressed={linking} onClick={() => { setLinking((l) => !l); setFirst(null); setExpanded(null); }}>
+          <button type="button" className={styles.boardTool} aria-pressed={linking} aria-label={linking ? "Annuler" : "Relier deux cartes"} onClick={() => { setLinking((l) => !l); setFirst(null); setExpanded(null); }}>
             <ThreadIcon />
-            <span>{linking ? "Annuler" : "Relier deux cartes"}</span>
+            {linking ? <span>Annuler</span> : <span>Relier<span className={styles.longLabel}> deux cartes</span></span>}
           </button>
           <button type="button" className={styles.boardTool} data-suggested={inquiry.hintSuggested || undefined} onClick={think}>
             <BulbIcon />
             <span>Réfléchir</span>
           </button>
-          <div className={styles.boardClose} data-touch={touch || undefined}>{close}</div>
+          <div className={styles.boardClose} data-touch={touch || undefined} data-board-close>{close}</div>
         </div>
         {linking ? (
           <p className={styles.linkHelp} role="note">{first ? <>Et maintenant, la carte qui <b>contredit</b> « {INDEX.cards.get(first)?.title} ».</> : <>Touchez une carte, puis celle qui la <b>contredit</b>.</>}</p>
@@ -243,8 +243,14 @@ function SentenceBox(props: {
   const { d, solved, fresh, words, activeSlot, bank, clues } = props;
   const parts = parseSentence(d.text);
   const full = words.every((w) => w !== null);
+  // Phrase tout juste résolue : le tampon « Résolu » vient à l'écran, sous la barre des outils (scroll-margin).
+  const ref = useRef<HTMLDivElement>(null);
+  const freshKey = fresh?.key;
+  useEffect(() => {
+    if (freshKey !== undefined) ref.current?.scrollIntoView({ block: "nearest" });
+  }, [freshKey]);
   return (
-    <div className={styles.sentence} data-solved={solved || undefined} aria-label={`Phrase à compléter : ${d.title}`}>
+    <div ref={ref} className={styles.sentence} data-solved={solved || undefined} aria-label={`Phrase à compléter : ${d.title}`}>
       <p className={styles.sentenceLabel}>{d.title}</p>
       <p className={styles.sentenceText}>
         {parts.map((p, i) => {

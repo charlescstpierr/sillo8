@@ -63,7 +63,7 @@ export function DialogueSheet({ engine, conversation, touch }: { engine: Engine;
 
   const speaker = data.speaker;
   // Sans jauge : le nom qu'on donne à Lou, ce que fait le corps (recalculés à chaque réplique).
-  const status = speakerStatus(speaker.id, engine.state);
+  const status = speakerStatus(speaker.id, engine.state, conversation);
   const calls = status.calls ? (status.calls === "…" ? "Elle ne t'appelle plus. Un silence." : speaker.id === "operatrice" ? `Elle t'appelle « ${status.calls} »` : `Il t'appelle « ${status.calls} »`) : "";
   return (
     <section className={styles.dialogue} aria-label={`Conversation avec ${speaker.name}`} data-sheet>

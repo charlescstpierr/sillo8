@@ -219,6 +219,9 @@
 
 .leverLabel {
   max-width: 100%;
+  /* Assez de hauteur pour l'accent des capitales (CAFÉTÉRIA, CONTRÔLE) : overflow les rognait. */
+  padding-top: 2px;
+  line-height: 1.45;
   overflow: hidden;
   font-family: var(--font-stamp, "Special Elite", monospace);
   font-size: 11px;

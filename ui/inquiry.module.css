@@ -466,6 +466,17 @@
 }
 
 /* Avis du jeu arrivé pendant le gros plan (disjoncteur, bruit…) : petite ligne au-dessus des boutons. */
+/* Gros plan à énigme : l'avis recouvre le bas de la scène au lieu de prendre une ligne de plus. */
+.closeupNotice[data-over-stage] {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  pointer-events: none;
+  background: rgba(20, 12, 6, 0.86);
+}
+
 .closeupNotice {
   flex: 1 1 100%;
   margin: 0;
@@ -1055,12 +1066,32 @@
   .boardClose > * { min-height: 38px; font-size: 14px; }
 }
 
+/*
+ * Téléphone portrait : barre compacte (titre et compte sur une ligne, les trois outils sur une autre, libellés
+ * courts) ; phrases à trous et fils en pleine largeur, le tampon posé dans la ligne du libellé.
+ */
 @media (max-width: 640px) and (min-height: 481px) {
-  .boardBar { grid-template-columns: minmax(0, 1fr); }
-  .boardCount { text-align: left; }
+  .boardBar { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; padding: 6px 8px 6px; }
+  .boardTitle { font-size: 18px; }
+  .boardCount { text-align: right; }
+  .boardTools { flex-wrap: nowrap; gap: 6px; }
+  .boardTool { min-height: 40px; padding: 2px 9px 2px 7px; gap: 4px; }
+  .boardTool svg { width: 19px; height: 19px; }
+  .longLabel { display: none; }
+  .boardClose > * { min-height: 40px; padding-left: 12px; padding-right: 12px; }
+  .boardScroll { padding: 8px 6px 12px; }
+  .question { padding: 8px 6px 8px; }
   .cards { grid-template-columns: 1fr 1fr; }
+  .sentence, .thread { padding-left: 9px; padding-right: 9px; }
   .sentenceText { font-size: 17px; }
+  .sentence[data-solved] .sentenceText, .threadText { margin-right: 0; }
+  .sentence[data-solved] .sentenceLabel { min-height: 26px; margin-right: 96px; }
+  .threadPair { margin-right: 84px; }
+  .rubber { top: 5px; right: 8px; font-size: 15px; }
 }
+
+/* Une phrase ou un fil qui vient à l'écran s'arrête sous la barre, tampon compris. */
+.sentence, .thread { scroll-margin: 22px 0 12px; }
 
 @media (prefers-reduced-motion: reduce) {
   .thoughtPaper, .newClue, .rubber, .closeup, .revealed, .boardTool[data-suggested], .uvVeil {

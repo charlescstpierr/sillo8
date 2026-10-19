@@ -10,6 +10,8 @@ export interface ArtProps {
   pitch: number;
   /** Détails révélés (index des `details` du gros plan). */
   revealed: boolean[];
+  /** L'énigme de l'objet est résolue (cadenas ouvert…). */
+  solved?: boolean;
 }
 
 const INK = "#3a2a1c";

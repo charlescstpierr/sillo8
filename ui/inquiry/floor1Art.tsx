@@ -213,21 +213,28 @@ function Ticket(): ReactNode {
   );
 }
 
-/** Cadenas à six molettes sur la porte de l'armoire à piles. */
-function Padlock(): ReactNode {
+/** Cadenas à six molettes sur la porte de l'armoire à piles ; ouvert, l'anse sautée et la combinaison visible. */
+function Padlock({ solved }: ArtProps): ReactNode {
+  const letters = solved ? [..."PECHES"] : Array.from({ length: 6 }, () => "?");
   return (
     <svg viewBox="0 0 270 300" width="100%" height="100%" aria-hidden>
       <rect x="0" y="0" width="270" height="300" fill="#7c8a6a" stroke={INK} strokeWidth="3" />
       <path d="M135 0v300" stroke={INK} strokeWidth="2" />
-      <path d="M95 110v-34a40 40 0 0 1 80 0v34" fill="none" stroke="#9a9a92" strokeWidth="12" />
+      {solved ? (
+        // Anse sortie de son logement et pivotée : le cadenas est ouvert.
+        <path d="M95 92v-34a40 40 0 0 1 80 0v6" fill="none" stroke="#9a9a92" strokeWidth="12" transform="rotate(-18 95 100)" />
+      ) : (
+        <path d="M95 110v-34a40 40 0 0 1 80 0v34" fill="none" stroke="#9a9a92" strokeWidth="12" />
+      )}
       <rect x="62" y="108" width="146" height="110" rx="14" fill="#d8a43a" stroke={INK} strokeWidth="3" />
-      {Array.from({ length: 6 }, (_, i) => (
+      {solved ? <circle cx="175" cy="112" r="7" fill="#3b2a1d" /> : null}
+      {letters.map((letter, i) => (
         <g key={i}>
-          <rect x={74 + i * 21} y="140" width="17" height="44" rx="3" fill="#3b2a1d" stroke={INK} strokeWidth="1.5" />
-          <text x={82.5 + i * 21} y="168" fontSize="13" textAnchor="middle" fill="#fff6e2" fontFamily="'Special Elite', monospace">?</text>
+          <rect x={74 + i * 21} y="140" width="17" height="44" rx="3" fill={solved ? "#2f4a2a" : "#3b2a1d"} stroke={INK} strokeWidth="1.5" />
+          <text x={82.5 + i * 21} y="168" fontSize="13" textAnchor="middle" fill="#fff6e2" fontFamily="'Special Elite', monospace">{letter}</text>
         </g>
       ))}
-      <text x="135" y="250" fontSize="12" textAnchor="middle" fill={CREAM} fontFamily="'Special Elite', monospace">PILES · COMPTÉES</text>
+      <text x="135" y="250" fontSize="12" textAnchor="middle" fill={CREAM} fontFamily="'Special Elite', monospace">{solved ? "OUVERT · PÊCHES" : "PILES · COMPTÉES"}</text>
     </svg>
   );
 }

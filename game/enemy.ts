@@ -78,6 +78,8 @@ export interface Zombie {
   stuck: number;
   /** Arrêt sur image restant (s) : ni déplacement, ni animation. */
   freeze: number;
+  /** Temps d'arrêt restant (s) : il reste sur place, sans être étourdi (mise en scène, ex. M4). */
+  hold: number;
   /** Recul restant à parcourir (m). */
   pushX: number;
   pushZ: number;
@@ -179,7 +181,7 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
       id: spawn.id, kind: spawn.kind, spawn, x: spawn.x, z: spawn.z, yaw: 0, health: 0, mode: "patrol", alive: true,
       stunned: 0, patrolIndex: 0, destX: 0, destZ: 0, lastX: 0, lastZ: 0, searchRemaining: 0, senseRemaining: i * 0.033,
       attackRemaining: 0, seesTarget: false, hit: 0, attackVisual: 0, stride: i * 1.7, speed: 0, dead: -1, stuck: 0,
-      freeze: 0, pushX: 0, pushZ: 0, room: -1, waypointX: spawn.x, waypointZ: spawn.z, rig: null, shadow: null, candidate: { id: spawn.id, x: spawn.x, z: spawn.z },
+      freeze: 0, hold: 0, pushX: 0, pushZ: 0, room: -1, waypointX: spawn.x, waypointZ: spawn.z, rig: null, shadow: null, candidate: { id: spawn.id, x: spawn.x, z: spawn.z },
       wait: 0, stopped: -1,
     };
     if (visuals) {
@@ -209,7 +211,7 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
     z.alive = true;
     z.dead = -1;
     z.stunned = z.hit = z.attackRemaining = z.attackVisual = z.searchRemaining = z.stuck = z.speed = 0;
-    z.freeze = z.pushX = z.pushZ = 0;
+    z.freeze = z.hold = z.pushX = z.pushZ = 0;
     z.wait = 0;
     z.stopped = -1;
     z.patrolIndex = 0;
@@ -426,8 +428,10 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
     const spec = ZOMBIE[z.kind];
     z.stunned = Math.max(0, z.stunned - dt);
     z.attackRemaining = Math.max(0, z.attackRemaining - dt);
+    const held = z.hold > 0;
+    z.hold = Math.max(0, z.hold - dt);
     let speed = 0;
-    if (z.stunned <= 0) {
+    if (z.stunned <= 0 && !held) {
       z.senseRemaining -= dt;
       if (z.senseRemaining <= 0) {
         z.senseRemaining = SENSE_PERIOD;
@@ -668,6 +672,12 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
         z.stunned = 0;
         current.markDefeated(z.id);
       }
+    },
+
+    hold(id, seconds) {
+      const z = byId.get(id);
+      if (!z || !z.alive) return;
+      z.hold = Math.max(z.hold, seconds);
     },
 
     push(id, dx, dz, distance, freeze = 0) {

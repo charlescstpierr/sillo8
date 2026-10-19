@@ -93,7 +93,7 @@ export interface SpeakerStatus {
  */
 export const conversationHooks: {
   name?: (speaker: string, state: SiloState) => string;
-  status?: (speaker: string, state: SiloState) => SpeakerStatus;
+  status?: (speaker: string, state: SiloState, conversation?: string) => SpeakerStatus;
   gesture?: (id: string, state: SiloState) => void;
 } = {};
 
@@ -104,8 +104,9 @@ export function fillText(text: string, speaker: string, state: SiloState): strin
   return text.replaceAll("{nom}", name).replaceAll("{Nom}", name.charAt(0).toUpperCase() + name.slice(1));
 }
 
-export function speakerStatus(speaker: string, state: SiloState): SpeakerStatus {
-  return conversationHooks.status?.(speaker, state) ?? {};
+/** État visible de l'interlocuteur ; `conversation` : la scène en cours (son état suit alors la mise en scène). */
+export function speakerStatus(speaker: string, state: SiloState, conversation?: string): SpeakerStatus {
+  return conversationHooks.status?.(speaker, state, conversation) ?? {};
 }
 
 function adjustItem(state: SiloState, kind: ItemKind, delta: number): boolean {

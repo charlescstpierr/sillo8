@@ -14,9 +14,16 @@ import {
 // ——— Branchements : le nom, l'état visible, les gestes ———
 
 conversationHooks.name = (speaker, state) => (speaker === COOK ? cookName(state) : speaker === OPERATOR ? operatorName(state) : "l'étranger");
-conversationHooks.status = (speaker, state) => {
+/** Scènes où Cuisine n'est pas à sa porte : l'état affiché suit la mise en scène, pas sa pose habituelle. */
+const COOK_SCENES: Record<string, { title: string; gesture: string; mood?: string }> = {
+  cuisine_m4: { title: "DEVANT SON COMMIS", gesture: "Il baisse lentement son couperet. Ses mains tremblent.", mood: "careful" },
+  cuisine_m7: { title: "DEVANT LE COULOIR NORD", gesture: "Couperet rangé. Il te tend une boîte de pêches." },
+};
+conversationHooks.status = (speaker, state, conversation) => {
   if (speaker === COOK) {
     const stance = COOK_STANCE[cookLevel(state)];
+    const scene = conversation ? COOK_SCENES[conversation] : undefined;
+    if (scene) return { title: scene.title, calls: cookName(state), gesture: scene.gesture, mood: scene.mood ?? stance.mood };
     const out = state.knows("cuisine_dehors");
     return { title: out ? "DEHORS, COUPERET À LA MAIN" : stance.title, calls: cookName(state), gesture: out ? "Il se plante devant toi." : `${stance.weapon} ${stance.gesture}`, mood: out ? "hostile" : stance.mood };
   }

@@ -47,6 +47,8 @@ export const THOUGHTS: Thought[] = [
   { id: "t_commis", text: "Il pose un plateau, frappe deux fois, repart. Il a fait ça souvent. Pour qui ?", trigger: { on: "nearEnemy", enemy: ENEMY.commis, radius: 8 }, card: "commis_habit" },
   // M1 : « Depuis que t'es là. »
   { id: "t_depuis", text: "Le moteur fait du bruit. Le bruit les attire. …Il n'a pas tout à fait tort.", trigger: { on: "fact", fact: SCENE.M1 } },
+  // M4 : le commis revient vers Cuisine ; Lou pense à sa lampe (lancée par game/content/people_director.ts).
+  { id: "t_lampe_commis", text: "Ma lampe ! Un éclair en pleine face, et il se fige.", trigger: { on: "chain" } },
   { id: "t_traits", text: "Neuf traits. Neuf jours. Moi, je suis arrivé ce matin. Ça se prouve, ça ?", trigger: { on: "examine", examinable: "cook_tally" } },
   // M2 : la voix au haut-parleur.
   { id: "t_presque", text: "Elle dit vrai. Presque tout.", trigger: { on: "fact", fact: SCENE.M2 } },

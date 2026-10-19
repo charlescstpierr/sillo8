@@ -34,11 +34,15 @@ export const CARRIERS = new Map<string, { x: number; z: number; ready: boolean; 
 export function examinableAvailable(id: string, state: SiloState): boolean {
   const e = INDEX.examinables.get(id);
   if (!e || e.carried) return false;
+  const record = recordOf(state);
   if (e.carrier) {
     const c = CARRIERS.get(e.carrier);
     if (c && !c.ready) return false;
+    // Sur un mordu encore debout, un objet déjà noté (carte rangée, détails vus) n'est plus proposé.
+    const noted = (!e.card || record.cards.includes(e.card)) && (e.closeup.details ?? []).every((_, i) => record.revealed.includes(`${e.id}#${i}`));
+    if (c && !c.dropped && noted) return false;
   }
-  return examinableState(e, recordOf(state), state) !== "hidden";
+  return examinableState(e, record, state) !== "hidden";
 }
 
 export function doorUnlocked(id: string, state: SiloState): boolean {

@@ -164,6 +164,7 @@ export class Engine {
         const z = (this.horde as Partial<ZombieHorde>).get?.(id);
         return z ? { x: z.x, z: z.z, alive: z.alive, frozen: z.alive && (z.stunned > 0 || z.freeze > 0) } : null;
       },
+      avoid: (viewW, viewH) => this.thoughtObstacles(viewW, viewH),
     });
     this.inquiry.attach(this.world.interactables);
     this.people = new PeopleDirector({
@@ -741,6 +742,38 @@ export class Engine {
     }
     this.hudClock += dt;
     if (this.hudClock >= 0.1) this.publishHud();
+  }
+
+  /**
+   * Ce que la bulle de pensée ne doit pas couvrir dans la scène : l'objet visé (de son pied à son infobulle) et les
+   * étiquettes « +1 … » des objets ramassés.
+   */
+  private thoughtObstacles(viewW: number, viewH: number): { x: number; y: number; w: number; h: number }[] {
+    const rects = this.combat.fx.labelRects(this.camera, viewW, viewH);
+    const def = this.focus;
+    const view = def ? this.world.interactables.get(def.id) : undefined;
+    if (def && view && !this.paused) {
+      const ys: number[] = [];
+      const xs: number[] = [];
+      for (const [dx, y] of [[-0.6, 0], [0.6, 0], [0, view.tooltipHeight]] as const) {
+        this.tmp.set(def.x + dx, y, def.z).project(this.camera);
+        xs.push((this.tmp.x * 0.5 + 0.5) * viewW);
+        ys.push((-this.tmp.y * 0.5 + 0.5) * viewH);
+      }
+      let x0 = Math.min(...xs);
+      let x1 = Math.max(...xs);
+      let y0 = Math.min(...ys);
+      const y1 = Math.max(...ys);
+      // L'infobulle est posée au-dessus de l'objet (placeTooltip) : on la compte aussi.
+      const tip = this.tooltipEl?.getBoundingClientRect();
+      if (tip && tip.width > 0) {
+        x0 = Math.min(x0, tip.left);
+        x1 = Math.max(x1, tip.right);
+        y0 = Math.min(y0, tip.top);
+      }
+      rects.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+    }
+    return rects;
   }
 
   private placeTooltip(): void {
