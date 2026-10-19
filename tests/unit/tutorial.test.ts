@@ -114,6 +114,21 @@ describe("bulles du tutoriel", () => {
     expect(loadTutorial(null)).toEqual([]);
   });
 
+  it("une scène peut rappeler une commande déjà vue (la lampe en M4), jusqu'au geste ou au délai", () => {
+    const state = new SiloState();
+    const director = new TutorialDirector(new MemoryStore());
+    director.start(state);
+    director.tracker.complete("dazzle");
+    director.prompt("dazzle", 2);
+    director.update(0.1, state, 0, 41, obs({ device: "touch" }));
+    expect(director.bubble?.key).toBe("LAMPE");
+    director.update(0.1, state, 0, 41, obs({ device: "touch", dazzled: true }));
+    expect(director.bubble?.step).not.toBe("dazzle");
+    director.prompt("dazzle", 1);
+    for (let i = 0; i < 12; i++) director.update(0.1, state, 0, 41, obs());
+    expect(director.bubble?.step).not.toBe("dazzle");
+  });
+
   it("le directeur sauvegarde la progression, et « Revoir le tutoriel » efface tout", () => {
     const store = new MemoryStore();
     const state = new SiloState();

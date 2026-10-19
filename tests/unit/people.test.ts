@@ -298,7 +298,9 @@ describe("directeur des personnes", () => {
     // Retour à la cafétéria : le commis se tourne vers son ancien patron ; Lou le fige à la lampe.
     d.tick(-20, 10, 30);
     const commis = d.horde.get("crawler_cafe")!;
-    expect(d.notices).toContain("CUISINE : « C'est… mon commis. »");
+    expect(d.notices).toContain("CUISINE : « C'est… mon commis. Il s'en vient su' moi ! Aveugle-le avec ta lampe, vite ! »");
+    // Lou pense aussitôt à sa lampe.
+    expect(recordOf(s).thoughts).toContain("t_lampe_commis");
     // (La horde n'avance pas dans ce test : on place le commis, revenu vers Cuisine.)
     [commis.x, commis.z] = [-24.5, 15];
     d.horde.damage("crawler_cafe", 0, 1.8);
@@ -316,7 +318,14 @@ describe("directeur des personnes", () => {
     s.facts.push("generator_powered");
     for (const m of ["M1", "M2", "M3"] as const) markScene(s, m);
     d.tick(-20, 10, 0.2);
-    d.tick(-9, 5, 0.2);
+    // Sortir un instant n'est pas fuir : Cuisine prévient d'abord ; revenir annule.
+    d.tick(-9, 5, 2);
+    expect(played(s, "M4")).toBe(false);
+    expect(d.notices).toContain("CUISINE : « Tu t'en vas ?! Reviens, l'étranger ! »");
+    d.tick(-20, 10, 0.2);
+    d.tick(-9, 5, 3);
+    expect(played(s, "M4")).toBe(false);
+    d.tick(-9, 5, 2);
     expect(played(s, "M4")).toBe(true);
     expect(gestureDone(s, "fuite")).toBe(true);
     d.tick(-9, 5, 8);

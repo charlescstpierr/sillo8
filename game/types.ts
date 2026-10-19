@@ -33,7 +33,7 @@ export interface Horde {
    * Attire un seul mordu vers un point, comme un bruit qu'il serait seul à entendre (facultatif ; ex. le commis qui
    * revient vers son ancien patron, scène M4). Sans effet s'il poursuit déjà le joueur. Vrai s'il y va.
    */
-  lure?(id: string, x: number, z: number, seconds?: number): boolean;
+  lure?(id: string, x: number, z: number, seconds?: number, pace?: number): boolean;
   /** Arrête un mordu sur place `seconds` s, sans l'étourdir (facultatif ; mise en scène, ex. le commis en M4). */
   hold?(id: string, seconds: number): void;
   /** Zombies vivants, pour la visée assistée, la clé à molette et la lampe. */

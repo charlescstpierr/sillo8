@@ -33,7 +33,15 @@ export interface PeopleHost {
   notify(text: string): void;
   openConversation(id: string): boolean;
   mode(): UiMode;
+  /** Rappelle une commande à l'écran (bulle du tutoriel : « Clic droit », « LAMPE »…) pendant `seconds` s. */
+  prompt?(step: string, seconds: number): void;
 }
+
+/**
+ * M4 : le commis s'arrête net à son entrée (HOLD s), puis revient vers Cuisine à PACE de son allure. Lou peut
+ * s'éloigner sans que ça compte comme une fuite : seulement hors de la cafétéria, après AWAY s (avec un avertissement).
+ */
+export const M4_TIMING = { hold: 1.8, pace: 0.6, away: 4, reach: 1.1, limit: 35 };
 
 /** Où se tiennent les survivants (positions réelles du décor, storyProps.ts). */
 export const SPOTS = {
@@ -82,7 +90,7 @@ export class PeopleDirector {
   private path: [number, number][] = [];
   private speed = 0;
   private talking: string | null = null;
-  private m4 = { t: 0, lure: 0, close: false };
+  private m4 = { t: 0, lure: 0, away: 0, warned: false };
   private noticeQueue: string[] = [];
   private noticeClock = 0;
   private pending: { at: number; run: () => void }[] = [];
@@ -149,7 +157,7 @@ export class PeopleDirector {
     this.talking = null;
     this.pending = [];
     this.noticeQueue = [];
-    this.m4 = { t: 0, lure: 0, close: false };
+    this.m4 = { t: 0, lure: 0, away: 0, warned: false };
     this.repairedAt = -1;
     this.placeCookHome();
     peopleNotices.length = 0;
@@ -243,8 +251,14 @@ export class PeopleDirector {
     if (result?.line) this.say(`${who} : « ${result.line} »`);
   }
 
-  private say(text: string): void {
-    this.noticeQueue.push(text);
+  private say(text: string, urgent = false): void {
+    if (!urgent) {
+      this.noticeQueue.push(text);
+      return;
+    }
+    // Appel à l'aide : passe devant les autres avis et s'affiche tout de suite.
+    this.noticeQueue.unshift(text);
+    this.noticeClock = 0;
   }
 
   private later(seconds: number, run: () => void): void {
@@ -379,8 +393,12 @@ export class PeopleDirector {
     }
     this.cookPhase = "m4";
     this.cookPos = { ...SPOTS.cookM4 };
-    this.m4 = { t: 0, lure: 0, close: false };
-    this.say("CUISINE : « C'est… mon commis. »");
+    this.m4 = { t: 0, lure: 0, away: 0, warned: false };
+    // Le commis se fige un instant : le joueur a le temps de comprendre la scène.
+    this.host.horde.hold?.("crawler_cafe", M4_TIMING.hold);
+    this.say("CUISINE : « C'est… mon commis. Il s'en vient su' moi ! Aveugle-le avec ta lampe, vite ! »", true);
+    this.host.inquiry.think("t_lampe_commis", true);
+    this.host.prompt?.("dazzle", 8);
   }
 
   private runM4(dt: number): void {
@@ -402,12 +420,20 @@ export class PeopleDirector {
     if (!commis || !commis.alive) return end(true);
     const distance = Math.hypot(commis.x - SPOTS.cookM4.x, commis.z - SPOTS.cookM4.z);
     if (commis.stunned > 0 && distance < 8) return end(true);
-    if (this.room !== "cafeteria") return end(false);
-    if (distance < 1.25) return end(false);
-    if (this.m4.t > 35) return end(true);
-    // Fidèle à son habitude, il revient vers son ancien patron.
+    // Lou sort de la cafétéria : un avertissement d'abord ; la fuite ne compte qu'après quelques secondes dehors.
+    if (this.room !== "cafeteria") {
+      this.m4.away += dt;
+      if (!this.m4.warned) {
+        this.m4.warned = true;
+        this.say("CUISINE : « Tu t'en vas ?! Reviens, l'étranger ! »", true);
+      }
+      if (this.m4.away > M4_TIMING.away) return end(false);
+    } else this.m4.away = 0;
+    if (distance < M4_TIMING.reach) return end(false);
+    if (this.m4.t > M4_TIMING.limit) return end(true);
+    // Fidèle à son habitude, il revient vers son ancien patron (lentement : il traîne son plateau).
     if (this.m4.lure <= 0) {
-      this.host.horde.lure?.("crawler_cafe", SPOTS.cookM4.x, SPOTS.cookM4.z, 6);
+      this.host.horde.lure?.("crawler_cafe", SPOTS.cookM4.x, SPOTS.cookM4.z, 6, M4_TIMING.pace);
       this.m4.lure = 1;
     }
   }

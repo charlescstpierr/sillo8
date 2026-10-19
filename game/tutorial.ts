@@ -490,6 +490,8 @@ export class TutorialDirector {
   arrowMode: ArrowMode = "auto";
   private targetClock = 0;
   private journalOpened = false;
+  /** Bulle demandée par une scène (ex. la lampe en M4), affichée quelques secondes, même étape déjà vue. */
+  private cue: { step: TutorialStep; left: number } | null = null;
 
   constructor(private readonly store: KeyValueStore | null) {
     this.tracker = new TutorialTracker(loadTutorial(store));
@@ -502,6 +504,12 @@ export class TutorialDirector {
     this.bubble = null;
     this.target = null;
     this.targetClock = 0;
+    this.cue = null;
+  }
+
+  /** Rappelle une commande pendant `seconds` s (scène qui l'exige, ex. éblouir le commis en M4). */
+  prompt(step: TutorialStep, seconds: number): void {
+    if (STEP_BY_ID.has(step)) this.cue = { step, left: seconds };
   }
 
   /** « Revoir le tutoriel » : efface les étapes vues. */
@@ -518,6 +526,12 @@ export class TutorialDirector {
 
   update(dt: number, state: SiloState, x: number, z: number, o: TutorialObservation): void {
     this.bubble = this.tracker.update(dt, { ...o, journalOpened: o.journalOpened || this.journalOpened });
+    if (this.cue) {
+      this.cue.left -= dt;
+      const def = STEP_BY_ID.get(this.cue.step);
+      if (this.cue.left <= 0 || def?.achieved(o)) this.cue = null;
+      else this.bubble = bubbleFor(this.cue.step, o.device);
+    }
     this.journalOpened = false;
     if (this.tracker.takeChanged()) this.persist();
     this.watch.update(dt, state);

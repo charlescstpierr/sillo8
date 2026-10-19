@@ -106,6 +106,25 @@ describe("zombies", () => {
     expect(Math.hypot(c.x + 26.9, c.z - 16.3)).toBeLessThan(Math.hypot(-18 + 26.9, 11.5 - 16.3));
   });
 
+  it("mise en scène M4 : le commis s'arrête sur place (hold), puis vient lentement (pace)", () => {
+    const held = setup(FAR);
+    const c = held.horde.get("crawler_cafe")!;
+    const [x0, z0] = [c.x, c.z];
+    held.horde.hold!("crawler_cafe", 1.5);
+    held.horde.lure!("crawler_cafe", -26.9, 16.3, 6, 0.5);
+    run(held, 1.2);
+    expect(Math.hypot(c.x - x0, c.z - z0)).toBeLessThan(0.01);
+    expect(c.stunned).toBe(0);
+    const slow = setup(FAR);
+    const fast = setup(FAR);
+    slow.horde.lure!("crawler_cafe", -26.9, 16.3, 6, 0.5);
+    fast.horde.lure!("crawler_cafe", -26.9, 16.3, 6);
+    run(slow, 1.5);
+    run(fast, 1.5);
+    const gone = (h: typeof slow) => Math.hypot(h.horde.get("crawler_cafe")!.x + 18, h.horde.get("crawler_cafe")!.z - 11.5);
+    expect(gone(slow)).toBeLessThan(gone(fast) * 0.75);
+  });
+
   it("poursuit à vue, pas à travers un mur", () => {
     const wall: Box = { minX: 16.6, maxX: 17.0, minZ: -6.9, maxZ: -2.9 };
     const blocked = setup({ x: 18, z: -4.9 }, undefined, [wall]);

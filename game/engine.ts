@@ -170,6 +170,7 @@ export class Engine {
     this.people = new PeopleDirector({
       scene: this.scene, state: this.state, horde: this.horde, inquiry: this.inquiry, events: this.events,
       notify: (text) => this.notify(text), openConversation: (id) => this.openConversation(id), mode: () => this.ui.get().mode,
+      prompt: (step, seconds) => this.tutorial.prompt(step, seconds),
     });
     this.people.attach(this.world.interactables);
     this.progressEffects = {

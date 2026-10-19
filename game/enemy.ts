@@ -80,6 +80,8 @@ export interface Zombie {
   freeze: number;
   /** Temps d'arrêt restant (s) : il reste sur place, sans être étourdi (mise en scène, ex. M4). */
   hold: number;
+  /** Allure quand il est attiré (lure) : 1 d'habitude, plus lent en mise en scène (M4). */
+  lurePace: number;
   /** Recul restant à parcourir (m). */
   pushX: number;
   pushZ: number;
@@ -181,7 +183,7 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
       id: spawn.id, kind: spawn.kind, spawn, x: spawn.x, z: spawn.z, yaw: 0, health: 0, mode: "patrol", alive: true,
       stunned: 0, patrolIndex: 0, destX: 0, destZ: 0, lastX: 0, lastZ: 0, searchRemaining: 0, senseRemaining: i * 0.033,
       attackRemaining: 0, seesTarget: false, hit: 0, attackVisual: 0, stride: i * 1.7, speed: 0, dead: -1, stuck: 0,
-      freeze: 0, hold: 0, pushX: 0, pushZ: 0, room: -1, waypointX: spawn.x, waypointZ: spawn.z, rig: null, shadow: null, candidate: { id: spawn.id, x: spawn.x, z: spawn.z },
+      freeze: 0, hold: 0, lurePace: 1, pushX: 0, pushZ: 0, room: -1, waypointX: spawn.x, waypointZ: spawn.z, rig: null, shadow: null, candidate: { id: spawn.id, x: spawn.x, z: spawn.z },
       wait: 0, stopped: -1,
     };
     if (visuals) {
@@ -212,6 +214,7 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
     z.dead = -1;
     z.stunned = z.hit = z.attackRemaining = z.attackVisual = z.searchRemaining = z.stuck = z.speed = 0;
     z.freeze = z.hold = z.pushX = z.pushZ = 0;
+    z.lurePace = 1;
     z.wait = 0;
     z.stopped = -1;
     z.patrolIndex = 0;
@@ -243,6 +246,7 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
     if (Math.hypot(z.x - x, z.z - zz) > radius * ZOMBIE[z.kind].hearing) return;
     if (z.mode !== "chase") {
       z.mode = "investigate";
+      z.lurePace = 1;
       z.destX = z.lastX = x;
       z.destZ = z.lastZ = zz;
       z.searchRemaining = INVESTIGATE_TIME;
@@ -438,7 +442,7 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
         sense(z, ctx);
       }
       // Mode moins effrayant : mordus plus lents (simple multiplicateur, 1 par défaut).
-      speed = brain(z, ctx, dt) * COMFORT.zombiePace;
+      speed = brain(z, ctx, dt) * COMFORT.zombiePace * (z.mode === "investigate" ? z.lurePace : 1);
     }
     if (speed > 0 && route(z, ctx)) {
       const dx = z.waypointX - z.x;
@@ -609,10 +613,11 @@ export function createHorde(state: SiloState, options: HordeOptions = {}): Zombi
       for (const zombie of zombies) hear(zombie, x, z, radius);
     },
 
-    lure(id, x, z, seconds = INVESTIGATE_TIME) {
+    lure(id, x, z, seconds = INVESTIGATE_TIME, pace = 1) {
       const zombie = byId.get(id);
       if (!zombie || !zombie.alive || dormant || zombie.mode === "chase") return false;
       zombie.mode = "investigate";
+      zombie.lurePace = pace;
       zombie.destX = zombie.lastX = x;
       zombie.destZ = zombie.lastZ = z;
       zombie.searchRemaining = seconds;
